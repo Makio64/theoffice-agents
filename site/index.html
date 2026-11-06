@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en" data-sky="night" data-playing="true">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#030616">
+  <title>The Office — your agents at work</title>
+  <meta name="description" content="Your agents at work. A Claude Code plugin. Explore the live floor, weekly activity, and monthly calendar in a living pixel-art office.">
+  <style>html { overflow-y: scroll; }</style>
+  <script>
+    // Fetch the first native-width picture while the rest of the page is still being read.
+    if (innerHeight > 340 && !location.hash && performance.getEntriesByType('navigation')[0]?.type !== 'back_forward') {
+      const phone = matchMedia('(max-width: 599px)').matches;
+      // the console's case keeps 30 px round the screen (shell.css --shell-m), none on a phone
+      const viewport = (document.documentElement.clientWidth || innerWidth) - (phone ? 0 : 60);
+      const gutter = phone ? 8 : 16;
+      const width = Math.max(376, Math.min(1088, Math.floor((viewport - gutter * 2) / 4) * 4));
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches ? '-still' : '';
+      const url = new URL(`img/initial-office-${width}${still}.svg`, document.baseURI).href;
+      const promise = fetch(url, { priority: 'high' }).then(response => {
+        if (!response.ok) throw new Error('Initial office picture unavailable');
+        return response.blob();
+      });
+      promise.catch(() => {});
+      window.__officeInitialPicture = { url, promise };
+    }
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23d77757' d='M2 4h12v8H2zM0 7h16v3H0zM3 12h2v2H3zM11 12h2v2h-2z'/%3E%3Cpath fill='%23101424' d='M5 6h1v2H5zM10 6h1v2h-1z'/%3E%3C/svg%3E">
+  <style>
+    /* The loader, whole in the page's first bytes so its first frame is its final look: the night sky and stars of
+       sky.js (bandTile and starsSvg, kept in step by test/site-loader.test.mjs), Office Pixel (Press Start 2P cut to
+       Latin and renamed, fonts/PressStart2P-OFL.txt) and the guide's frame. The page's stylesheets follow it in <body>:
+       they hold back main.js, never this frame. */
+    @font-face { font-family: 'Office Pixel'; src: url(data:font/woff2;base64,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) format('woff2'); font-display: block; }
+    @property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
+    html { background: #030616; color-scheme: dark; }
+    .site-loader {
+      --l-sky: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 450' width='8' height='900' shape-rendering='crispEdges' aria-hidden='true' focusable='false'%3E%3Cpath fill='%23030616' d='M0 0h4v28h-4zM1 28h3v1h-3zM0 29h1v2h-1zM2 29h1v3h-1z'/%3E%3Cpath fill='%2305081c' d='M0 28h1v1h-1zM1 29h1v2h-1zM3 29h1v3h-1zM0 31h2v1h-2zM0 32h4v26h-4zM1 58h3v1h-3zM0 59h1v2h-1zM2 59h1v3h-1z'/%3E%3Cpath fill='%23090f2c' d='M0 58h1v1h-1zM1 59h1v2h-1zM3 59h1v3h-1zM0 61h2v1h-2zM0 62h4v26h-4zM1 88h3v1h-3zM0 89h1v2h-1zM2 89h1v3h-1z'/%3E%3Cpath fill='%230f1639' d='M0 88h1v1h-1zM1 89h1v2h-1zM3 89h1v3h-1zM0 91h2v1h-2zM0 92h4v26h-4zM1 118h3v1h-3zM0 119h1v2h-1zM2 119h1v3h-1z'/%3E%3Cpath fill='%23151d44' d='M0 118h1v1h-1zM1 119h1v2h-1zM3 119h1v3h-1zM0 121h2v1h-2zM0 122h4v26h-4zM1 148h3v1h-3zM0 149h1v2h-1zM2 149h1v3h-1z'/%3E%3Cpath fill='%231b2250' d='M0 148h1v1h-1zM1 149h1v2h-1zM3 149h1v3h-1zM0 151h2v1h-2zM0 152h4v26h-4zM1 178h3v1h-3zM0 179h1v2h-1zM2 179h1v3h-1z'/%3E%3Cpath fill='%23232455' d='M0 178h1v1h-1zM1 179h1v2h-1zM3 179h1v3h-1zM0 181h2v1h-2zM0 182h4v26h-4zM1 208h3v1h-3zM0 209h1v2h-1zM2 209h1v3h-1z'/%3E%3Cpath fill='%23282658' d='M0 208h1v1h-1zM1 209h1v2h-1zM3 209h1v3h-1zM0 211h2v1h-2zM0 212h4v26h-4zM1 238h3v1h-3zM0 239h1v2h-1zM2 239h1v3h-1z'/%3E%3Cpath fill='%232e285a' d='M0 238h1v1h-1zM1 239h1v2h-1zM3 239h1v3h-1zM0 241h2v1h-2zM0 242h4v26h-4zM1 268h3v1h-3zM0 269h1v2h-1zM2 269h1v3h-1z'/%3E%3Cpath fill='%23362a5c' d='M0 268h1v1h-1zM1 269h1v2h-1zM3 269h1v3h-1zM0 271h2v1h-2zM0 272h4v26h-4zM1 298h3v1h-3zM0 299h1v2h-1zM2 299h1v3h-1z'/%3E%3Cpath fill='%233d2d5d' d='M0 298h1v1h-1zM1 299h1v2h-1zM3 299h1v3h-1zM0 301h2v1h-2zM0 302h4v26h-4zM1 328h3v1h-3zM0 329h1v2h-1zM2 329h1v3h-1z'/%3E%3Cpath fill='%2345305f' d='M0 328h1v1h-1zM1 329h1v2h-1zM3 329h1v3h-1zM0 331h2v1h-2zM0 332h4v26h-4zM1 358h3v1h-3zM0 359h1v2h-1zM2 359h1v3h-1z'/%3E%3Cpath fill='%234f335f' d='M0 358h1v1h-1zM1 359h1v2h-1zM3 359h1v3h-1zM0 361h2v1h-2zM0 362h4v26h-4zM1 388h3v1h-3zM0 389h1v2h-1zM2 389h1v3h-1z'/%3E%3Cpath fill='%235a375e' d='M0 388h1v1h-1zM1 389h1v2h-1zM3 389h1v3h-1zM0 391h2v1h-2zM0 392h4v26h-4zM1 418h3v1h-3zM0 419h1v2h-1zM2 419h1v3h-1z'/%3E%3Cpath fill='%23653b5e' d='M0 418h1v1h-1zM1 419h1v2h-1zM3 419h1v3h-1zM0 421h2v1h-2zM0 422h4v28h-4z'/%3E%3C/svg%3E");
+      --l-stars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 225' width='640' height='450' shape-rendering='crispEdges' aria-hidden='true' focusable='false'%3E%3Cpath fill='%236f86c9' d='M220 0h1v1h-1zM3 23h1v1h-1zM60 103h1v1h-1zM157 61h1v1h-1zM243 85h1v1h-1zM307 47h1v1h-1zM288 43h1v1h-1zM155 136h1v1h-1zM242 62h1v1h-1zM6 145h1v1h-1zM174 66h1v1h-1zM262 112h1v1h-1zM245 33h1v1h-1zM27 61h1v1h-1zM119 75h1v1h-1zM181 125h1v1h-1zM58 128h1v1h-1zM278 89h1v1h-1zM25 9h1v1h-1zM115 162h1v1h-1zM238 179h1v1h-1zM105 8h1v1h-1zM171 71h1v1h-1zM106 35h1v1h-1zM226 34h1v1h-1zM317 98h1v1h-1zM299 168h1v1h-1zM49 145h1v1h-1zM94 10h1v1h-1zM124 183h1v1h-1zM101 5h1v1h-1zM19 125h1v1h-1zM277 46h1v1h-1zM200 23h1v1h-1zM16 147h1v1h-1zM164 53h1v1h-1zM164 89h1v1h-1zM167 202h1v1h-1zM203 114h1v1h-1zM283 59h1v1h-1zM178 169h1v1h-1zM23 147h1v1h-1zM166 30h1v1h-1zM161 70h1v1h-1zM192 116h1v1h-1zM98 35h1v1h-1zM77 33h1v1h-1zM275 2h1v1h-1zM258 71h1v1h-1zM81 198h1v1h-1zM213 74h1v1h-1z'/%3E%3Cpath fill='%23e9e6ff' d='M238 139h1v1h-1zM115 86h1v1h-1zM148 58h1v1h-1zM281 173h1v1h-1zM315 115h1v1h-1zM120 118h1v1h-1zM259 93h1v1h-1zM258 55h1v1h-1zM73 90h1v1h-1zM169 171h1v1h-1zM42 16h1v1h-1zM258 78h1v1h-1zM276 154h1v1h-1zM20 98h1v1h-1zM287 205h1v1h-1zM167 39h1v1h-1z'/%3E%3C/svg%3E");
+      --l-twinkle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 225' width='640' height='450' shape-rendering='crispEdges' aria-hidden='true' focusable='false'%3E%3Cpath fill='%23ffffff' fill-opacity='.5' d='M81 210h3v1h-3zM82 209h1v3h-1z'/%3E%3Cpath fill='%23ffffff' d='M82 210h1v1h-1z'/%3E%3Cpath fill='%23ffffff' fill-opacity='.5' d='M138 1h3v1h-3zM139 0h1v3h-1z'/%3E%3Cpath fill='%23ffffff' d='M139 1h1v1h-1z'/%3E%3Cpath fill='%23ffffff' fill-opacity='.5' d='M32 37h3v1h-3zM33 36h1v3h-1z'/%3E%3Cpath fill='%23ffffff' d='M33 37h1v1h-1z'/%3E%3Cpath fill='%23ffffff' fill-opacity='.5' d='M249 38h3v1h-3zM250 37h1v3h-1z'/%3E%3Cpath fill='%23ffffff' d='M250 38h1v1h-1z'/%3E%3C/svg%3E");
+      --art: 640px; --type: 16px; --line: 28px; --small: 8px; --bar: 16px;
+      position: fixed; inset: 0; z-index: 1000; overflow: hidden;
+      display: grid; place-items: center; padding: 16px;
+      background: var(--l-sky) left bottom / 8px 900px repeat-x, #030616;
+      color: #ece2cd; font: var(--small)/16px 'Office Pixel', monospace; -webkit-font-smoothing: none;
+      /* until main.js reports the real stages: the first third, quickly, then slower */
+      animation: site-loader-boot 6s cubic-bezier(.2, .8, .3, 1) both;
+      mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; -webkit-mask-repeat: no-repeat;
+    }
+    .site-loader[hidden] { display: none; }
+    .site-loader::before, .site-loader::after {
+      content: ''; position: absolute; inset: 0 0 auto; height: 450px; pointer-events: none;
+      background: var(--l-stars) left top / 640px 450px repeat-x;
+    }
+    .site-loader::after { background-image: var(--l-twinkle); animation: site-loader-twinkle 2.4s steps(1) infinite; }
+    .site-loader__box {
+      position: relative; z-index: 1; box-sizing: border-box; width: min(100%, calc(var(--art) + 54px));
+      padding: 18px 18px 14px; border: 9px solid transparent;
+      border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30' shape-rendering='crispEdges'%3E%3Cpath fill='%230b0a09' d='M1 0h28v30H1zM0 1h30v28H0z'/%3E%3Cpath fill='%23ece2cd' d='M2 1h26v28H2zM1 2h28v26H1z'/%3E%3Cpath fill='%230b0a09' d='M2 2h26v26H2z'/%3E%3Cpath fill='%231f1a16' d='M3 3h24v24H3z'/%3E%3Cpath fill='%232e2721' d='M3 3h24v1H3z'/%3E%3C/svg%3E") 3 fill / 9px stretch;
+      filter: drop-shadow(4px 4px 0 #0009);
+      /* a fast load goes straight from the sky to the building: the console only comes up if the wait lasts */
+      animation: site-loader-wait 1ms .2s steps(1) both;
+    }
+    .site-loader p { margin: 0; }
+    .site-loader .site-loader__tab { position: absolute; left: 12px; top: -17px; padding: 2px 6px; background: #0b0a09; color: #ffd23f; }
+    /* the scene powers on like a screen once it has arrived, from a line across its middle */
+    .site-loader__art { position: relative; display: block; }
+    .site-loader__art img { display: block; width: 100%; height: auto; }
+    .site-loader__art::before { content: ''; position: absolute; left: 6%; right: 6%; top: calc(50% - 1px); height: 2px; background: #ece2cd; opacity: .45; }
+    .site-loader__art:not([data-on]) img { clip-path: inset(50% 0); }
+    .site-loader__art[data-on]::before { visibility: hidden; }
+    .site-loader__art[data-on] img { animation: site-loader-on .3s steps(5, end) both; }
+    .site-loader .site-loader__prompt { margin-top: 14px; font-size: var(--type); line-height: var(--line); white-space: nowrap; }
+    .site-loader__prompt span { color: #7d7466; }
+    .site-loader__prompt b { font-weight: inherit; color: #ffd23f; }
+    .site-loader__prompt i {
+      display: inline-block; width: calc(var(--type) * .75); height: var(--type); margin-left: calc(var(--type) / 4);
+      vertical-align: calc(var(--type) / -8); background: #ece2cd; animation: site-loader-blink 1s steps(1) infinite;
+    }
+    /* the meter: chunky segments, each lit with a pixel bevel, round(): a segment at a time */
+    /* whole segments only: a pitch of --bar, a border of an art pixel, so 640 and 960 wide end on a full block */
+    .site-loader__bar, .site-loader .site-loader__status { width: round(down, 100%, var(--bar)); }
+    .site-loader__bar { position: relative; box-sizing: border-box; height: var(--bar); margin-top: 10px; border: calc(var(--bar) / 8) solid #0b0a09; background: #0b0a09; }
+    .site-loader__bar::before, .site-loader__bar::after {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(var(--bar) * .75), transparent 0 var(--bar));
+      mask: repeating-linear-gradient(90deg, #000 0 calc(var(--bar) * .75), transparent 0 var(--bar));
+    }
+    .site-loader__bar::before { right: 0; background: #2e2721; }
+    .site-loader__bar::after {
+      width: min(100%, round(up, var(--p) * 100%, var(--bar)));
+      background: linear-gradient(#fff2b0 0 calc(var(--bar) / 8), #ffd23f 0 calc(100% - var(--bar) / 8), #c8921c 0);
+    }
+    .site-loader .site-loader__status { display: flex; gap: 16px; justify-content: space-between; margin-top: 8px; color: #c0b49b; white-space: nowrap; }
+    .site-loader__pct { counter-reset: pct calc(var(--p) * 100); color: #ece2cd; }
+    .site-loader__pct::after { content: counter(pct) '%'; }
+    @media (min-width: 1120px) and (min-height: 760px) {
+      .site-loader { --art: 960px; --type: 24px; --line: 40px; --small: 16px; --bar: 24px; font-size: var(--small); line-height: 24px; }
+      .site-loader__box { padding: 24px 24px 20px; }
+      .site-loader .site-loader__prompt { margin-top: 18px; }
+    }
+    @media (max-width: 479px) { .site-loader { --art: 400px; } }
+    @keyframes site-loader-boot { from { --p: .04; } to { --p: .34; } }
+    @keyframes site-loader-wait { from { visibility: hidden; } }
+    @keyframes site-loader-twinkle { 50% { opacity: .2; } }
+    @keyframes site-loader-blink { 50% { visibility: hidden; } }
+    @keyframes site-loader-on { from { clip-path: inset(49% 0); } 40% { clip-path: inset(46% 0); } to { clip-path: inset(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .site-loader::after, .site-loader__prompt i, .site-loader__art[data-on] img { animation: none; }
+    }
+  </style>
+  <noscript><style>.site-loader, .simple-view > img, .simple-front > img { display: none; }</style></noscript>
+  <script type="module" src="main.js" onerror="document.querySelector('#site-loader')?.remove()"></script>
+</head>
+<body class="simple-office">
+  <div id="site-loader" class="site-loader" role="status" aria-label="Opening The Office">
+    <div class="site-loader__box" aria-hidden="true">
+      <p class="site-loader__tab">THE OFFICE</p>
+      <picture class="site-loader__art">
+        <source media="(max-width: 479px) and (prefers-reduced-motion: reduce)" srcset="img/loading-month-400-still.svg" width="400" height="192">
+        <source media="(prefers-reduced-motion: reduce)" srcset="img/loading-month-640-still.svg">
+        <source media="(max-width: 479px)" srcset="img/loading-month-400.svg" width="400" height="192">
+        <img id="site-loader-art" src="img/loading-month-640.svg" width="640" height="192" alt="" fetchpriority="high" onload="this.parentNode.dataset.on = ''" onerror="this.parentNode.dataset.on = ''">
+      </picture>
+      <p class="site-loader__prompt"><span>&gt;</span> <b>/theoffice</b><i></i></p>
+      <div class="site-loader__bar"></div>
+      <p class="site-loader__status"><span id="site-loader-text">Unlocking the front door…</span><span class="site-loader__pct"></span></p>
+    </div>
+  </div>
+  <!-- After the loader, so they hold back main.js but not the loader's first frame. -->
+  <link rel="stylesheet" href="art.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="scenery.css">
+  <link rel="stylesheet" href="footer.css">
+  <link rel="stylesheet" href="dialogue.css">
+  <link rel="stylesheet" href="shell.css">
+  <a class="simple-skip" href="#office">Skip to the office</a>
+  <div class="sky" aria-hidden="true"></div>
+  <div class="shell" aria-hidden="true"><i class="shell-case"></i><i class="shell-screen"></i><span class="shell-led">Power</span></div>
+  <header class="simple-header col">
+    <a href="./" class="site-logo" aria-label="The Office home"><span id="header-mascot" aria-hidden="true"></span><span class="site-wordmark">THE OFFICE</span></a>
+    <span class="header-gap"></span>
+    <a class="btn steel install-link" id="install-link" href="#install"><span aria-hidden="true">↓</span><span>Install</span></a>
+    <button class="btn steel toggle" id="sky-switch" type="button" aria-label="Switch to day"><span class="tg"></span></button>
+    <a class="btn brass gh" href="https://github.com/Makio64/theoffice-agents" target="_blank" rel="noreferrer" aria-label="The Office on GitHub"><span id="github-icon" aria-hidden="true"></span><span>GitHub</span></a>
+  </header>
+  <main>
+    <section class="roof" aria-label="The Office rooftop">
+      <div class="simple-rooftop col">
+        <div class="sign simple-sign">
+          <div class="bulbs top" aria-hidden="true"></div>
+          <h1 class="simple-title"><span class="neon" id="neon" role="img" aria-label="The Office">THE OFFICE</span></h1>
+          <p>Your agents at work. A Claude Code plugin</p>
+          <div class="bulbs bottom" aria-hidden="true"></div>
+          <i class="sign-leg left" aria-hidden="true"></i><i class="sign-leg right" aria-hidden="true"></i>
+        </div>
+        <div class="simple-props" id="roof-props" aria-hidden="true"></div>
+      </div>
+      <div class="parapet col"><div class="coping"></div><span class="prop cat" id="roof-cat" aria-hidden="true"></span><span class="prop pigeon" id="roof-pigeon" aria-hidden="true"></span></div>
+      <div class="cornice-row col"><div class="cornice"></div></div>
+    </section>
+    <section class="tower col" id="office" aria-label="The Office interactive preview">
+      <div class="upper">
+        <section class="building-floor" aria-labelledby="live-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="live-title"><span data-floor-icon="live" aria-hidden="true"></span>Live Floor</h2><span class="floor-note"><span class="demo-dot" aria-hidden="true"></span>Sample activity</span></header>
+          <div class="simple-view"><img id="simple-picture-office" data-floor-view="office" width="1088" height="282" alt="Sample live floor: coding agents working at desks, grouped by project, under a bar counting who works and who needs you."><noscript><img src="img/office-night.svg" width="1088" height="282" alt="Sample live floor: coding agents working at desks, grouped by project, under a bar counting who works and who needs you."></noscript></div>
+        </section>
+        <div class="ledge"></div>
+        <section class="building-floor" aria-labelledby="weekly-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="weekly-title"><span data-floor-icon="week" aria-hidden="true"></span>Weekly</h2></header>
+          <div class="simple-view"><img id="simple-picture-week" data-floor-view="week" width="1088" height="426" alt="Sample weekly activity: one floor per project, its week's agent-time on its sign and each day's hours on its window."><noscript><img src="img/week-night.svg" loading="lazy" width="1088" height="426" alt="Sample weekly activity: one floor per project, its week's agent-time on its sign and each day's hours on its window."></noscript></div>
+        </section>
+        <div class="ledge"></div>
+        <section class="building-floor" aria-labelledby="monthly-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="monthly-title"><span data-floor-icon="month" aria-hidden="true"></span>Monthly Calendar</h2></header>
+          <div class="simple-view"><img id="simple-picture-month" data-floor-view="month" width="1088" height="574" alt="Sample monthly calendar: daily agent activity, the crew of AIs beside it and the projects they worked on."><noscript><img src="img/month-night.svg" loading="lazy" width="1088" height="574" alt="Sample monthly calendar: daily agent activity, the crew of AIs beside it and the projects they worked on."></noscript></div>
+        </section>
+        <div class="ledge"></div>
+      </div>
+      <div class="front simple-front"><img id="simple-front" width="1088" height="112" alt="The Office entrance, with agents coming and going."><noscript><img src="img/front-night.svg" loading="lazy" width="1088" height="112" alt="The Office entrance, with agents coming and going."></noscript></div>
+    </section>
+    <div class="city" aria-hidden="true"><div class="far" id="far"></div></div>
+    <div class="nbrs" aria-hidden="true"><div class="nb l" id="nbl"></div><div class="nb r" id="nbr"></div></div>
+  </main>
+  <footer class="street" id="street"></footer>
+  <noscript><p class="no-script">JavaScript adds motion and the installation console. <a href="https://github.com/Makio64/theoffice-agents#install">Read the installation guide on GitHub.</a></p></noscript>
+</body>
+</html>

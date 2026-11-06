@@ -1,0 +1,36 @@
+# The collector and the CLI on Windows, with Linux beside it to tell a Windows fault from one of the runner.
+# The smoke run and the collector suites must pass; the whole suite runs after them to show what else differs.
+# Run by hand (Actions, Platforms, Run workflow, or `gh workflow run platforms.yml`): Windows minutes count double.
+name: Platforms
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Smoke (a fake home, every view)
+        timeout-minutes: 5
+        run: node .github/scripts/platform-smoke.mjs
+      - name: Collector and CLI suites
+        timeout-minutes: 8
+        run: node --test --test-reporter=spec test/collect.test.mjs test/agents.test.mjs test/fixtures.test.mjs test/shared.test.mjs test/timelapse-cli.test.mjs test/month-export.test.mjs test/dashboard.test.mjs test/mcp.test.mjs test/agent-tail.test.mjs test/agent-titles.test.mjs test/skill.test.mjs test/editor.test.mjs test/antigravity-sidecar.test.mjs test/timeline.test.mjs
+      - name: Whole suite (informational)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 10
+        run: node --test --test-reporter=spec "test/*.test.mjs"

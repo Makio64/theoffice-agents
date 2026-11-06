@@ -1,0 +1,51 @@
+# Publishes the original and Voxel editions to GitHub Pages. The original artwork and the compiled Voxel bundle
+# are assembled in dist/site without modifying the tracked Voxel source tree.
+# One setup, once: Settings, Pages, Source: GitHub Actions.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - plugin/**
+      - site/**
+      - package.json
+      - package-lock.json
+      - scripts/build-site.mjs
+      - .github/workflows/site.yml
+  workflow_dispatch:
+
+# a newer push replaces a run still going
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build:site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

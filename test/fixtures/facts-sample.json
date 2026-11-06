@@ -1,0 +1,2151 @@
+{
+ "spec": "theoffice/1",
+ "generated_at": "2026-10-26T00:40:00.000Z",
+ "range": {
+  "kind": "week",
+  "from": "2026-10-19T22:00:00.000Z",
+  "to": "2026-10-26T00:40:00.000Z",
+  "days": [
+   "2026-10-20",
+   "2026-10-21",
+   "2026-10-22",
+   "2026-10-23",
+   "2026-10-24",
+   "2026-10-25",
+   "2026-10-26"
+  ],
+  "label": "Tue 20 Oct → Mon 26 Oct"
+ },
+ "now": {
+  "iso": "2026-10-26T00:40:00.000Z",
+  "local_date": "2026-10-26",
+  "local_time": "01:40",
+  "hour": 1,
+  "weekday": "Mon",
+  "is_night": true
+ },
+ "live": {
+  "counts": {
+   "desks": 10,
+   "busy": 6,
+   "idle": 3,
+   "waiting": 1,
+   "interns": 2,
+   "meetings": 1,
+   "meeting_agents": 3
+  },
+  "desks": [
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "3d5e0b71",
+    "pid": 21489,
+    "title": "Atlas glyph edge cleanup",
+    "project": "glyph-atlas-webgpu",
+    "status": "idle",
+    "state": "idle",
+    "idle_reason": "break",
+    "activity": {
+     "kind": "idle",
+     "tool": null,
+     "label": null,
+     "since": "2026-10-26T00:06:45.000Z"
+    },
+    "started_at": "2026-10-25T22:53:15.000Z",
+    "last_seen": "2026-10-26T00:06:45.000Z",
+    "project_path": "/home/demo/git/glyph-atlas-webgpu"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [
+     {
+      "id": "wf_45b7c1d2-9aa",
+      "name": "arcade-finale-brief",
+      "phase": "Design",
+      "agents_running": 3,
+      "agents_done": 5,
+      "agents_failed": 0,
+      "agents_total": 9,
+      "started_at": "2026-10-26T00:20:00.000Z",
+      "labels": [
+       "design:arcade-angle",
+       "design:boss-rush",
+       "design:story-first"
+      ]
+     }
+    ],
+    "id": "5b8c2f47",
+    "pid": 26775,
+    "title": "Final arcade world design",
+    "project": "glyph-atlas-webgpu",
+    "status": "busy",
+    "state": "waiting_on_agents",
+    "activity": {
+     "kind": "delegating",
+     "tool": "Workflow",
+     "label": "arcade-finale-brief",
+     "since": "2026-10-26T00:28:00.000Z"
+    },
+    "started_at": "2026-10-25T22:58:56.000Z",
+    "last_seen": "2026-10-26T00:39:30.000Z",
+    "project_path": "/home/demo/git/glyph-atlas-webgpu"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "c41d7a06",
+    "pid": 32009,
+    "title": "Coconut drum rhythm puzzle",
+    "project": "island-tour-3d",
+    "status": "busy",
+    "state": "working",
+    "activity": {
+     "kind": "coding",
+     "tool": "Edit",
+     "label": "rhythm-drums.js",
+     "since": "2026-10-26T00:39:58.000Z"
+    },
+    "started_at": "2026-10-25T23:02:49.000Z",
+    "last_seen": "2026-10-26T00:39:58.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "1c0b9e44",
+    "pid": 34143,
+    "title": "Footnote links in EPUB 3",
+    "project": "md2epub",
+    "status": "busy",
+    "state": "working",
+    "activity": {
+     "kind": "terminal",
+     "tool": "Bash",
+     "label": "Validate the sample book with epubcheck",
+     "since": "2026-10-26T00:39:40.000Z"
+    },
+    "started_at": "2026-10-25T23:03:42.000Z",
+    "last_seen": "2026-10-26T00:39:41.000Z",
+    "project_path": "/home/demo/git/md2epub"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [
+     {
+      "id": "a19ed217",
+      "type": "Explore",
+      "description": "Sketch the lobby layout",
+      "started_at": "2026-10-26T00:35:00.000Z",
+      "last_seen": "2026-10-26T00:39:55.000Z"
+     },
+     {
+      "id": "a291f090",
+      "type": "general-purpose",
+      "description": "Try the pane sizes",
+      "started_at": "2026-10-26T00:36:10.000Z",
+      "last_seen": "2026-10-26T00:39:57.000Z"
+     }
+    ],
+    "meetings": [],
+    "id": "9e60f3a8",
+    "pid": 46361,
+    "title": "Clawd desk sprites in pixel art",
+    "project": "theoffice-agents",
+    "status": "busy",
+    "state": "working",
+    "activity": {
+     "kind": "reading",
+     "tool": "Read",
+     "label": "office-notes.md",
+     "since": "2026-10-26T00:39:50.000Z"
+    },
+    "started_at": "2026-10-25T23:07:41.000Z",
+    "last_seen": "2026-10-26T00:39:52.000Z",
+    "project_path": "/home/demo/git/theoffice-agents"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "4e2f8a10",
+    "pid": 49645,
+    "title": "Playtest notes and difficulty tuning",
+    "project": "island-tour-3d",
+    "status": "busy",
+    "state": "working",
+    "activity": {
+     "kind": "testing",
+     "tool": "Bash",
+     "label": "Run difficulty curve tests",
+     "since": "2026-10-26T00:39:20.000Z"
+    },
+    "started_at": "2026-10-25T22:04:17.000Z",
+    "last_seen": "2026-10-26T00:39:21.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "77d1c3b5",
+    "pid": 50501,
+    "title": "Deploy previews and asset caching",
+    "project": "island-tour-3d",
+    "status": "busy",
+    "state": "working",
+    "activity": {
+     "kind": "web",
+     "tool": "mcp__Claude_Browser__navigate",
+     "label": "app.netlify.com",
+     "since": "2026-10-26T00:38:00.000Z"
+    },
+    "started_at": "2026-10-25T22:10:21.000Z",
+    "last_seen": "2026-10-26T00:38:02.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "0a9d6e21",
+    "pid": 52676,
+    "title": "Fresques d'Hélène et Apollon au musée",
+    "project": "island-tour-3d",
+    "status": "idle",
+    "state": "idle",
+    "idle_reason": "done",
+    "activity": {
+     "kind": "idle",
+     "tool": null,
+     "label": null,
+     "since": "2026-10-25T23:07:16.000Z"
+    },
+    "started_at": "2026-10-25T21:30:00.000Z",
+    "last_seen": "2026-10-25T23:07:16.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "5b8f2c90",
+    "pid": 53511,
+    "title": "Wizard's cape shoulder positioning",
+    "project": "island-tour-3d",
+    "status": "idle",
+    "state": "asking",
+    "activity": {
+     "kind": "talking",
+     "tool": "AskUserQuestion",
+     "label": "Which cape anchor?",
+     "since": "2026-10-26T00:14:48.000Z"
+    },
+    "started_at": "2026-10-25T21:40:00.000Z",
+    "last_seen": "2026-10-26T00:14:48.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   },
+   {
+    "worktree": null,
+    "branch": "main",
+    "model": "claude-opus-5-5",
+    "entrypoint": "claude-desktop",
+    "interns": [],
+    "meetings": [],
+    "id": "93e1aa07",
+    "pid": 66477,
+    "title": "Lava Cavern camera positioning",
+    "project": "island-tour-3d",
+    "status": "idle",
+    "state": "idle",
+    "idle_reason": "break",
+    "activity": {
+     "kind": "idle",
+     "tool": null,
+     "label": null,
+     "since": "2026-10-26T00:02:27.000Z"
+    },
+    "started_at": "2026-10-25T22:00:00.000Z",
+    "last_seen": "2026-10-26T00:02:27.000Z",
+    "project_path": "/home/demo/git/island-tour-3d"
+   }
+  ],
+  "recently_left": [
+   {
+    "title": "Exporter cleanup",
+    "project": "gizmo3d",
+    "left_at": "2026-10-26T00:31:00.000Z"
+   }
+  ]
+ },
+ "projects": [
+  {
+   "name": "harborledger",
+   "path": "/home/demo/git/harborledger",
+   "worktrees": [
+    "big-pdf-batch",
+    "resume-v4",
+    "speed-roadmap",
+    "adapters-switchover"
+   ],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 48,
+   "subagents": 312,
+   "workflows": 9,
+   "desk_minutes": 1460,
+   "agent_minutes": 19277,
+   "prompts": 250,
+   "tool_calls": 30843,
+   "files_edited": 482,
+   "commits": 64,
+   "additions": 11520,
+   "deletions": 2560,
+   "activity": {
+    "coding": 3455,
+    "reading": 4249,
+    "terminal": 11316,
+    "testing": 1529,
+    "web": 1754,
+    "delegating": 943,
+    "planning": 1938,
+    "talking": 710,
+    "design": 711,
+    "tools": 4238
+   },
+   "intern_types": {
+    "workflow-subagent": 265,
+    "general-purpose": 38,
+    "Explore": 9
+   },
+   "models": {
+    "claude-opus-5-5": 46,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 1753,
+     "desk_minutes": 133,
+     "sessions": 5,
+     "subagents": 29,
+     "prompts": 23,
+     "commits": 6
+    },
+    "2026-10-21": {
+     "minutes": 1169,
+     "desk_minutes": 89,
+     "sessions": 3,
+     "subagents": 19,
+     "prompts": 16,
+     "commits": 4
+    },
+    "2026-10-22": {
+     "minutes": 5257,
+     "desk_minutes": 399,
+     "sessions": 14,
+     "subagents": 86,
+     "prompts": 69,
+     "commits": 18
+    },
+    "2026-10-23": {
+     "minutes": 4673,
+     "desk_minutes": 353,
+     "sessions": 11,
+     "subagents": 75,
+     "prompts": 60,
+     "commits": 16
+    },
+    "2026-10-24": {
+     "minutes": 5841,
+     "desk_minutes": 442,
+     "sessions": 14,
+     "subagents": 94,
+     "prompts": 75,
+     "commits": 19
+    },
+    "2026-10-25": {
+     "minutes": 584,
+     "desk_minutes": 44,
+     "sessions": 1,
+     "subagents": 9,
+     "prompts": 7,
+     "commits": 1
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    1010,
+    1161,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1109,
+    1303,
+    688,
+    829,
+    1187,
+    1176,
+    486,
+    1161,
+    929,
+    1416,
+    1293,
+    560,
+    978,
+    1417,
+    1166,
+    1118
+   ],
+   "titles": [
+    "Speed up invoice PDF batch exporting",
+    "Timeline correction pass v2",
+    "Invoice parser v10 clean-ups",
+    "Report templates",
+    "Speed baseline"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1b2c3d",
+     "subject": "feat: speed up invoice pdf batch exporting",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "glyph-atlas-webgpu",
+   "path": "/home/demo/git/glyph-atlas-webgpu",
+   "worktrees": [
+    "wall-vertical-fold"
+   ],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 2,
+    "busy": 1,
+    "idle": 1,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 1
+   },
+   "sessions": 22,
+   "subagents": 96,
+   "workflows": 7,
+   "desk_minutes": 840,
+   "agent_minutes": 2978,
+   "prompts": 114,
+   "tool_calls": 4765,
+   "files_edited": 74,
+   "commits": 131,
+   "additions": 23580,
+   "deletions": 5240,
+   "activity": {
+    "coding": 798,
+    "reading": 654,
+    "terminal": 2492,
+    "testing": 264,
+    "web": 215,
+    "delegating": 172,
+    "planning": 300,
+    "talking": 75,
+    "design": 84,
+    "tools": 0
+   },
+   "intern_types": {
+    "workflow-subagent": 82,
+    "general-purpose": 11,
+    "Explore": 3
+   },
+   "models": {
+    "claude-opus-5-5": 20,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 249,
+     "desk_minutes": 70,
+     "sessions": 2,
+     "subagents": 8,
+     "prompts": 10,
+     "commits": 11
+    },
+    "2026-10-21": {
+     "minutes": 497,
+     "desk_minutes": 140,
+     "sessions": 4,
+     "subagents": 16,
+     "prompts": 20,
+     "commits": 22
+    },
+    "2026-10-22": {
+     "minutes": 744,
+     "desk_minutes": 210,
+     "sessions": 6,
+     "subagents": 24,
+     "prompts": 29,
+     "commits": 33
+    },
+    "2026-10-23": {
+     "minutes": 620,
+     "desk_minutes": 175,
+     "sessions": 5,
+     "subagents": 20,
+     "prompts": 23,
+     "commits": 28
+    },
+    "2026-10-24": {
+     "minutes": 372,
+     "desk_minutes": 105,
+     "sessions": 3,
+     "subagents": 12,
+     "prompts": 14,
+     "commits": 17
+    },
+    "2026-10-25": {
+     "minutes": 248,
+     "desk_minutes": 70,
+     "sessions": 1,
+     "subagents": 8,
+     "prompts": 9,
+     "commits": 10
+    },
+    "2026-10-26": {
+     "minutes": 248,
+     "desk_minutes": 70,
+     "sessions": 1,
+     "subagents": 8,
+     "prompts": 9,
+     "commits": 10
+    }
+   },
+   "per_hour": [
+    137,
+    115,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    221,
+    158,
+    187,
+    211,
+    76,
+    111,
+    159,
+    150,
+    136,
+    98,
+    217,
+    75,
+    127,
+    123,
+    176,
+    219
+   ],
+   "titles": [
+    "Final arcade world design",
+    "Atlas glyph edge cleanup",
+    "Improve gallery sharpness and FPS",
+    "Cold start headroom"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1b4b2c",
+     "subject": "feat: final arcade world design",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "island-tour-3d",
+   "path": "/home/demo/git/island-tour-3d",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 6,
+    "busy": 3,
+    "idle": 2,
+    "waiting": 1,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 31,
+   "subagents": 44,
+   "workflows": 2,
+   "desk_minutes": 1310,
+   "agent_minutes": 2588,
+   "prompts": 161,
+   "tool_calls": 4141,
+   "files_edited": 65,
+   "commits": 77,
+   "additions": 13860,
+   "deletions": 3080,
+   "activity": {
+    "coding": 668,
+    "reading": 364,
+    "terminal": 1641,
+    "testing": 216,
+    "web": 190,
+    "delegating": 119,
+    "planning": 261,
+    "talking": 84,
+    "design": 88,
+    "tools": 510
+   },
+   "intern_types": {
+    "workflow-subagent": 37,
+    "general-purpose": 6,
+    "Explore": 1
+   },
+   "models": {
+    "claude-opus-5-5": 29,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 93,
+     "desk_minutes": 47,
+     "sessions": 2,
+     "subagents": 2,
+     "prompts": 6,
+     "commits": 3
+    },
+    "2026-10-21": {
+     "minutes": 278,
+     "desk_minutes": 141,
+     "sessions": 4,
+     "subagents": 5,
+     "prompts": 18,
+     "commits": 9
+    },
+    "2026-10-22": {
+     "minutes": 370,
+     "desk_minutes": 188,
+     "sessions": 5,
+     "subagents": 7,
+     "prompts": 23,
+     "commits": 11
+    },
+    "2026-10-23": {
+     "minutes": 554,
+     "desk_minutes": 280,
+     "sessions": 6,
+     "subagents": 9,
+     "prompts": 34,
+     "commits": 16
+    },
+    "2026-10-24": {
+     "minutes": 647,
+     "desk_minutes": 327,
+     "sessions": 7,
+     "subagents": 11,
+     "prompts": 40,
+     "commits": 19
+    },
+    "2026-10-25": {
+     "minutes": 369,
+     "desk_minutes": 187,
+     "sessions": 4,
+     "subagents": 6,
+     "prompts": 23,
+     "commits": 11
+    },
+    "2026-10-26": {
+     "minutes": 277,
+     "desk_minutes": 140,
+     "sessions": 3,
+     "subagents": 4,
+     "prompts": 17,
+     "commits": 8
+    }
+   },
+   "per_hour": [
+    91,
+    188,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    123,
+    182,
+    149,
+    149,
+    132,
+    130,
+    157,
+    193,
+    115,
+    159,
+    94,
+    142,
+    108,
+    105,
+    114,
+    172
+   ],
+   "titles": [
+    "Coconut drum rhythm puzzle",
+    "Playtest notes and difficulty tuning",
+    "Wizard's cape shoulder positioning",
+    "Lava Cavern camera positioning",
+    "Deploy previews and asset caching"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1b6a1b",
+     "subject": "feat: shooting game rhythm approach",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "webgl-swatch-demos",
+   "path": "/home/demo/git/webgl-swatch-demos",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 9,
+   "subagents": 60,
+   "workflows": 3,
+   "desk_minutes": 420,
+   "agent_minutes": 1908,
+   "prompts": 47,
+   "tool_calls": 3053,
+   "files_edited": 48,
+   "commits": 208,
+   "additions": 37440,
+   "deletions": 8320,
+   "activity": {
+    "coding": 599,
+    "reading": 257,
+    "terminal": 1528,
+    "testing": 137,
+    "web": 144,
+    "delegating": 73,
+    "planning": 160,
+    "talking": 79,
+    "design": 51,
+    "tools": 25
+   },
+   "intern_types": {
+    "workflow-subagent": 51,
+    "general-purpose": 7,
+    "Explore": 2
+   },
+   "models": {
+    "claude-opus-5-5": 7,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 637,
+     "desk_minutes": 140,
+     "sessions": 4,
+     "subagents": 20,
+     "prompts": 16,
+     "commits": 70
+    },
+    "2026-10-22": {
+     "minutes": 763,
+     "desk_minutes": 168,
+     "sessions": 4,
+     "subagents": 24,
+     "prompts": 19,
+     "commits": 84
+    },
+    "2026-10-23": {
+     "minutes": 381,
+     "desk_minutes": 84,
+     "sessions": 1,
+     "subagents": 12,
+     "prompts": 9,
+     "commits": 41
+    },
+    "2026-10-24": {
+     "minutes": 127,
+     "desk_minutes": 28,
+     "sessions": 0,
+     "subagents": 4,
+     "prompts": 3,
+     "commits": 13
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    109,
+    58,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    91,
+    105,
+    57,
+    140,
+    136,
+    137,
+    136,
+    139,
+    123,
+    72,
+    44,
+    69,
+    50,
+    43,
+    108,
+    67
+   ],
+   "titles": [
+    "Demo pages refresh",
+    "Shader gallery thumbnails"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1b890a",
+     "subject": "feat: demo pages refresh",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "csv-batch-importer",
+   "path": "/home/demo/git/csv-batch-importer",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 4,
+   "subagents": 70,
+   "workflows": 1,
+   "desk_minutes": 300,
+   "agent_minutes": 1695,
+   "prompts": 21,
+   "tool_calls": 2712,
+   "files_edited": 42,
+   "commits": 68,
+   "additions": 12240,
+   "deletions": 2720,
+   "activity": {
+    "coding": 497,
+    "reading": 296,
+    "terminal": 1267,
+    "testing": 137,
+    "web": 167,
+    "delegating": 68,
+    "planning": 175,
+    "talking": 67,
+    "design": 42,
+    "tools": 0
+   },
+   "intern_types": {
+    "workflow-subagent": 60,
+    "general-purpose": 8,
+    "Explore": 2
+   },
+   "models": {
+    "claude-opus-5-5": 2,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-22": {
+     "minutes": 989,
+     "desk_minutes": 175,
+     "sessions": 3,
+     "subagents": 41,
+     "prompts": 13,
+     "commits": 40
+    },
+    "2026-10-23": {
+     "minutes": 424,
+     "desk_minutes": 75,
+     "sessions": 1,
+     "subagents": 18,
+     "prompts": 5,
+     "commits": 17
+    },
+    "2026-10-24": {
+     "minutes": 282,
+     "desk_minutes": 50,
+     "sessions": 0,
+     "subagents": 11,
+     "prompts": 3,
+     "commits": 11
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    84,
+    38,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    124,
+    98,
+    124,
+    40,
+    122,
+    55,
+    129,
+    91,
+    102,
+    63,
+    59,
+    57,
+    91,
+    43,
+    110,
+    104
+   ],
+   "titles": [
+    "Batch file import",
+    "Landing page critique"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1ba7f9",
+     "subject": "feat: batch file import",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "recipe-chat",
+   "path": "/home/demo/git/recipe-chat",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 12,
+   "subagents": 22,
+   "workflows": 0,
+   "desk_minutes": 390,
+   "agent_minutes": 1083,
+   "prompts": 62,
+   "tool_calls": 1733,
+   "files_edited": 27,
+   "commits": 33,
+   "additions": 5940,
+   "deletions": 1320,
+   "activity": {
+    "coding": 313,
+    "reading": 190,
+    "terminal": 524,
+    "testing": 80,
+    "web": 108,
+    "delegating": 40,
+    "planning": 135,
+    "talking": 43,
+    "design": 25,
+    "tools": 275
+   },
+   "intern_types": {
+    "workflow-subagent": 19,
+    "general-purpose": 2,
+    "Explore": 1
+   },
+   "models": {
+    "claude-opus-5-5": 10,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 434,
+     "desk_minutes": 156,
+     "sessions": 5,
+     "subagents": 9,
+     "prompts": 25,
+     "commits": 14
+    },
+    "2026-10-21": {
+     "minutes": 325,
+     "desk_minutes": 117,
+     "sessions": 4,
+     "subagents": 7,
+     "prompts": 19,
+     "commits": 10
+    },
+    "2026-10-22": {
+     "minutes": 108,
+     "desk_minutes": 39,
+     "sessions": 1,
+     "subagents": 2,
+     "prompts": 6,
+     "commits": 3
+    },
+    "2026-10-23": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 216,
+     "desk_minutes": 78,
+     "sessions": 2,
+     "subagents": 4,
+     "prompts": 12,
+     "commits": 6
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    77,
+    76,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    84,
+    81,
+    70,
+    49,
+    39,
+    68,
+    77,
+    48,
+    38,
+    48,
+    77,
+    58,
+    45,
+    61,
+    68,
+    44
+   ],
+   "titles": [
+    "Fix mobile splash screen scaling",
+    "Voice lines pass"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1bc6e8",
+     "subject": "feat: fix mobile full-screen background",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "md2epub",
+   "path": "/home/demo/git/md2epub",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 1,
+    "busy": 1,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 6,
+   "subagents": 8,
+   "workflows": 0,
+   "desk_minutes": 260,
+   "agent_minutes": 418,
+   "prompts": 31,
+   "tool_calls": 669,
+   "files_edited": 10,
+   "commits": 5,
+   "additions": 900,
+   "deletions": 200,
+   "activity": {
+    "coding": 122,
+    "reading": 70,
+    "terminal": 230,
+    "testing": 36,
+    "web": 43,
+    "delegating": 26,
+    "planning": 51,
+    "talking": 16,
+    "design": 17,
+    "tools": 58
+   },
+   "intern_types": {
+    "workflow-subagent": 7,
+    "general-purpose": 1
+   },
+   "models": {
+    "claude-opus-5-5": 4,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-22": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 60,
+     "desk_minutes": 38,
+     "sessions": 1,
+     "subagents": 2,
+     "prompts": 5,
+     "commits": 1
+    },
+    "2026-10-24": {
+     "minutes": 120,
+     "desk_minutes": 74,
+     "sessions": 2,
+     "subagents": 2,
+     "prompts": 9,
+     "commits": 2
+    },
+    "2026-10-25": {
+     "minutes": 179,
+     "desk_minutes": 111,
+     "sessions": 3,
+     "subagents": 3,
+     "prompts": 13,
+     "commits": 2
+    },
+    "2026-10-26": {
+     "minutes": 59,
+     "desk_minutes": 37,
+     "sessions": 0,
+     "subagents": 1,
+     "prompts": 4,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    14,
+    24,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    12,
+    21,
+    22,
+    27,
+    31,
+    20,
+    14,
+    20,
+    13,
+    25,
+    21,
+    22,
+    21,
+    27,
+    18,
+    27
+   ],
+   "titles": [
+    "Footnote links in EPUB 3",
+    "Notarization checklist"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1be5d7",
+     "subject": "feat: mac app shipping setup",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "gizmo3d",
+   "path": "/home/demo/git/gizmo3d",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 14,
+   "subagents": 6,
+   "workflows": 0,
+   "desk_minutes": 210,
+   "agent_minutes": 382,
+   "prompts": 73,
+   "tool_calls": 611,
+   "files_edited": 10,
+   "commits": 2,
+   "additions": 360,
+   "deletions": 80,
+   "activity": {
+    "coding": 70,
+    "reading": 59,
+    "terminal": 263,
+    "testing": 30,
+    "web": 35,
+    "delegating": 16,
+    "planning": 36,
+    "talking": 13,
+    "design": 12,
+    "tools": 77
+   },
+   "intern_types": {
+    "workflow-subagent": 5,
+    "general-purpose": 1
+   },
+   "models": {
+    "claude-opus-5-5": 12,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 164,
+     "desk_minutes": 90,
+     "sessions": 6,
+     "subagents": 3,
+     "prompts": 32,
+     "commits": 1
+    },
+    "2026-10-21": {
+     "minutes": 110,
+     "desk_minutes": 60,
+     "sessions": 4,
+     "subagents": 2,
+     "prompts": 21,
+     "commits": 1
+    },
+    "2026-10-22": {
+     "minutes": 54,
+     "desk_minutes": 30,
+     "sessions": 2,
+     "subagents": 1,
+     "prompts": 10,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 54,
+     "desk_minutes": 30,
+     "sessions": 2,
+     "subagents": 0,
+     "prompts": 10,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    10,
+    25,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    26,
+    28,
+    28,
+    23,
+    29,
+    9,
+    25,
+    21,
+    24,
+    28,
+    9,
+    11,
+    10,
+    11,
+    10,
+    9
+   ],
+   "titles": [
+    "Gizmo snapping",
+    "Exporter cleanup"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1c04c6",
+     "subject": "feat: gizmo snapping",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "acme-meshlines",
+   "path": "/home/demo/git/acme-meshlines",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 5,
+   "subagents": 12,
+   "workflows": 1,
+   "desk_minutes": 180,
+   "agent_minutes": 444,
+   "prompts": 26,
+   "tool_calls": 710,
+   "files_edited": 11,
+   "commits": 0,
+   "additions": 0,
+   "deletions": 0,
+   "activity": {
+    "coding": 121,
+    "reading": 99,
+    "terminal": 243,
+    "testing": 33,
+    "web": 29,
+    "delegating": 24,
+    "planning": 42,
+    "talking": 14,
+    "design": 18,
+    "tools": 87
+   },
+   "intern_types": {
+    "workflow-subagent": 10,
+    "general-purpose": 2
+   },
+   "models": {
+    "claude-opus-5-5": 3,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-22": {
+     "minutes": 178,
+     "desk_minutes": 72,
+     "sessions": 2,
+     "subagents": 5,
+     "prompts": 11,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 178,
+     "desk_minutes": 72,
+     "sessions": 2,
+     "subagents": 5,
+     "prompts": 10,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 88,
+     "desk_minutes": 36,
+     "sessions": 1,
+     "subagents": 2,
+     "prompts": 5,
+     "commits": 0
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    20,
+    26,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    29,
+    20,
+    20,
+    11,
+    16,
+    30,
+    34,
+    14,
+    33,
+    22,
+    13,
+    15,
+    25,
+    14,
+    12,
+    17
+   ],
+   "titles": [
+    "MeshLine WebGPU port"
+   ],
+   "top_commits": []
+  },
+  {
+   "name": "quick-image-resize",
+   "path": "/home/demo/git/quick-image-resize",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 7,
+   "subagents": 20,
+   "workflows": 1,
+   "desk_minutes": 150,
+   "agent_minutes": 572,
+   "prompts": 36,
+   "tool_calls": 915,
+   "files_edited": 14,
+   "commits": 1,
+   "additions": 180,
+   "deletions": 40,
+   "activity": {
+    "coding": 159,
+    "reading": 104,
+    "terminal": 380,
+    "testing": 71,
+    "web": 34,
+    "delegating": 26,
+    "planning": 57,
+    "talking": 13,
+    "design": 13,
+    "tools": 58
+   },
+   "intern_types": {
+    "workflow-subagent": 17,
+    "general-purpose": 2,
+    "Explore": 1
+   },
+   "models": {
+    "claude-opus-5-5": 5,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 143,
+     "desk_minutes": 38,
+     "sessions": 2,
+     "subagents": 5,
+     "prompts": 9,
+     "commits": 1
+    },
+    "2026-10-22": {
+     "minutes": 286,
+     "desk_minutes": 75,
+     "sessions": 4,
+     "subagents": 10,
+     "prompts": 18,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 143,
+     "desk_minutes": 37,
+     "sessions": 1,
+     "subagents": 5,
+     "prompts": 9,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    26,
+    16,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    20,
+    42,
+    37,
+    37,
+    27,
+    40,
+    43,
+    38,
+    34,
+    31,
+    24,
+    26,
+    29,
+    28,
+    31,
+    36
+   ],
+   "titles": [
+    "KTX2 transcoder bench"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1c42a4",
+     "subject": "feat: ktx2 transcoder bench",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  },
+  {
+   "name": "theoffice-agents",
+   "path": "/home/demo/git/theoffice-agents",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 1,
+    "busy": 1,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 2,
+    "meetings": 0
+   },
+   "sessions": 1,
+   "subagents": 4,
+   "workflows": 1,
+   "desk_minutes": 55,
+   "agent_minutes": 95,
+   "prompts": 5,
+   "tool_calls": 152,
+   "files_edited": 2,
+   "commits": 0,
+   "additions": 0,
+   "deletions": 0,
+   "activity": {
+    "coding": 27,
+    "reading": 18,
+    "terminal": 73,
+    "testing": 11,
+    "web": 9,
+    "delegating": 6,
+    "planning": 10,
+    "talking": 3,
+    "design": 4,
+    "tools": 0
+   },
+   "intern_types": {
+    "workflow-subagent": 3,
+    "general-purpose": 1
+   },
+   "models": {
+    "claude-opus-5-5": 1
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-21": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-22": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-25": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-26": {
+     "minutes": 95,
+     "desk_minutes": 55,
+     "sessions": 1,
+     "subagents": 4,
+     "prompts": 5,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    7,
+    4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    3,
+    4,
+    7,
+    6,
+    6,
+    7,
+    6,
+    3,
+    3,
+    6,
+    3,
+    7,
+    6,
+    5,
+    6,
+    5
+   ],
+   "titles": [
+    "Clawd desk sprites in pixel art"
+   ],
+   "top_commits": []
+  },
+  {
+   "name": "novibenolife",
+   "path": "/home/demo/git/novibenolife",
+   "worktrees": [],
+   "worktrees_more": 0,
+   "live": {
+    "desks": 0,
+    "busy": 0,
+    "idle": 0,
+    "waiting": 0,
+    "interns": 0,
+    "meetings": 0
+   },
+   "sessions": 4,
+   "subagents": 3,
+   "workflows": 0,
+   "desk_minutes": 160,
+   "agent_minutes": 240,
+   "prompts": 21,
+   "tool_calls": 384,
+   "files_edited": 6,
+   "commits": 6,
+   "additions": 1080,
+   "deletions": 240,
+   "activity": {
+    "coding": 59,
+    "reading": 52,
+    "terminal": 167,
+    "testing": 28,
+    "web": 17,
+    "delegating": 13,
+    "planning": 26,
+    "talking": 7,
+    "design": 6,
+    "tools": 9
+   },
+   "intern_types": {
+    "workflow-subagent": 3
+   },
+   "models": {
+    "claude-opus-5-5": 2,
+    "claude-fable-5-1": 2
+   },
+   "per_day": {
+    "2026-10-20": {
+     "minutes": 120,
+     "desk_minutes": 80,
+     "sessions": 2,
+     "subagents": 2,
+     "prompts": 11,
+     "commits": 4
+    },
+    "2026-10-21": {
+     "minutes": 60,
+     "desk_minutes": 40,
+     "sessions": 1,
+     "subagents": 1,
+     "prompts": 5,
+     "commits": 1
+    },
+    "2026-10-22": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-23": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-24": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    },
+    "2026-10-25": {
+     "minutes": 60,
+     "desk_minutes": 40,
+     "sessions": 1,
+     "subagents": 0,
+     "prompts": 5,
+     "commits": 1
+    },
+    "2026-10-26": {
+     "minutes": 0,
+     "desk_minutes": 0,
+     "sessions": 0,
+     "subagents": 0,
+     "prompts": 0,
+     "commits": 0
+    }
+   },
+   "per_hour": [
+    13,
+    8,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    17,
+    16,
+    10,
+    14,
+    17,
+    7,
+    9,
+    18,
+    5,
+    7,
+    11,
+    6,
+    15,
+    17,
+    8,
+    8
+   ],
+   "titles": [
+    "Friends circle QR",
+    "Usage panel"
+   ],
+   "top_commits": [
+    {
+     "sha": "a1c8082",
+     "subject": "feat: friends circle qr",
+     "time": "2026-10-25T17:12:00.000Z"
+    }
+   ]
+  }
+ ],
+ "projects_more": 23,
+ "contractors": [
+  {
+   "tool": "codex",
+   "project": "harborledger",
+   "title": "OCR pipeline bench",
+   "minutes": 180,
+   "start": "2026-10-24T09:00:00.000Z",
+   "end": "2026-10-24T13:00:00.000Z",
+   "live": false
+  }
+ ],
+ "totals": {
+  "projects": 12,
+  "sessions": 163,
+  "subagents": 657,
+  "workflows": 25,
+  "desk_minutes": 5735,
+  "agent_minutes": 31680,
+  "prompts": 847,
+  "tool_calls": 50688,
+  "files_edited": 791,
+  "commits": 595,
+  "additions": 107100,
+  "deletions": 23800,
+  "activity": {
+   "coding": 6888,
+   "reading": 6412,
+   "terminal": 20124,
+   "testing": 2572,
+   "web": 2745,
+   "delegating": 1526,
+   "planning": 3191,
+   "talking": 1124,
+   "design": 1071,
+   "tools": 5337
+  },
+  "intern_types": {
+   "workflow-subagent": 559,
+   "general-purpose": 79,
+   "Explore": 19
+  },
+  "models": {
+   "claude-opus-5-5": 141,
+   "claude-fable-5-1": 22
+  }
+ },
+ "per_day": {
+  "2026-10-20": {
+   "minutes": 2813,
+   "desk_minutes": 576,
+   "sessions": 22,
+   "subagents": 53,
+   "workflows": 3,
+   "prompts": 107,
+   "commits": 39
+  },
+  "2026-10-21": {
+   "minutes": 3219,
+   "desk_minutes": 765,
+   "sessions": 26,
+   "subagents": 75,
+   "workflows": 4,
+   "prompts": 124,
+   "commits": 118
+  },
+  "2026-10-22": {
+   "minutes": 8749,
+   "desk_minutes": 1356,
+   "sessions": 41,
+   "subagents": 200,
+   "workflows": 9,
+   "prompts": 198,
+   "commits": 189
+  },
+  "2026-10-23": {
+   "minutes": 7087,
+   "desk_minutes": 1144,
+   "sessions": 30,
+   "subagents": 146,
+   "workflows": 6,
+   "prompts": 165,
+   "commits": 119
+  },
+  "2026-10-24": {
+   "minutes": 7693,
+   "desk_minutes": 1140,
+   "sessions": 29,
+   "subagents": 140,
+   "workflows": 2,
+   "prompts": 161,
+   "commits": 87
+  },
+  "2026-10-25": {
+   "minutes": 1440,
+   "desk_minutes": 452,
+   "sessions": 10,
+   "subagents": 26,
+   "workflows": 1,
+   "prompts": 57,
+   "commits": 25
+  },
+  "2026-10-26": {
+   "minutes": 679,
+   "desk_minutes": 302,
+   "sessions": 5,
+   "subagents": 17,
+   "workflows": 1,
+   "prompts": 35,
+   "commits": 18
+  }
+ },
+ "per_hour": [
+  1598,
+  1739,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1859,
+  2058,
+  1399,
+  1536,
+  1818,
+  1790,
+  1275,
+  1896,
+  1555,
+  1975,
+  1865,
+  1048,
+  1505,
+  1894,
+  1827,
+  1826
+ ],
+ "sources": {
+  "claude_dir": "/home/demo/.claude",
+  "files_scanned": 1658,
+  "files_from_cache": 1612,
+  "cache_path": "/home/demo/.cache/theoffice/cache-v1.json",
+  "git_repos": 12,
+  "novi": "used",
+  "ms": {
+   "total": 212,
+   "live": 9,
+   "history": 61,
+   "git": 140
+  }
+ },
+ "notes": []
+}

@@ -1,0 +1,1175 @@
+/* The original Office composition: one readable building, with depth behind it. */
+
+html {
+  min-width: 320px;
+  height: auto;
+  overflow-x: clip;
+  scroll-behavior: auto;
+}
+
+body,
+body[data-mode="app"],
+body[data-mode="website"],
+body[data-cinema="true"] {
+  min-height: 100dvh;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+body *,
+body *::before,
+body *::after {
+  transition: none !important;
+  backdrop-filter: none !important;
+}
+
+body::after {
+  display: none;
+}
+
+.site-header,
+body[data-mode="app"] .site-header,
+body[data-cinema="true"] .site-header {
+  display: flex !important;
+  position: relative;
+  width: min(1088px, calc(100% - 32px));
+  max-width: 1088px;
+  min-height: 64px;
+  height: auto !important;
+  padding: 10px 0 !important;
+  margin: 0 auto;
+  gap: 20px;
+  border: 0;
+  background: transparent;
+}
+
+.brand,
+body[data-mode="app"] .brand {
+  font: 22px/1 "Office Pixel", monospace;
+  letter-spacing: .5px;
+}
+
+.edition,
+.site-nav,
+.hero-copy,
+body[data-mode="app"] .hero-copy,
+#leave-office,
+.header-actions > [data-launch] {
+  display: none !important;
+}
+
+.header-actions {
+  margin-left: auto;
+  gap: 12px;
+}
+
+.github-link,
+.header-actions .button,
+.header-actions .text-button {
+  font-size: 11px;
+}
+
+.button,
+.button-small {
+  min-height: 40px;
+  font-size: 12px;
+}
+
+.hero,
+body[data-mode="app"] .hero,
+body[data-cinema="true"] .hero {
+  display: block;
+  width: min(1088px, calc(100% - 32px));
+  max-width: 1088px;
+  min-height: 0;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 auto;
+}
+
+.workspace,
+body[data-mode="app"] .workspace,
+body[data-mode="app"] .workspace.inspector-collapsed,
+body[data-cinema="true"] .workspace {
+  display: block !important;
+  grid-template-columns: none !important;
+  width: 100%;
+  max-width: 1088px;
+  height: auto !important;
+  min-height: 0;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  box-shadow: none;
+  transform: none;
+}
+
+.workspace-main,
+body[data-mode="app"] .workspace-main {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.viewer-topbar,
+body[data-mode="app"] .viewer-topbar,
+body[data-cinema="true"] .viewer-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  min-height: 52px;
+  height: auto;
+  padding: 9px 14px;
+  gap: 12px;
+}
+
+.viewer-topbar > div,
+.viewer-top-actions {
+  gap: 12px !important;
+}
+
+.live-badge,
+body[data-mode="app"] .live-badge {
+  font: 19px/1 "Office Pixel", monospace;
+  letter-spacing: 0;
+  padding: 6px 9px;
+}
+
+.floor-label {
+  font: 10px/1.5 var(--mono);
+  letter-spacing: 0;
+}
+
+.theme-toggle,
+body[data-mode="app"] .theme-toggle {
+  min-height: 36px;
+  font: 11px var(--mono);
+  padding: 7px 9px;
+}
+
+.icon-button,
+body[data-mode="app"] .icon-button {
+  min-height: 36px;
+  min-width: 36px;
+}
+
+#directory-toggle,
+body[data-mode="app"] #directory-toggle,
+#directory-close {
+  display: inline-flex;
+}
+
+#fullscreen-button,
+#building-focus-button,
+.viewfinder > span,
+.viewfinder > [data-camera],
+.information-toggle {
+  display: none !important;
+}
+
+.classic-tabs,
+.office-tabs,
+.header-tabs,
+.viewer-topbar > .view-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+
+.classic-tabs button,
+.office-tabs button,
+.header-tabs button,
+.viewer-topbar > .view-navigation button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 7px 12px;
+  font: 17px/1 "Office Pixel", monospace;
+  color: #d9cbb3;
+  border: 1px solid #6a5945;
+  background: #2a251f;
+  box-shadow: inset 1px 1px #ac947233;
+}
+
+.classic-tabs button[aria-selected="true"],
+.office-tabs button[aria-selected="true"],
+.header-tabs button[aria-selected="true"],
+.viewer-topbar > .view-navigation button[aria-selected="true"] {
+  color: #2b2418;
+  border-color: #a1834c;
+  background: #e6c48c;
+}
+
+.viewfinder,
+body[data-mode="app"] .viewfinder,
+body[data-cinema="true"] .viewfinder {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px !important;
+  min-height: 48px;
+  padding: 6px 12px !important;
+  background: #201b18;
+  border-bottom: 2px solid #5d4c3a;
+}
+
+#camera-select,
+body[data-mode="app"] #camera-select,
+.viewfinder #camera-select {
+  display: block;
+  flex: none;
+  width: auto;
+  min-width: 150px !important;
+  min-height: 34px;
+  padding: 6px 8px !important;
+  font: 11px/1.5 var(--mono) !important;
+}
+
+#facade-toggle,
+#explode-floors,
+body[data-mode="app"] #facade-toggle,
+body[data-mode="app"] #explode-floors {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 9px !important;
+  font: 11px/1.5 var(--mono) !important;
+}
+
+#depth-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 10px;
+  margin: 0;
+  font: 11px/1.5 var(--mono);
+}
+
+.workspace:not(.is-exploring) .viewfinder {
+  display: none !important;
+}
+
+.workspace.is-exploring .viewfinder {
+  display: flex !important;
+}
+
+.scene-wrap,
+.hero .scene-wrap,
+body[data-mode="app"] .scene-wrap,
+body[data-cinema="true"] .workspace .scene-wrap {
+  display: block !important;
+  position: relative;
+  width: 100%;
+  height: clamp(560px, 108vw, 1180px) !important;
+  min-height: 560px !important;
+  flex: none;
+  overflow: hidden;
+  border: 0;
+  box-shadow: none;
+}
+
+.scene-wrap::after {
+  box-shadow: none;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#scene canvas {
+  image-rendering: pixelated;
+}
+
+.scene-wrap .building-hud,
+.agent-bubble,
+.scene-caption,
+.scene-key,
+.floor-navigation {
+  display: none !important;
+}
+
+/* the hover card is how the floors say what a desk, a day or a department is (the pixel office's Quiet cards) */
+.scene-hover-tooltip[hidden] {
+  display: none;
+}
+
+.workspace-main > .building-hud,
+body[data-cinema="true"] .workspace-main > .building-hud {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(160px, .8fr) minmax(0, 2fr);
+  align-items: center;
+  width: 100%;
+  max-width: none;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid #4d4034;
+  box-shadow: none;
+  background: #241e19;
+  pointer-events: auto;
+}
+
+.building-hud header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 0;
+  border: 0;
+  font: 10px/1.7 var(--mono);
+  color: #dcc7a5;
+}
+
+.building-hud header > span:first-child {
+  max-width: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.building-hud header > span:last-child {
+  display: block;
+  font: 10px/1.7 var(--mono);
+  color: #a89c86;
+}
+
+.building-hud-metrics {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  gap: 12px;
+}
+
+.building-metric {
+  padding: 3px 5px;
+}
+
+.building-metric strong {
+  font: 27px/1 "Office Pixel", monospace;
+}
+
+.building-metric span {
+  margin-top: 4px;
+  font: 10px/1.4 var(--mono);
+  letter-spacing: 0;
+}
+
+.building-hud footer {
+  grid-column: 1 / -1;
+  padding: 7px 0 0;
+  margin-top: 5px;
+  border: 0;
+  font: 10px/1.6 var(--mono);
+}
+
+#room-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.room-nameplate,
+body[data-cinema="true"] .room-nameplate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content !important;
+  min-width: 0;
+  max-width: 270px !important;
+  padding: 3px 7px 4px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #17130edb;
+  box-shadow: none;
+  text-align: center;
+  color: #f0e0bb;
+  pointer-events: auto;
+  contain: layout style;
+  will-change: auto;
+}
+
+.room-nameplate::before,
+.room-nameplate::after {
+  display: none !important;
+  content: none !important;
+}
+
+.room-nameplate:hover,
+.room-nameplate.selected {
+  border: 0;
+  background: #2d251be8;
+  box-shadow: none;
+  color: #ffe7aa;
+}
+
+.room-label-name,
+body[data-cinema="true"] .room-label-name {
+  display: block;
+  overflow: hidden;
+  max-width: 256px;
+  padding: 0;
+  font: 24px/1 "Office Pixel", monospace;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.room-nameplate small,
+body[data-cinema="true"] .room-nameplate small {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font: 10px/1.35 var(--mono);
+  color: #c2b290;
+  white-space: nowrap;
+}
+
+.room-label-floor,
+.room-nameplate small > b {
+  display: none;
+}
+
+.room-nameplate small > span:nth-child(2) {
+  display: inline;
+}
+
+.scene-toolbar,
+body[data-mode="app"] .scene-toolbar {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  height: auto;
+  min-height: 45px;
+  padding: 5px 12px;
+  border-top: 2px solid #5f4f3d;
+  background: #241e1a;
+}
+
+.orbit-hint,
+body[data-mode="app"] .orbit-hint {
+  display: flex;
+  font: 10px/1.5 var(--mono);
+  color: #b1a18a;
+}
+
+.scene-tools,
+body[data-mode="app"] .scene-tools {
+  display: flex;
+  justify-content: flex-end;
+  width: auto;
+  margin-left: auto;
+  gap: 4px;
+}
+
+.scene-tools .icon-button,
+body[data-mode="app"] .scene-tools .icon-button {
+  min-height: 34px;
+  min-width: 34px;
+}
+
+.office-status,
+body[data-mode="app"] .office-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 41px;
+  padding: 9px 14px;
+  gap: 10px 18px;
+  font: 10px/1.6 var(--mono);
+  background: #1b1817;
+}
+
+.office-status > span,
+.office-status > span:first-child,
+.sample-note,
+.capacity-label,
+.renderer-label,
+body[data-mode="app"] .renderer-label {
+  font-size: 10px !important;
+}
+
+.workspace-sidebar,
+body[data-mode="app"] .workspace-sidebar,
+body[data-cinema="true"] .workspace-sidebar,
+.agent-inspector,
+body[data-mode="app"] .agent-inspector,
+body[data-cinema="true"] .agent-inspector {
+  display: none !important;
+}
+
+.workspace.directory-open .workspace-sidebar,
+body[data-mode="app"] .workspace.directory-open .workspace-sidebar {
+  position: fixed;
+  z-index: 50;
+  inset: 0 auto 0 0;
+  display: flex !important;
+  flex-direction: column;
+  width: min(350px, 100vw);
+  min-height: 0;
+  max-height: 100dvh;
+  padding: 20px 20px 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-right: 3px solid #83705b;
+  background: #191b25;
+  box-shadow: 6px 0 #05081499;
+  transform: none;
+}
+
+.agent-inspector.mobile-open,
+body[data-mode="app"] .agent-inspector.mobile-open,
+body[data-cinema="true"] .agent-inspector.mobile-open {
+  position: fixed;
+  z-index: 51;
+  inset: 0 0 0 auto;
+  display: flex !important;
+  flex-direction: column;
+  width: min(350px, 100vw);
+  min-height: 0;
+  max-height: 100dvh;
+  padding: 20px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-left: 3px solid #83705b;
+  background: #191b25;
+  box-shadow: -6px 0 #05081499;
+  transform: none;
+}
+
+.workspace.inspector-collapsed .agent-inspector,
+body[data-mode="app"] .workspace.inspector-collapsed .agent-inspector.mobile-open,
+body[data-cinema="true"] .workspace.inspector-collapsed .agent-inspector.mobile-open {
+  display: none !important;
+}
+
+.workspace.directory-open .sidebar-heading,
+.workspace.directory-open .sidebar-description,
+.workspace.directory-open .sidebar-section-heading,
+.workspace.directory-open .search-field,
+.workspace.directory-open .sidebar-bottom {
+  display: flex !important;
+}
+
+.workspace.directory-open .workspace-sidebar h2 {
+  display: flex !important;
+  font: 30px/1 "Office Pixel", monospace;
+}
+
+.workspace.directory-open .project-list,
+.workspace.directory-open .agent-list {
+  display: grid !important;
+}
+
+.workspace.directory-open .sidebar-heading > .eyebrow,
+.workspace.directory-open .sidebar-section-heading h3,
+.workspace.directory-open .sidebar-section-heading > span {
+  font: 10px/1.5 var(--mono);
+  letter-spacing: .3px;
+}
+
+.workspace.directory-open .sidebar-heading [data-settings] {
+  display: inline-flex;
+}
+
+.workspace.directory-open .sidebar-description,
+.workspace.directory-open .source-indicator {
+  font: 11px/1.8 var(--mono);
+}
+
+.workspace.directory-open .view-navigation {
+  display: grid;
+  gap: 5px;
+  padding: 6px 0 18px;
+}
+
+.workspace.directory-open .view-navigation button {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px;
+  font: 12px/1.5 var(--mono);
+}
+
+.workspace.directory-open .view-navigation .nav-count,
+.workspace.directory-open .project-button span {
+  display: block;
+  font-size: 11px;
+}
+
+.workspace.directory-open .project-button {
+  min-height: 40px;
+  font-size: 12px;
+}
+
+.workspace.directory-open .search-field {
+  min-height: 42px;
+  padding: 9px;
+}
+
+.workspace.directory-open .search-field input {
+  font: 12px var(--mono);
+}
+
+.workspace.directory-open .team-member {
+  justify-content: flex-start;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px;
+}
+
+.workspace.directory-open .team-member > span:nth-child(2),
+.workspace.directory-open .team-member .status-dot {
+  display: block !important;
+}
+
+.workspace.directory-open .team-member strong {
+  font: 21px/1 "Office Pixel", monospace;
+}
+
+.workspace.directory-open .team-member small {
+  max-width: 220px;
+  font: 10px/1.6 var(--mono);
+}
+
+.workspace.directory-open .sidebar-bottom {
+  margin: 0 -20px;
+  padding: 12px 20px;
+}
+
+.inspector-top {
+  position: sticky;
+  top: -20px;
+  z-index: 1;
+  margin: -1px -1px 0;
+  padding: 5px 0 10px;
+  background: #191b25;
+}
+
+.inspector-top .eyebrow {
+  font: 10px/1.5 var(--mono);
+  letter-spacing: .5px;
+}
+
+.inspector-name-row h2,
+.project-inspector-title {
+  font: 36px/1.05 "Office Pixel", monospace;
+}
+
+.agent-provider,
+.inspector-status,
+.detail-field h3,
+.detail-field .project-pill,
+.back-to-project,
+.project-inspector-banner > span,
+.project-quick-stats span,
+.project-attention h3,
+.mini-day small,
+.crew-share > small,
+.commit-detail code,
+.inspector-footer {
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.detail-field p,
+html[data-theme="night"] .detail-field p,
+.project-inspector-banner p,
+.project-attention button span,
+.work-row > div,
+.crew-share > div,
+.commit-detail p,
+.detail-empty,
+.project-small-print {
+  font: 12px/1.9 var(--mono) !important;
+}
+
+.project-session-list button {
+  min-height: 58px;
+  padding: 10px;
+  gap: 12px;
+}
+
+.project-session-list button b {
+  font: 23px/1 "Office Pixel", monospace;
+}
+
+.project-session-list button small {
+  font: 11px/1.7 var(--mono);
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.project-quick-stats strong {
+  font: 32px/1 "Office Pixel", monospace;
+}
+
+.inspector-note,
+html[data-theme="night"] .inspector-note {
+  font: 12px/1.9 var(--mono) !important;
+}
+
+.inspector-action,
+.agent-inspector .text-button {
+  min-height: 43px;
+  font-size: 12px;
+}
+
+.workspace-panel {
+  display: block !important;
+  position: relative;
+  min-height: 0;
+  height: auto;
+  padding: 26px;
+  overflow: visible !important;
+  scroll-margin-top: 16px;
+  border-top: 5px solid #8d7860;
+}
+
+.workspace-panel[hidden] {
+  display: block !important;
+}
+
+.workspace[data-view="activity"] .scene-wrap,
+.workspace[data-view="insights"] .scene-wrap {
+  display: block !important;
+}
+
+.workspace[data-view="activity"] .scene-toolbar,
+.workspace[data-view="insights"] .scene-toolbar {
+  display: flex !important;
+}
+
+.workspace[data-view="activity"] .viewfinder,
+.workspace[data-view="insights"] .viewfinder {
+  display: flex !important;
+}
+
+.panel-heading h2 {
+  font: 40px/1.1 "Office Pixel", monospace;
+}
+
+.panel-heading .eyebrow,
+.label-pill,
+.filter-button,
+.insight-stat span,
+.chart-card > p,
+.chart-column,
+.chart-column b,
+.hourly-chart small,
+.insights-scope,
+.project-insight > div:first-child {
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.filter-button {
+  min-height: 38px;
+}
+
+.activity-item p,
+html[data-theme="night"] .activity-item p {
+  font: 12px/1.9 var(--mono);
+}
+
+.activity-item small,
+.activity-item time {
+  font: 10px/1.7 var(--mono);
+}
+
+.activity-item time {
+  max-width: none;
+}
+
+.chart-card h3 {
+  font: 27px/1.1 "Office Pixel", monospace;
+}
+
+dialog {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 26px;
+}
+
+dialog::backdrop {
+  background: #040711b8;
+  backdrop-filter: none !important;
+}
+
+dialog h2 {
+  font: 42px/1.05 "Office Pixel", monospace;
+}
+
+dialog > p,
+.install-explanation,
+.preference-row small,
+.settings-footnote,
+.performance-details output {
+  font: 12px/1.85 var(--mono);
+}
+
+.dialog-top .eyebrow,
+.install-options button,
+.install-code code,
+.preference-row select,
+.performance-details summary,
+.toast {
+  font-size: 11px;
+}
+
+.preference-row strong {
+  font: 23px/1 "Office Pixel", monospace;
+}
+
+.preference-row select,
+.install-options button {
+  min-height: 42px;
+}
+
+.website-content {
+  width: min(1088px, calc(100% - 32px));
+  max-width: 1088px;
+  margin: 0 auto;
+}
+
+.website-content > section,
+.website-content > footer {
+  max-width: 1088px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.website-content .eyebrow,
+.website-content .feature-number,
+.website-content .crew-card small,
+.terminal-title,
+.terminal-comment,
+.terminal-footer,
+.site-footer > p,
+.site-footer > div {
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.website-content article > p,
+.website-content .section-intro > p:last-child,
+.website-content .crew-section > div:first-child > p:not(.eyebrow),
+.website-content .setup-section > div > p:not(.eyebrow),
+.terminal-body {
+  font: 12px/1.9 var(--mono);
+}
+
+@media (max-width: 700px) {
+  .site-header,
+  body[data-mode="app"] .site-header,
+  .hero,
+  body[data-mode="app"] .hero,
+  body[data-cinema="true"] .hero,
+  .website-content {
+    width: calc(100% - 16px);
+  }
+
+  .site-header,
+  body[data-mode="app"] .site-header {
+    min-height: 58px;
+    gap: 10px;
+    padding: 8px 0 !important;
+  }
+
+  .brand,
+  body[data-mode="app"] .site-header .brand {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .header-actions .button,
+  .header-actions .text-button {
+    min-height: 38px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+
+  .viewer-topbar,
+  body[data-mode="app"] .viewer-topbar {
+    min-height: 50px;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .viewer-topbar > div,
+  .viewer-top-actions {
+    gap: 8px !important;
+  }
+
+  .live-badge,
+  body[data-mode="app"] .live-badge {
+    font-size: 18px;
+    padding: 6px;
+  }
+
+  .floor-label {
+    display: none;
+  }
+
+  .theme-toggle,
+  body[data-mode="app"] .theme-toggle {
+    min-height: 38px;
+    font-size: 10px;
+    padding: 7px;
+  }
+
+  .viewfinder,
+  body[data-mode="app"] .viewfinder,
+  body[data-cinema="true"] .viewfinder {
+    gap: 7px !important;
+    padding: 7px 8px !important;
+    justify-content: flex-start;
+  }
+
+  #camera-select,
+  body[data-mode="app"] #camera-select,
+  .viewfinder #camera-select {
+    flex: 1;
+    min-width: 128px !important;
+    min-height: 38px;
+    font-size: 10px !important;
+  }
+
+  #facade-toggle,
+  #explode-floors,
+  body[data-mode="app"] #facade-toggle,
+  body[data-mode="app"] #explode-floors {
+    min-height: 38px;
+    padding: 6px 8px !important;
+    font-size: 10px !important;
+  }
+
+  .classic-tabs,
+  .office-tabs,
+  .header-tabs {
+    gap: 6px;
+  }
+
+  .classic-tabs button,
+  .office-tabs button,
+  .header-tabs button {
+    padding: 7px 10px;
+    font-size: 18px;
+  }
+
+  .workspace-main > .building-hud,
+  body[data-cinema="true"] .workspace-main > .building-hud {
+    display: block;
+    padding: 11px 10px;
+  }
+
+  .building-hud header {
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+
+  .building-hud-metrics {
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .building-metric {
+    padding: 0;
+  }
+
+  .building-metric strong {
+    font-size: 25px;
+  }
+
+  .building-metric span {
+    font-size: 10px;
+    letter-spacing: -.4px;
+  }
+
+  .building-hud footer {
+    display: block;
+    font-size: 10px;
+    margin-top: 8px;
+  }
+
+  .room-nameplate,
+  body[data-cinema="true"] .room-nameplate {
+    max-width: min(200px, calc(50vw - 15px)) !important;
+    padding: 3px 5px 4px;
+  }
+
+  .room-label-name,
+  body[data-cinema="true"] .room-label-name {
+    max-width: calc(50vw - 25px);
+    font-size: 24px;
+  }
+
+  .room-nameplate small,
+  body[data-cinema="true"] .room-nameplate small {
+    font-size: 10px;
+    gap: 6px;
+  }
+
+  .room-nameplate small > span:nth-child(2) {
+    display: inline;
+  }
+
+  .scene-toolbar,
+  body[data-mode="app"] .scene-toolbar {
+    min-height: 46px;
+    padding: 5px 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .orbit-hint,
+  body[data-mode="app"] .orbit-hint {
+    font-size: 10px;
+  }
+
+  .orbit-hint .toolbar-dot {
+    display: none;
+  }
+
+  .scene-tools,
+  body[data-mode="app"] .scene-tools {
+    gap: 1px;
+  }
+
+  .scene-tools .icon-button,
+  body[data-mode="app"] .scene-tools .icon-button {
+    min-width: 32px;
+    min-height: 36px;
+  }
+
+  .office-status,
+  body[data-mode="app"] .office-status {
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  .sample-note {
+    display: none;
+  }
+
+  .workspace-panel {
+    padding: 22px 14px;
+  }
+
+  .panel-heading h2 {
+    font-size: 35px;
+  }
+
+  .insights-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .insight-stat {
+    padding: 17px;
+  }
+
+  .insight-stat strong {
+    font-size: 36px;
+  }
+
+  .activity-item {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .activity-item p {
+    font-size: 12px;
+  }
+
+  .activity-item time {
+    width: auto;
+    margin-left: 45px;
+    font-size: 10px;
+  }
+
+  dialog {
+    padding: 22px;
+  }
+
+  .dialog-top .eyebrow,
+  .install-options button,
+  .install-code code {
+    font-size: 10px;
+  }
+
+  .install-options {
+    gap: 12px;
+  }
+
+  .project-week {
+    height: 115px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+}
+
+/* Keep the first view focused on the same building as the pixel edition. */
+.workspace:not(.is-exploring) .viewfinder{display:none!important}
+.room-nameplate small>b{display:inline;color:#efab88;font-weight:400}
+.project-insight button{border:0;padding:0;background:none;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.project-insight button:hover{color:#ffe5a6;text-decoration:underline}
+.classic-tabs button[aria-selected=true]{color:#2b2418;background:#e6c48c}
+.header-actions>[data-install]{display:inline-flex!important}
+@media(max-width:700px){
+  #depth-toggle{font-size:10px;padding:6px 8px;min-height:38px}
+  .room-label-name,body[data-cinema=true] .room-label-name{font-size:20px;max-width:calc(40vw - 12px)}
+  .room-nameplate,body[data-cinema=true] .room-nameplate{max-width:calc(43vw - 12px)!important;padding:2px 4px}
+  .room-nameplate small,body[data-cinema=true] .room-nameplate small{font-size:9px;gap:5px}
+  .room-nameplate small>span:nth-child(3){display:none}
+  .room-nameplate small>b{position:absolute;right:2px;top:-10px;font-size:8px;background:#39251b;padding:1px 3px}
+  .project-insight>div:first-child{gap:12px;flex-wrap:wrap;font-size:11px}
+  .building-hud header{margin-top:5px}
+}
+
+/* The edge veil uses the same sky as the world-space distance haze. */
+.scene-wrap{--office-sky:linear-gradient(#0a1027,#171c37 56%,#39304b);background:var(--office-sky)!important}
+html[data-theme=day] .scene-wrap{--office-sky:linear-gradient(#8da6cb,#b6b8cc 65%,#c2a98d)}
+.scene-wrap:after,html[data-theme=day] .scene-wrap:after{background:var(--office-sky);mask-image:linear-gradient(90deg,#0009,transparent 24%,transparent 76%,#0009);box-shadow:none;z-index:2}
+
+/* Keep the page's navigation labels, including below the old dashboard breakpoint. */
+body[data-mode=app] .classic-tabs button{display:inline-flex;justify-content:center;gap:7px;padding:7px 10px;font:18px/1 'Office Pixel',monospace;min-height:38px}
+body[data-mode=app] .classic-tabs button svg{width:14px;height:14px}

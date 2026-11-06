@@ -1,0 +1,255 @@
+/* The six views of the pixel office, their pages and the replay's controls; the building scrolls under a sticky stage. */
+
+.scene-wrap,
+.hero .scene-wrap,
+body[data-mode="app"] .scene-wrap,
+body[data-cinema="true"] .workspace .scene-wrap {
+  --stage-h: clamp(520px, min(calc(100dvh - 24px), 112vw), 1180px);
+  height: calc(var(--stage-h) * var(--scene-pages, 1)) !important;
+  min-height: var(--stage-h) !important;
+  overflow: clip !important;
+  background: none !important;
+}
+
+.scene-wrap::after,
+html[data-theme="day"] .scene-wrap::after {
+  display: none !important;
+}
+
+.scene-stage {
+  position: sticky;
+  top: 0;
+  height: var(--stage-h);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--office-sky, linear-gradient(#0a1027, #171c37 56%, #39304b));
+}
+
+.scene-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: var(--office-sky);
+  -webkit-mask-image: linear-gradient(90deg, #0008, transparent 18%, transparent 82%, #0008);
+  mask-image: linear-gradient(90deg, #0008, transparent 18%, transparent 82%, #0008);
+}
+
+.scene-stage > *:not(#scene) {
+  z-index: 3;
+}
+
+#room-labels {
+  display: none !important;
+}
+
+/* the tabs: one row, scrolling sideways when narrow */
+.view-navigation.classic-tabs {
+  display: flex !important;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 4px;
+}
+
+.view-navigation.classic-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.view-navigation.classic-tabs button {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* the page strip and the replay bar: keys on a riveted console, an amber LED naming the page */
+.period-strip,
+.lapse-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #5d4f3a;
+  border-top: 0;
+  background: linear-gradient(#2a241d, #1f1b16);
+  box-shadow: inset 0 1px #ffffff10, inset 0 -2px #00000040;
+  font: 16px/1 "Office Pixel", monospace;
+  color: #d8c7a1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.period-strip[hidden],
+.lapse-bar[hidden] {
+  display: none;
+}
+
+.period-key {
+  flex: none;
+  min-width: 34px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid #6e5f45;
+  background: #2f2a22;
+  box-shadow: inset 1px 1px #ffffff14, 0 2px #0007;
+  color: #e9dcbc;
+  font: inherit;
+  cursor: pointer;
+}
+
+.period-key:hover:not(:disabled) {
+  background: #3b3428;
+}
+
+.period-key:disabled {
+  opacity: .38;
+  cursor: default;
+}
+
+.period-key.selected {
+  background: #e7c46a;
+  border-color: #f3dc94;
+  color: #241c10;
+  box-shadow: inset 1px 1px #fff6, 0 0 10px #eec96f55;
+}
+
+.period-led {
+  flex: none;
+  min-width: 150px;
+  padding: 5px 10px;
+  border: 1px solid #120f0b;
+  background: #120f0b;
+  color: #ffb35c;
+  text-align: center;
+  text-shadow: 0 0 6px #ff9d5c99;
+  font: 17px/1 "Office Pixel", monospace;
+  letter-spacing: .5px;
+}
+
+.period-strip.loading .period-led {
+  animation: led-wait .9s steps(2) infinite;
+}
+
+@keyframes led-wait {
+  50% { opacity: .45; }
+}
+
+.period-ticks {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.period-tick {
+  flex: none;
+  min-width: 22px;
+  height: 26px;
+  border: 1px solid #4a4030;
+  background: #1a1612;
+  color: #9d8d6c;
+  font: 14px/1 "Office Pixel", monospace;
+  cursor: pointer;
+}
+
+.period-tick.on {
+  background: #3d3220;
+  border-color: #eec96f;
+  color: #ffd98a;
+  box-shadow: 0 0 8px #eec96f44;
+}
+
+.period-tick.future {
+  background: repeating-linear-gradient(#2a241d 0 3px, #1b1713 3px 6px);
+  color: #5a4f3c;
+  cursor: default;
+}
+
+.lapse-ranges,
+.lapse-speeds {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+/* the reel of the whole replay (sessions, interns, commits), the scrubber laid over it */
+.lapse-reel {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  height: 42px;
+  border: 1px solid #120f0b;
+  background: #120f0b;
+}
+
+#lapse-reel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+#lapse-scrub {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: .01;
+  cursor: ew-resize;
+}
+
+.quiet-key.selected {
+  background: #e7c46a !important;
+  color: #241c10 !important;
+}
+
+.scene-key {
+  flex-wrap: wrap;
+}
+
+body:not([data-tab="live"]) .scene-key,
+body:not([data-tab="live"]) .agent-bubble {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  .period-led {
+    min-width: 108px;
+    font-size: 15px;
+  }
+  .period-ticks {
+    display: none;
+  }
+  .lapse-speeds {
+    display: none;
+  }
+}
+
+#lapse-video.recording {
+  background: #6b1f1a;
+  border-color: #e07a61;
+  color: #ffd8cf;
+  animation: led-wait .9s steps(2) infinite;
+}
+
+.period-export {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.period-export[hidden] {
+  display: none;
+}
+
+/* a month page charts every day: thin columns, the date under each */
+#weekly-chart.long {
+  gap: 2px;
+}
+
+#weekly-chart.long .chart-column span {
+  font-size: 9px;
+}

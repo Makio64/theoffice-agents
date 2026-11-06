@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-sky="night" data-playing="true">
+<head>
+  <meta charset="utf-8">
+  <base href="../../">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d23">
+  <title>The Office — your agents at work</title>
+  <meta name="description" content="Your coding agents, under one roof. Explore the live floor, weekly activity, and monthly calendar in a living pixel-art office.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23d77757' d='M2 4h12v8H2zM0 7h16v3H0zM3 12h2v2H3zM11 12h2v2h-2z'/%3E%3Cpath fill='%23101424' d='M5 6h1v2H5zM10 6h1v2h-1z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="art.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="alternative/simple/simple.css">
+  <link rel="stylesheet" href="alternative/simple/scenery.css">
+  <link rel="stylesheet" href="alternative/simple/footer.css">
+  <script type="module" src="alternative/simple/simple.js"></script>
+</head>
+<body class="simple-office">
+  <a class="simple-skip" href="alternative/simple/#office">Skip to the office</a>
+  <div class="sky" aria-hidden="true"></div>
+  <header class="simple-header col">
+    <a href="./" class="original-link" aria-label="Compare with the original version">← Original</a>
+    <span class="header-gap"></span>
+    <a class="btn steel install-link" id="install-link" href="alternative/simple/#install"><span aria-hidden="true">↓</span><span>Install</span></a>
+    <button class="btn steel toggle" id="sky-switch" type="button" aria-label="Switch to day"><span class="tg"></span></button>
+    <a class="btn brass gh" href="https://github.com/Makio64/theoffice-agents" target="_blank" rel="noreferrer" aria-label="The Office on GitHub"><span id="github-icon" aria-hidden="true"></span><span>GitHub</span></a>
+  </header>
+  <main>
+    <section class="roof" aria-label="The Office rooftop">
+      <div class="simple-rooftop col">
+        <div class="sign simple-sign">
+          <div class="bulbs top" aria-hidden="true"></div>
+          <h1 class="simple-title"><span class="neon" id="neon" role="img" aria-label="The Office">THE OFFICE</span></h1>
+          <p>Your coding agents, under one roof.</p>
+          <div class="bulbs bottom" aria-hidden="true"></div>
+          <i class="sign-leg left" aria-hidden="true"></i><i class="sign-leg right" aria-hidden="true"></i>
+        </div>
+        <div class="simple-props" id="roof-props" aria-hidden="true"></div>
+      </div>
+      <div class="parapet col"><div class="coping"></div><span class="prop cat" id="roof-cat" aria-hidden="true"></span><span class="prop pigeon" id="roof-pigeon" aria-hidden="true"></span></div>
+      <div class="cornice-row col"><div class="cornice"></div></div>
+    </section>
+    <section class="tower col" id="office" aria-label="The Office interactive preview">
+      <div class="upper">
+        <section class="building-floor" aria-labelledby="live-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="live-title"><span data-floor-icon="office" aria-hidden="true"></span>Live Floor</h2><span class="floor-note"><span class="demo-dot" aria-hidden="true"></span>Sample activity</span></header>
+          <div class="simple-view"><img id="simple-picture-office" data-floor-view="office" src="img/office-night.svg" width="1088" height="268" alt="Sample live floor: coding agents working at desks, grouped by project."></div>
+        </section>
+        <div class="ledge"></div>
+        <section class="building-floor" aria-labelledby="weekly-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="weekly-title"><span data-floor-icon="week" aria-hidden="true"></span>Weekly</h2></header>
+          <div class="simple-view"><img id="simple-picture-week" data-floor-view="week" src="img/week-night.svg" width="1088" height="590" alt="Sample weekly activity: one floor per project and seven windows for the days of the week."></div>
+        </section>
+        <div class="ledge"></div>
+        <section class="building-floor" aria-labelledby="monthly-title">
+          <header class="floor-heading"><h2 class="chip floor-title" id="monthly-title"><span data-floor-icon="month" aria-hidden="true"></span>Monthly Calendar</h2></header>
+          <div class="simple-view"><img id="simple-picture-month" data-floor-view="month" src="img/month-night.svg" width="1088" height="808" alt="Sample monthly calendar: daily agent activity and the projects they worked on."></div>
+        </section>
+        <div class="ledge"></div>
+      </div>
+      <div class="front simple-front"><img id="simple-front" src="img/front-night.svg" width="1088" height="112" alt="The Office entrance, with agents coming and going."></div>
+    </section>
+    <div class="city" aria-hidden="true"><div class="far" id="far"></div></div>
+    <div class="nbrs" aria-hidden="true"><div class="nb l" id="nbl"></div><div class="nb r" id="nbr"></div></div>
+  </main>
+  <footer class="street" id="street"></footer>
+  <noscript><p class="no-script">JavaScript adds motion and the installation console. <a href="https://github.com/Makio64/theoffice-agents#installation">Read the installation guide on GitHub.</a></p></noscript>
+</body>
+</html>

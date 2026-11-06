@@ -1,0 +1,18 @@
+{
+  "//": "Type-checks the desktop mod only (tsc -p .). Node never reads this file. plugin/.claude-plugin/types is laid there by Claude Code when it loads the mod from plugin/.",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "types": [],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
+  },
+  "include": ["plugin/.claude-plugin/types", "plugin/hooks", "plugin/types", "tests", "plugin/lib/*.d.mts"]
+}

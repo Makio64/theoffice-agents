@@ -1,0 +1,11 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "theoffice-voxel",
+  "version": "1.0.0",
+  "description": "An alternative 3D voxel office for your local coding agents. Open an interactive WebGPU dashboard with real local activity, project history, and the whole crew.",
+  "author": { "name": "Makio64", "url": "https://github.com/Makio64" },
+  "homepage": "https://github.com/Makio64/theoffice-agents",
+  "repository": "https://github.com/Makio64/theoffice-agents",
+  "license": "MIT",
+  "keywords": ["voxel", "webgpu", "agents", "activity", "office", "visualization"]
+}

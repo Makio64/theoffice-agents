@@ -1,0 +1,5 @@
+{
+  "description": "The Office desktop mod: a live pixel-art pane of your Claude agents beside the chat, with a pixel-art menu of tabs for the office, today, the week, the month, what they did and the timelapse (/theoffice, or the Open The Office button above the prompt), and a status line.",
+  "modules": ["./register.tsx"],
+  "hooks": {}
+}

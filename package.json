@@ -1,0 +1,38 @@
+{
+  "name": "theoffice",
+  "version": "1.0.0",
+  "description": "A little pixel-art office of your coding agents across all your accounts (Claude as Clawd; Codex, Gemini, Cursor, Kimi and Grok as their own characters), showing how many are doing what, per project — live and over today/week/month.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Makio64 (David Ronai)",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "theoffice": "plugin/scripts/office.mjs"
+  },
+  "scripts": {
+    "dev": "claude --plugin-dir plugin",
+    "dashboard": "node plugin/scripts/dashboard.mjs --open",
+    "package:plugin": "node scripts/package-plugin.mjs",
+    "package:editor": "node scripts/package-editor.mjs",
+    "site": "node site/build.mjs && vite build --config site/voxel/vite.config.js --logLevel warn && node site/serve.mjs",
+    "voxel": "vite --config site/voxel/vite.config.js --host 127.0.0.1",
+    "build:voxel": "vite build --config site/voxel/vite.config.js",
+    "build:site": "node scripts/build-site.mjs",
+    "voxel:live": "node plugin/scripts/voxel.mjs --open",
+    "package:voxel": "node scripts/package-voxel.mjs",
+    "promo": "node promo/editor.mjs",
+    "promo:export": "node promo/export.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:mod": "node scripts/test-mod.mjs"
+  },
+  "dependencies": {
+    "@fontsource/dm-mono": "5.3.0",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.5"
+  }
+}

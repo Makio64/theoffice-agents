@@ -1,0 +1,21 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "theoffice",
+  "displayName": "The Office",
+  "version": "1.0.0",
+  "description": "A live pixel-art office of your local coding agents. Open it beside chat, explore activity history, and replay a timelapse.",
+  "suggestedPrompts": [
+    "Open The Office beside this chat",
+    "What did my agents do this week?",
+    "Show me a timelapse of yesterday"
+  ],
+  "author": {
+    "name": "Makio64",
+    "url": "https://github.com/Makio64"
+  },
+  "homepage": "https://github.com/Makio64/theoffice-agents",
+  "repository": "https://github.com/Makio64/theoffice-agents",
+  "license": "MIT",
+  "logo": "assets/icon.png",
+  "keywords": ["pixel-art", "agents", "activity", "office", "visualization", "timelapse"]
+}

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en" data-sky="night">
+<head>
+<meta charset="utf-8">
+<base href="../">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Office — a clearer introduction</title>
+<meta name="description" content="See what your coding agents are doing, who needs your input, and what got done. A local pixel-art office in Claude Code.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2017%2017%22%20shape-rendering%3D%22crispEdges%22%3E%3Crect%20width%3D%2217%22%20height%3D%2217%22%20fill%3D%22%2316203e%22%2F%3E%3Cpath%20fill%3D%22%23d77757%22%20d%3D%22M2%204h1v1h-1zM3%204h1v1h-1zM4%204h1v1h-1zM5%204h1v1h-1zM6%204h1v1h-1zM7%204h1v1h-1zM8%204h1v1h-1zM9%204h1v1h-1zM10%204h1v1h-1zM11%204h1v1h-1zM12%204h1v1h-1zM13%204h1v1h-1zM14%204h1v1h-1zM2%205h1v1h-1zM3%205h1v1h-1zM4%205h1v1h-1zM5%205h1v1h-1zM6%205h1v1h-1zM7%205h1v1h-1zM8%205h1v1h-1zM9%205h1v1h-1zM10%205h1v1h-1zM11%205h1v1h-1zM12%205h1v1h-1zM13%205h1v1h-1zM14%205h1v1h-1zM2%206h1v1h-1zM3%206h1v1h-1zM4%206h1v1h-1zM6%206h1v1h-1zM7%206h1v1h-1zM8%206h1v1h-1zM9%206h1v1h-1zM10%206h1v1h-1zM12%206h1v1h-1zM13%206h1v1h-1zM14%206h1v1h-1zM2%207h1v1h-1zM3%207h1v1h-1zM4%207h1v1h-1zM6%207h1v1h-1zM7%207h1v1h-1zM8%207h1v1h-1zM9%207h1v1h-1zM10%207h1v1h-1zM12%207h1v1h-1zM13%207h1v1h-1zM14%207h1v1h-1zM0%208h1v1h-1zM1%208h1v1h-1zM2%208h1v1h-1zM3%208h1v1h-1zM4%208h1v1h-1zM5%208h1v1h-1zM6%208h1v1h-1zM7%208h1v1h-1zM8%208h1v1h-1zM9%208h1v1h-1zM10%208h1v1h-1zM11%208h1v1h-1zM12%208h1v1h-1zM13%208h1v1h-1zM14%208h1v1h-1zM15%208h1v1h-1zM16%208h1v1h-1zM0%209h1v1h-1zM1%209h1v1h-1zM2%209h1v1h-1zM3%209h1v1h-1zM4%209h1v1h-1zM5%209h1v1h-1zM6%209h1v1h-1zM7%209h1v1h-1zM8%209h1v1h-1zM9%209h1v1h-1zM10%209h1v1h-1zM11%209h1v1h-1zM12%209h1v1h-1zM13%209h1v1h-1zM14%209h1v1h-1zM15%209h1v1h-1zM16%209h1v1h-1zM2%2010h1v1h-1zM3%2010h1v1h-1zM4%2010h1v1h-1zM5%2010h1v1h-1zM6%2010h1v1h-1zM7%2010h1v1h-1zM8%2010h1v1h-1zM9%2010h1v1h-1zM10%2010h1v1h-1zM11%2010h1v1h-1zM12%2010h1v1h-1zM13%2010h1v1h-1zM14%2010h1v1h-1zM2%2011h1v1h-1zM3%2011h1v1h-1zM4%2011h1v1h-1zM5%2011h1v1h-1zM6%2011h1v1h-1zM7%2011h1v1h-1zM8%2011h1v1h-1zM9%2011h1v1h-1zM10%2011h1v1h-1zM11%2011h1v1h-1zM12%2011h1v1h-1zM13%2011h1v1h-1zM14%2011h1v1h-1zM2%2012h1v1h-1zM4%2012h1v1h-1zM12%2012h1v1h-1zM14%2012h1v1h-1zM2%2013h1v1h-1zM4%2013h1v1h-1zM12%2013h1v1h-1zM14%2013h1v1h-1z%22%2F%3E%3Cpath%20fill%3D%22%23141414%22%20d%3D%22M5%206h1v1h-1zM11%206h1v1h-1zM5%207h1v1h-1zM11%207h1v1h-1z%22%2F%3E%3C%2Fsvg%3E">
+<script>
+  // the sky before the first paint: ?sky= forces it, else the one remembered, else the system's
+  (function () {
+    var s = new URLSearchParams(location.search).get('sky')
+    if (s !== 'day' && s !== 'night') {
+      var saved = null
+      try { saved = localStorage.getItem('theoffice-sky') } catch (e) {}
+      s = saved === 'day' || saved === 'night' ? saved : (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night')
+    }
+    document.documentElement.setAttribute('data-sky', s)
+    // the terminal types its lines in, unless motion is unwelcome (css: they show by themselves if app.js never runs)
+    document.documentElement.dataset.intro = new URLSearchParams(location.search).get('intro') === 'film' ? 'film' : 'guided'
+  })()
+</script>
+<link rel="stylesheet" href="art.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="alternative/alternative.css">
+<script type="module" src="app.js"></script>
+<script type="module" src="alternative/alternative.js"></script>
+</head>
+<body class="alternative">
+<a class="skip-link" href="alternative/#views">Skip to the interactive preview</a>
+<div class="sky" aria-hidden="true">
+  <div class="stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="sun"></div>
+  <div class="clouds" id="clouds"></div>
+</div>
+
+<header class="bar col">
+  <a class="logo" href="alternative/" aria-label="The Office"><span data-sprite="claude" data-scale="2"></span><span class="logo-name">THE OFFICE</span></a>
+  <span class="chip" id="ver"></span>
+  <span class="bar-gap"></span>
+  <nav class="comparison" aria-label="Compare introductions">
+    <a href="./">Original</a>
+    <a href="alternative/" data-intro-link="guided">Guided</a>
+    <a href="alternative/?intro=film" data-intro-link="film">Film</a>
+  </nav>
+  <button class="btn steel toggle" id="sky" type="button" aria-label="Switch to day"><span class="tg"></span></button>
+  <a class="btn brass gh" href="https://github.com/Makio64/theoffice-agents" aria-label="GitHub"><span data-ico="cat"></span><span>GitHub</span></a>
+</header>
+
+<main>
+  <section class="roof" aria-labelledby="title">
+    <div class="stands col">
+      <div class="sign">
+        <div class="bulbs top"></div>
+        <div class="neon" role="img" aria-label="The Office"><div class="wide"></div><div class="narrow"></div></div>
+        <div class="rail"></div>
+        <p class="eyebrow">YOUR CODING SESSIONS, UNDER ONE ROOF</p>
+        <h1 id="title">See what your coding<br class="hero-break"> agents are doing.</h1>
+        <p class="lede">Your sessions become a living pixel-art office. See who’s working, who’s waiting for your input, and what got done.</p>
+        <div class="hero-actions">
+          <a class="btn lit" href="alternative/#views">Explore the office <span aria-hidden="true">↓</span></a>
+          <button class="btn steel" type="button" data-watch>Watch the film <span class="duration">0:34</span></button>
+          <a class="install-link" href="alternative/#setup">Install in Claude Code ↗</a>
+        </div>
+        <p class="hero-footnote">Opens beside your Claude chat. Reads local activity. Everything stays on your machine.</p>
+        <div class="bulbs bottom"></div>
+      </div>
+      <aside class="film-card" aria-label="The Office walkthrough">
+        <div class="film-title"><span class="record-dot"></span> THE OFFICE, IN 34 SECONDS</div>
+        <button class="poster-play" type="button" data-watch aria-label="Play the 34-second walkthrough">
+          <img src="alternative/media/poster.webp" width="1080" height="1920" alt="A preview of the film: agents at their desks in the live office">
+          <span class="play-mark" aria-hidden="true">▶</span>
+          <span class="play-caption">Play the film · 0:34</span>
+        </button>
+        <p>Live activity. Project history. Your whole crew.</p>
+      </aside>
+    </div>
+    <div class="roofline col" id="roofline"></div>
+    <div class="parapet col">
+      <div class="coping"></div>
+    </div>
+    <div class="col cornice-row"><div class="cornice"></div></div>
+  </section>
+
+  <div class="tower col">
+    <div class="upper">
+      <section class="views" id="views" aria-label="The views">
+        <div class="floor preview-intro">
+          <div><p class="eyebrow">TAKE A LOOK INSIDE</p><h2>One office. All your agents.</h2></div>
+          <p class="sample-label"><span></span> Interactive preview · sample data</p>
+          <p class="preview-lede">Choose a view to see what the plugin shows while your agents work.</p>
+        </div>
+        <div class="floor menu-floor">
+          <div class="menu">
+            <div class="keys" role="tablist" aria-label="Views">
+              <button class="btn steel tab" type="button" role="tab" id="tab-office" aria-controls="view" aria-selected="true" data-view="office"><span data-ico="office"></span><span>Live</span></button>
+              <button class="btn steel tab" type="button" role="tab" id="tab-today" aria-controls="view" aria-selected="false" tabindex="-1" data-view="today"><span data-ico="today"></span><span>Today</span></button>
+              <button class="btn steel tab" type="button" role="tab" id="tab-week" aria-controls="view" aria-selected="false" tabindex="-1" data-view="week"><span data-ico="week"></span><span>Week</span></button>
+              <button class="btn steel tab" type="button" role="tab" id="tab-month" aria-controls="view" aria-selected="false" tabindex="-1" data-view="month"><span data-ico="month"></span><span>Month</span></button>
+              <button class="btn steel tab" type="button" role="tab" id="tab-work" aria-controls="view" aria-selected="false" tabindex="-1" data-view="work"><span data-ico="work"></span><span>What they did</span></button>
+            </div>
+            <div class="view-status"><p class="display" aria-live="polite"><span id="caption">Who is typing, who has a hand up, who is on a break.</span></p><button class="btn steel" id="quiet" type="button" aria-pressed="false" aria-controls="view" title="Show project names without desk tags">Quiet</button></div>
+          </div>
+        </div>
+        <div class="ledge"></div>
+        <div class="reading-guide" aria-label="How to read this view">
+          <div><span class="guide-number">01</span><p><strong id="guide-title-1">A room is a project.</strong><span id="guide-copy-1">Sessions working on the same project sit together.</span></p></div>
+          <div><span class="guide-number">02</span><p><strong id="guide-title-2">A desk is a session.</strong><span id="guide-copy-2">Its screen and label show what the agent is doing.</span></p></div>
+          <div><span class="guide-number">03</span><p><strong id="guide-title-3">A hand means it needs you.</strong><span id="guide-copy-3">The agent is waiting for your answer or approval.</span></p></div>
+        </div>
+        <div class="rooms" id="view" role="tabpanel" aria-labelledby="tab-office">
+          <img id="pic" src="img/office-night.svg" width="1088" height="268" alt="The Live view, drawn by the plugin from sample data">
+        </div>
+        <div class="preview-note"><span>Shown here with made-up projects. Your installed office uses your local activity.</span><button type="button" data-watch>Watch the 34-second walkthrough ↗</button></div>
+      </section>
+
+      <div class="ledge"></div>
+
+      <section class="floor explanation" aria-labelledby="how-title">
+        <div class="section-heading"><p class="eyebrow">THE IDEA IS SIMPLE</p><h2 id="how-title">Keep an eye on the work,<br>without leaving your chat.</h2></div>
+        <div class="explanation-copy">
+          <p>The Office reads the activity your coding tools already save on your machine and turns it into an animated office beside your Claude chat.</p>
+          <p>Use <b>Live</b> to see who is busy and who needs you. Look back through <b>Today, Week, and Month</b> to see where your agents spent their time. <b>What they did</b> groups their tool calls into coding, tests, reading, and more.</p>
+          <details><summary>What does “agent-time” mean?</summary><p>Combined active time across agent sessions. Several agents can work at once, so a day can add up to more than 24 agent-hours.</p></details>
+        </div>
+      </section>
+      <div class="ledge"></div>
+      <section class="floor facts" aria-label="The facts">
+        <ul class="highlights">
+          <li class="fact">
+            <div class="win"><div class="lintel"><i class="key-stone"></i></div><div class="sash"><div class="room" data-scene="live"></div></div><div class="sill"></div></div>
+            <p class="board"><b>LIVE</b><span>Moves while they work.</span></p>
+          </li>
+          <li class="fact">
+            <div class="win"><div class="lintel"><i class="key-stone"></i></div><div class="sash"><div class="room" data-scene="crowd"></div></div><div class="sill"></div></div>
+            <p class="board"><b>ONE OFFICE</b><span>Your agents, under one roof.</span></p>
+          </li>
+          <li class="fact">
+            <div class="win"><div class="lintel"><i class="key-stone"></i></div><div class="sash"><div class="room" data-scene="local"></div></div><div class="sill"></div></div>
+            <p class="board"><b>LOCAL</b><span>Nothing leaves your machine.</span></p>
+          </li>
+        </ul>
+
+      </section>
+
+      <div class="ledge"></div>
+
+      <section class="floor setup" id="setup" aria-labelledby="setup-title">
+        <div class="setup-copy"><p class="eyebrow">READY TO MOVE IN?</p><h2 id="setup-title">Install in Claude Code.<br>See the whole crew.</h2>
+          <p>The pane opens in Claude Code. It reads local sessions from Claude, Codex, Gemini, Cursor, Kimi, and Grok, grouped by project.</p>
+          <ul class="supported-agents" aria-label="Supported agents"><li><span data-sprite="claude" data-scale="2" aria-hidden="true"></span>Claude</li><li><span data-sprite="codex" data-scale="2" aria-hidden="true"></span>Codex</li><li><span data-sprite="gemini" data-scale="2" aria-hidden="true"></span>Gemini</li><li><span data-sprite="cursor" data-scale="2" aria-hidden="true"></span>Cursor</li><li><span data-sprite="kimi" data-scale="2" aria-hidden="true"></span>Kimi</li><li><span data-sprite="grok" data-scale="2" aria-hidden="true"></span>Grok</li></ul>
+          <p class="setup-note">Run these commands inside Claude Code, then open a new session and type <code>/theoffice</code>.</p>
+        </div>
+      <div class="term" id="install" role="group" aria-labelledby="move-in">
+        <h2 class="box-title" id="move-in">Install in Claude Code</h2>
+        <div class="screen">
+          <div class="line note"><code class="cmd"># Claude Code 2.1.308+ · Node 24+ · No dependencies</code></div>
+          <div class="line"><span class="pr">&gt;</span><code class="cmd">/plugin install theoffice <span class="keep">--marketplace</span> <span class="keep">Makio64/theoffice-agents</span></code><button class="key copy" type="button" aria-label="Copy"><span data-ico="copy"></span></button></div>
+          <div class="line note"><code class="cmd"># in the desktop app, paste this prompt instead</code></div>
+          <div class="line"><span class="pr">&gt;</span><code class="cmd">Install The Office for me by following https://theoffice.makio.io/install.md</code><button class="key copy" type="button" aria-label="Copy install prompt" data-text="Install The Office for me by following https://theoffice.makio.io/install.md"><span data-ico="copy"></span></button></div>
+          <div class="line note"><code class="cmd"># then, in a new session</code></div>
+          <div class="line go"><span class="pr">&gt;</span><code class="cmd">/theoffice</code><button class="btn lit sq copy" type="button" aria-label="Copy"><span data-ico="copy"></span></button></div>
+        </div>
+      </div>
+      </section>
+      <div class="ledge"></div>
+      <section class="floor lobby" id="crew" aria-label="Agents at work and on a coffee break, with colleagues walking through the office">
+        <div class="hall">
+          <div class="beam" aria-hidden="true"></div>
+          <div class="office-life" id="officeLife"><img src="img/lobby-night.svg" width="960" height="168" alt="Agents typing and reading at desks, chatting over coffee and walking through the office"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="ledge"></div>
+
+    <section class="front" aria-label="The entrance">
+      <img data-art="front" src="img/front-night.svg" width="1088" height="112" loading="lazy" alt="The way in, drawn by the plugin: shop windows, the door under its THE OFFICE canopy, the agents going in and out">
+    </section>
+  </div>
+  <div class="city" aria-hidden="true"><div class="far" id="far"></div></div>
+  <div class="nbrs" aria-hidden="true"><div class="nb l" id="nbl"></div><div class="nb r" id="nbr"></div></div>
+</main>
+
+<footer class="street">
+  <div class="walk" id="walk"></div>
+  <div class="road" aria-hidden="true"></div>
+  <div class="far-walk" aria-hidden="true"></div>
+  <div class="underground">
+    <div class="tracks">
+      <img data-art="subway" src="img/subway-night.svg" width="1088" height="80" loading="lazy" alt="A sample week's commits ride the train under the street, one green parcel per commit">
+    </div>
+    <p class="credit"><span>MIT · made by <a href="https://github.com/Makio64">Makio64</a></span></p>
+  </div>
+  <div class="bedrock" aria-hidden="true"></div>
+</footer>
+<dialog class="film-dialog" aria-labelledby="film-dialog-title">
+  <div class="dialog-heading"><h2 id="film-dialog-title">A little office for your coding agents.</h2><button class="btn steel" type="button" data-close-film aria-label="Close walkthrough">Close ×</button></div>
+  <video class="walkthrough" controls playsinline preload="none" poster="alternative/media/poster.webp" aria-label="The Office narrated walkthrough">
+    <source src="alternative/media/walkthrough.mp4" type="video/mp4">
+    <track kind="captions" src="alternative/media/walkthrough.vtt" srclang="en" label="English" default>
+    <p><a href="alternative/media/walkthrough.mp4">Watch the walkthrough</a>.</p>
+  </video>
+  <p class="film-summary">See live activity, the week’s projects, and time spent by each AI. The Office is a local Claude Code plugin.</p>
+  <details><summary>Read the narration</summary><p>Every day, your agents go to work. But… what do they do in there? Today… find out. See what they’re doing right now, which projects they worked on this week, which AI did the work, and for how long… month after month. The Office plugin, available in Claude Code!</p></details>
+</dialog>
+</body>
+</html>

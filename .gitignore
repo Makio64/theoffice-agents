@@ -1,0 +1,19 @@
+node_modules/
+.DS_Store
+*.log
+*.tmp
+coverage/
+dist/
+.cache/
+theoffice-*.html
+plugin/.claude-plugin/types/
+# the site's drawings: site/build.mjs writes them, here and on each publish
+site/img/
+site/data.js
+site/sample.json
+site/art.css
+site/lib/
+# the promo's renders, its ElevenLabs audio takes, and the plugin copy promo/pin.mjs pins
+promo/out/
+promo/audio/
+promo/.head/

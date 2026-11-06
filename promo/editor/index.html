@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Promo Editor</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header class="ed-top">
+  <div class="ed-brand"><b>THE OFFICE</b> promo editor</div>
+  <select id="board" aria-label="Storyboard"></select>
+  <div class="ed-transport">
+    <button id="toStart" title="Go to start (Home)">⏮</button>
+    <button id="prevKey" title="Previous keyframe ([)">◂◆</button>
+    <button id="play" class="ed-play" title="Play / pause (Space)">▶</button>
+    <button id="nextKey" title="Next keyframe (])">◆▸</button>
+    <button id="toEnd" title="Go to end (End)">⏭</button>
+    <span id="clock" class="ed-clock">00:00:00 / 00:00:00</span>
+  </div>
+  <div class="ed-tools">
+    <span id="status" class="ed-status"></span>
+    <span id="exported" class="ed-exported"></span>
+    <button id="export" class="ed-export" title="Film the timeline to an MP4 (H.264, 30 fps)">⬆ Export</button>
+  </div>
+</header>
+<main class="ed-main">
+  <aside class="ed-left" id="shots"></aside>
+  <section class="ed-player" id="player">
+    <div id="viewport" class="ed-viewport">
+      <div id="stage" class="ed-stage"></div>
+      <div id="overlay" class="ed-overlay"></div>
+    </div>
+    <div class="ed-player-hint" id="playerHint"></div>
+  </section>
+  <aside class="ed-right" id="inspector"></aside>
+</main>
+<footer class="ed-timeline">
+  <div class="ed-tl-bar">
+    <button id="undo" title="Undo (⌘Z)">↶</button>
+    <button id="redo" title="Redo (⇧⌘Z)">↷</button>
+    <span class="ed-tl-sep"></span>
+    <button id="addKey" title="Keyframe at the playhead (K)">◆ Keyframe</button>
+    <button id="split" title="Split the clip at the playhead (S)">✂ Split</button>
+    <button id="del" title="Delete the selected keyframe, or the clip (⌫)">🗑 Delete</button>
+    <span class="ed-tl-sep"></span>
+    <label class="ed-check"><input type="checkbox" id="safe" checked> Safe zone</label>
+    <label class="ed-check"><input type="checkbox" id="loop" checked> Loop</label>
+    <button id="revert" title="Back to the storyboard's own timing">Revert</button>
+    <span class="ed-tl-spacer"></span>
+    <button id="zoomOut" title="Zoom out (−)">−</button>
+    <input id="zoom" type="range" min="20" max="600" value="80" aria-label="Timeline zoom">
+    <button id="zoomIn" title="Zoom in (+)">+</button>
+    <button id="fitTl" title="Fit the whole timeline">Fit</button>
+  </div>
+  <div class="ed-tl-body">
+    <div class="ed-tl-heads"><div class="ed-h ed-h-ruler"></div><div class="ed-h">T&nbsp;Text</div><div class="ed-h ed-h-main">▣&nbsp;Video</div></div>
+    <div class="ed-tl-scroll" id="scroll">
+      <div class="ed-tl-content" id="content">
+        <div id="ruler" class="ed-ruler"></div>
+        <div id="capTrack" class="ed-track ed-track-cap"></div>
+        <div id="mainTrack" class="ed-track ed-track-main"></div>
+        <div id="playhead" class="ed-playhead"><i></i></div>
+      </div>
+    </div>
+  </div>
+</footer>
+<div id="toast" class="ed-toast"></div>
+<script type="module" src="editor.js"></script>
+</body>
+</html>

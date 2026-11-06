@@ -1,0 +1,12 @@
+{
+  "name": "theoffice-voxel",
+  "interface": { "displayName": "The Office / Voxel" },
+  "plugins": [
+    {
+      "name": "theoffice-voxel",
+      "source": { "source": "local", "path": "./" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

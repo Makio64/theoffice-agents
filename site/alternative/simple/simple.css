@@ -1,0 +1,73 @@
+/* Three labelled floors, one building. Native art and the original street remain shared. */
+html { scroll-behavior: smooth; }
+.simple-office { --bw: 1088px; min-height: 100dvh; }
+.simple-header { display: flex; align-items: center; gap: 10px; padding-top: 12px; z-index: 4; }
+.original-link { padding: 12px 0; color: #d4d3dc; text-decoration: none; font-size: 11px; text-shadow: 1px 1px #080c1c; }
+.original-link:hover { color: #ffe0a3; }
+.header-gap { flex: 1; }
+.simple-header .btn { min-height: 40px; }
+.simple-header .install-link { font-size: 12px; gap: 8px; }
+.simple-header #github-icon { display: flex; }
+.simple-header #github-icon svg { width: 18px; height: 18px; }
+.simple-rooftop { padding-top: 28px; padding-bottom: 40px; display: flex; justify-content: center; }
+.simple-office .simple-sign { --w: min(420px, 100% - 32px); width: var(--w); margin: 0; padding: 0 10px; z-index: 2; }
+.simple-title { margin: 0 !important; font-size: 24px; line-height: 1; }
+.simple-sign .neon { display: block; width: 285px; max-width: 100%; margin: 8px auto 0; }
+.simple-sign .neon svg { width: 100%; height: auto; }
+.simple-sign p { margin: 10px 0 12px; font-size: 11px; color: #d3bb91; }
+.simple-sign .bulbs { width: 100%; }
+.sign-leg { position: absolute; top: calc(100% + 6px); height: 40px; width: 12px; background: var(--truss) 0 0 / 16px 16px repeat-y; }
+.sign-leg.left { left: 42px; }
+.sign-leg.right { right: 42px; }
+.simple-props { position: absolute; inset: 0; pointer-events: none; }
+.simple-props .prop { bottom: -4px; }
+.simple-office #roof-cat { left: 82%; }
+.simple-office #roof-pigeon { left: 20%; }
+.building-floor { position: relative; }
+.floor-heading { position: relative; z-index: 3; min-height: 58px; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.floor-title { display: inline-flex; align-items: center; gap: 8px; width: fit-content; min-width: 0; padding: 2px 8px; margin: 0; font-size: 13px; line-height: 20px; letter-spacing: .1px; }
+.floor-title [data-floor-icon] { display: inline-flex; flex: none; }
+.floor-title svg { width: 18px; height: 18px; }
+.floor-note { display: inline-flex; align-items: center; gap: 8px; color: #e2d0b3; font-size: 10px; line-height: 18px; }
+.demo-dot { width: 5px; height: 5px; background: #b4cc8e; box-shadow: 0 0 0 2px #36422c; }
+html[data-playing="true"] .demo-dot { animation: demo-pulse 3s steps(1) infinite; }
+@keyframes demo-pulse { 50% { background: #e5f0c3; } }
+.simple-view { position: relative; z-index: 3; background: #201b17; overflow: hidden; }
+.simple-view img { width: 100%; height: auto; }
+.simple-front { background: #291f19; }
+.simple-skip { position: fixed; left: 12px; top: -100px; z-index: 10; padding: 12px; background: #ffe0a4; color: #241b13; }
+.simple-skip:focus { top: 12px; }
+.no-script { position: relative; padding: 24px; background: #16120f; color: #f4efe4; }
+html[data-sky="day"] .original-link { color: #fff5dd; text-shadow: 1px 1px #263653; }
+html[data-playing="false"] .simple-office *, html[data-playing="false"] .simple-office *::before, html[data-playing="false"] .simple-office *::after { animation-play-state: paused !important; }
+#install { scroll-margin-block: 24px; }
+#install:focus { outline: 2px solid #ffcf2e; outline-offset: 5px; }
+@media (max-width: 759px) {
+  .simple-header { padding-top: 10px; gap: 8px; }
+  .simple-rooftop { padding-top: 34px; }
+  .simple-props .water-tower { left: 20px !important; }
+  .simple-props .antenna { right: 20px !important; }
+}
+@media (max-width: 479px) {
+  .simple-header { gap: 6px; }
+  .original-link { font-size: 10px; }
+  .simple-header .btn { padding-left: 6px; padding-right: 6px; }
+  .simple-header .gh { gap: 4px; font-size: 11px; }
+  .simple-header .install-link { font-size: 11px; gap: 5px; }
+  .simple-rooftop { padding-top: 28px; }
+  .simple-sign p { font-size: 10px; }
+  .simple-office .simple-sign { --w: calc(100% - 48px); }
+  .simple-sign .neon { width: 248px; }
+  .simple-props .water-tower { display: none; }
+  .floor-heading { min-height: 54px; padding: 12px 16px; }
+  .floor-title { gap: 6px; font-size: 12px; padding-left: 4px; padding-right: 4px; }
+  .floor-note { font-size: 8px; gap: 5px; }
+}
+@media (max-width: 359px) {
+  .simple-header .gh > span:last-child { display: none; }
+  .simple-header .gh { width: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .simple-office *, .simple-office *::before, .simple-office *::after { animation: none !important; transition: none !important; }
+}

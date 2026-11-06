@@ -1,0 +1,78 @@
+/* A 64-second day, sharing the office's pixel palette and the trailer's layered light. */
+.simple-office .sky.scenery { background: #04071a; }
+.scenery-wash { position: absolute; inset: 0; background-position: left bottom; background-repeat: repeat-x; opacity: 0; animation-duration: 64s; animation-delay: var(--scenery-delay, 0s); animation-iteration-count: infinite; animation-timing-function: linear; }
+.scenery-night { opacity: 1; }
+.scenery-dawn { animation-name: scenery-dawn; }
+.scenery-day { animation-name: scenery-day; }
+.scenery-dusk { animation-name: scenery-dusk; }
+@keyframes scenery-dawn { 0%, 20% { opacity: 0; } 25%, 45% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes scenery-day { 0%, 45% { opacity: 0; } 50%, 70% { opacity: 1; } 75%, 100% { opacity: 0; } }
+@keyframes scenery-dusk { 0%, 70% { opacity: 0; } 75%, 95% { opacity: 1; } 100% { opacity: 0; } }
+.simple-office .scenery .stars { display: block; animation: scenery-stars 64s linear var(--scenery-delay, 0s) infinite; }
+@keyframes scenery-stars { 0%, 20%, 100% { opacity: 1; } 25%, 95% { opacity: 0; } }
+.simple-office .scenery .scenery-orb { display: block; top: 0; left: 0; }
+.scenery-orb-track { display: block; width: 54px; height: 54px; animation-duration: 64s; animation-delay: var(--scenery-delay, 0s); animation-iteration-count: infinite; animation-timing-function: steps(96, end); }
+.scenery .moon .scenery-orb-track { animation-name: scenery-moon; }
+.scenery .sun .scenery-orb-track { animation-name: scenery-sun; }
+@keyframes scenery-sun {
+  0%, 20% { opacity: 0; transform: translate(0, 256px); }
+  25% { opacity: 1; transform: translate(0, 256px); }
+  45% { opacity: 1; transform: translate(var(--orb-middle), 64px); }
+  70% { opacity: 1; transform: translate(var(--orb-right), 256px); }
+  75%, 100% { opacity: 0; transform: translate(var(--orb-right), 256px); }
+}
+@keyframes scenery-moon {
+  0% { opacity: 1; transform: translate(var(--orb-middle), 64px); }
+  20% { opacity: 1; transform: translate(var(--orb-right), 256px); }
+  /* Finish fading offscreen before resetting to the next moonrise. */
+  25% { opacity: 0; transform: translate(var(--orb-right), 256px); }
+  26%, 70% { opacity: 0; transform: translate(0, 256px); }
+  75% { opacity: 1; transform: translate(0, 256px); }
+  100% { opacity: 1; transform: translate(var(--orb-middle), 64px); }
+}
+.scenery .cloud { opacity: .7; }
+.scenery .cloud.near { opacity: .9; }
+.scenery .cloud .cb, .scenery .cloud .cr, .scenery .cloud .cu { transition: fill 2.5s linear; }
+html[data-phase="dusk"] { --cl-body: #7a6aa8; --cl-rim: #ffc27a; --cl-under: #e88a7a; --roofline-glow: #ffae66; }
+.scenery-meteor { position: absolute; top: 68px; left: 16%; opacity: 0; animation: scenery-meteor 64s steps(24, end) var(--scenery-delay, 0s) infinite; }
+@keyframes scenery-meteor { 0%, 10%, 12%, 100% { opacity: 0; transform: translate(0, 0); } 10.1% { opacity: 1; transform: translate(0, 0); } 11.9% { opacity: 0; transform: translate(192px, 96px); } }
+.simple-office .city { position: absolute; left: 0; right: 0; height: 0; z-index: 0; pointer-events: none; }
+.simple-office .city .far { left: 0; bottom: 0; width: 100%; opacity: .82; }
+.simple-office .city .far > span, .simple-office .nbrs .nb > span { display: block; }
+.simple-office .city .far > span + span, .simple-office .nbrs .nb > span + span { position: absolute; inset: 0; }
+html[data-sky="night"] .simple-office .city .far > .d,
+html[data-sky="night"] .simple-office .nbrs .nb > .d,
+html[data-sky="day"] .simple-office .city .far > .n,
+html[data-sky="day"] .simple-office .nbrs .nb > .n { display: none; }
+.simple-office .nbrs { z-index: 0; }
+.simple-office .nbrs .nb { overflow: hidden; }
+.simple-office .city svg, .simple-office .nbrs svg { max-width: none; }
+/* Freeze the complete scene without resetting its place in the day. */
+html[data-scenery-playing="false"] .simple-office .scenery *,
+html[data-scenery-playing="false"] .simple-office .nbrs *,
+html[data-scenery-playing="false"] .simple-office .city * { animation-play-state: paused !important; }
+html[data-scenery-mode="manual"] .scenery-wash,
+html[data-scenery-mode="manual"] .scenery .stars,
+html[data-scenery-mode="manual"] .simple-office .scenery .scenery-orb-track,
+html[data-scenery-mode="manual"] .scenery-meteor { animation-name: none; }
+html[data-scenery-mode="manual"] .scenery-wash { opacity: 0; }
+html[data-scenery-mode="manual"][data-phase="night"] .scenery-night,
+html[data-scenery-mode="manual"][data-phase="day"] .scenery-day { opacity: 1; }
+html[data-scenery-mode="manual"][data-sky="day"] .simple-office .scenery .stars,
+html[data-scenery-mode="manual"][data-sky="day"] .simple-office .scenery .moon,
+html[data-scenery-mode="manual"][data-sky="night"] .simple-office .scenery .sun { display: none; }
+html[data-scenery-mode="manual"] .scenery-orb-track { opacity: 1; transform: translate(var(--orb-middle), 64px); }
+@media (max-width: 759px) { .scenery .cloud:nth-child(n+5) { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .simple-office .scenery *, .simple-office .city *, .simple-office .nbrs * { animation: none !important; transition: none !important; }
+  .simple-office .scenery-wash { opacity: 0; }
+  html[data-phase="night"] .simple-office .scenery-night,
+  html[data-phase="dawn"] .simple-office .scenery-dawn,
+  html[data-phase="day"] .simple-office .scenery-day,
+  html[data-phase="dusk"] .simple-office .scenery-dusk { opacity: 1; }
+  .simple-office .scenery-orb-track { opacity: 1; transform: translate(var(--orb-middle), 64px); }
+  html[data-sky="day"] .simple-office .scenery .moon,
+  html[data-sky="day"] .simple-office .scenery .stars,
+  html[data-sky="night"] .simple-office .scenery .sun { display: none; }
+  .simple-office .scenery-meteor { display: none; }
+}

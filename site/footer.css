@@ -1,0 +1,38 @@
+/* The original street and tunnel, with the installation console set into the soil. */
+.simple-office #street { flex: 1; }
+.simple-office #street .walk { height: 24px; flex: none; }
+.simple-office #street .road { height: 36px; flex: none; }
+.simple-office #street .far-walk { height: 22px; flex: none; }
+.simple-office #street .underground { flex: none; }
+.simple-office #street .tracks { z-index: 1; }
+.simple-office #street .footer-install { position: relative; width: min(650px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 12px; }
+.simple-office #street .term { width: 100%; }
+.simple-office #street .box-title { font-size: 15px; line-height: 22px; }
+.simple-office #street .screen { font-size: 15px; line-height: 23px; }
+.simple-office #street .line { min-height: 36px; }
+.simple-office #street .line.note { font-size: 13px; line-height: 21px; }
+.simple-office #street .line.go { min-height: 36px; margin: 0; padding: 2px 0; font-size: 16px; line-height: 23px; font-weight: 400; color: #ffd23f; background: none; box-shadow: none; }
+.simple-office #street .line.go .cmd::after { height: 1em; vertical-align: -2px; }
+.simple-office #street .key { width: 36px; height: 36px; }
+.simple-office #street .copy .ico { width: 18px; height: 18px; }
+.simple-office #street .footer-requirements { margin: 10px 0 0; color: #b9aa94; text-align: center; font-size: 12px; line-height: 20px; }
+.simple-office #street .credit { margin: 8px auto 24px; font-size: 11px; line-height: 20px; }
+.simple-office #street .bedrock { min-height: 88px; }
+.simple-office #street .footer-copy-status { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.simple-office #street .copy:focus-visible { outline: 2px solid #ffcf2e; outline-offset: 3px; }
+.simple-office #street .footer-walker { position: absolute; z-index: 3; left: -60px; width: var(--footer-walker-size, 50px); pointer-events: none; animation: footer-walk var(--duration, 40s) steps(var(--steps, 400)) var(--delay, -10s) infinite; }
+.simple-office #street .footer-walker.reverse { animation-direction: reverse; }
+.simple-office #street .walker-figure, .simple-office #street .walker-figure svg { display: block; width: 100%; height: auto; }
+@keyframes footer-walk { from { transform: translateX(0); } to { transform: translateX(var(--footer-walk-distance, 1400px)); } }
+@media (max-width: 599px) {
+  .simple-office #street .footer-install { width: calc(100% - 24px); padding-top: 28px; }
+  .simple-office #street .screen { padding: 10px 10px 8px 12px; font-size: 13px; line-height: 21px; }
+  .simple-office #street .line { gap: 6px; min-height: 34px; }
+  .simple-office #street .line.note { min-height: 28px; font-size: 12px; line-height: 20px; }
+  .simple-office #street .line.go { margin: 0; padding: 2px 0; font-size: 14px; line-height: 21px; }
+  .simple-office #street .key { width: 36px; height: 40px; margin-top: 0; margin-bottom: 0; }
+  .simple-office #street .footer-requirements { font-size: 11px; line-height: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .simple-office #street .footer-walker { animation: none !important; transform: translateX(var(--still-x, 100px)); }
+}

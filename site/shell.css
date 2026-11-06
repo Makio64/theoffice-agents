@@ -1,0 +1,142 @@
+/* The console: the page is seen through a screen set into a pixel-art case, 30 px of case round its top and sides (none
+   on a phone), and the guide is docked in the case under it, its boxes riding a little over the screen's foot. The case
+   (index.html .shell) sits over the page with the screen cut out of it: grained plastic, a screw in each corner, the
+   screen's light spilling onto it in bands, a power lamp in the top band and speaker grilles beside the guide where the
+   window is wide enough. dialogue.js reports the guide's height as --shell-dock; the screen ends --shell-overlap above
+   the guide's top. One art pixel is 2 CSS px, as everywhere on the page. */
+
+:root {
+  --shell-m: 30px;
+  --shell-bezel: 9px;
+  --shell-overlap: 30px;
+  /* the guide's height until dialogue.js measures it */
+  --shell-dock: 166px;
+  --shell-low: calc(var(--shell-dock) - var(--shell-overlap));
+  --shell-glow: 126 138 255;
+  /* the frame and ink of the guide's box (dialogue.css), its fill left out for the screen */
+  --shell-frame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30' shape-rendering='crispEdges'%3E%3Cpath fill='%230b0a09' d='M0 0h30v30H0z'/%3E%3Cpath fill='%23ece2cd' d='M2 1h26v28H2zM1 2h28v26H1z'/%3E%3Cpath fill='%230b0a09' d='M2 2h26v26H2z'/%3E%3Cpath fill='%231f1a16' d='M3 3h24v24H3z'/%3E%3Cpath fill='%232e2721' d='M3 3h24v1H3z'/%3E%3C/svg%3E");
+  /* the case's light from above: six bands of warm plastic, their seams dithered as the sky's (sky.js bandTile) */
+  --shell-bands: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%20450%22%20width%3D%228%22%20height%3D%22900%22%20shape-rendering%3D%22crispEdges%22%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%3E%3Cpath%20fill%3D%22%233a2e29%22%20d%3D%22M0%200h4v78h-4zM1%2078h3v1h-3zM0%2079h1v2h-1zM2%2079h1v3h-1z%22%2F%3E%3Cpath%20fill%3D%22%23322823%22%20d%3D%22M0%2078h1v1h-1zM1%2079h1v2h-1zM3%2079h1v3h-1zM0%2081h2v1h-2zM0%2082h4v76h-4zM1%20158h3v1h-3zM0%20159h1v2h-1zM2%20159h1v3h-1z%22%2F%3E%3Cpath%20fill%3D%22%232b221e%22%20d%3D%22M0%20158h1v1h-1zM1%20159h1v2h-1zM3%20159h1v3h-1zM0%20161h2v1h-2zM0%20162h4v76h-4zM1%20238h3v1h-3zM0%20239h1v2h-1zM2%20239h1v3h-1z%22%2F%3E%3Cpath%20fill%3D%22%23251d1a%22%20d%3D%22M0%20238h1v1h-1zM1%20239h1v2h-1zM3%20239h1v3h-1zM0%20241h2v1h-2zM0%20242h4v76h-4zM1%20318h3v1h-3zM0%20319h1v2h-1zM2%20319h1v3h-1z%22%2F%3E%3Cpath%20fill%3D%22%231f1916%22%20d%3D%22M0%20318h1v1h-1zM1%20319h1v2h-1zM3%20319h1v3h-1zM0%20321h2v1h-2zM0%20322h4v76h-4zM1%20398h3v1h-3zM0%20399h1v2h-1zM2%20399h1v3h-1z%22%2F%3E%3Cpath%20fill%3D%22%231a1512%22%20d%3D%22M0%20398h1v1h-1zM1%20399h1v2h-1zM3%20399h1v3h-1zM0%20401h2v1h-2zM0%20402h4v48h-4z%22%2F%3E%3C%2Fsvg%3E");
+  /* its grain: an 8-pixel tile of lighter and darker flecks over the bands */
+  --shell-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' fill-opacity='.05' d='M1 2h1v1H1zM6 1h1v1H6zM4 6h1v1H4zM2 5h1v1H2z'/%3E%3Cpath fill='%23000' fill-opacity='.22' d='M3 4h1v1H3zM7 5h1v1H7zM0 7h1v1H0zM5 3h1v1H5z'/%3E%3C/svg%3E");
+  /* a screw, its slot on the diagonal, lit from the top left */
+  --shell-screw: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 6 6' shape-rendering='crispEdges'%3E%3Cpath fill='%235b4e43' d='M1 0h4v1H1zM0 1h6v4H0z'/%3E%3Cpath fill='%233a3029' d='M1 5h4v1H1zM5 1h1v4H5zM4 4h1v1H4z'/%3E%3Cpath fill='%238b7b69' d='M1 1h2v1H1zM1 2h1v1H1z'/%3E%3Cpath fill='%2315110e' d='M4 1h1v1H4zM3 2h1v1H3zM2 3h1v1H2zM1 4h1v1H1z'/%3E%3C/svg%3E");
+  /* a speaker grille: six slots, each with its lit lower lip */
+  --shell-grille: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='72' viewBox='0 0 32 36' shape-rendering='crispEdges'%3E%3Cpath fill='%230d0a08' d='M1 1h30v2H1zM0 2h32v1H0zM1 7h30v2H1zM0 8h32v1H0zM1 13h30v2H1zM0 14h32v1H0zM1 19h30v2H1zM0 20h32v1H0zM1 25h30v2H1zM0 26h32v1H0zM1 31h30v2H1zM0 32h32v1H0z'/%3E%3Cpath fill='%232a231e' d='M1 3h30v1H1zM1 9h30v1H1zM1 15h30v1H1zM1 21h30v1H1zM1 27h30v1H1zM1 33h30v1H1z'/%3E%3C/svg%3E");
+  --shell-cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='14' viewBox='0 0 4 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffd23f' d='M0 0h1v7H0zM1 1h1v5H1zM2 2h1v3H2zM3 3h1v1H3z'/%3E%3C/svg%3E");
+}
+
+/* the page lays out inside the screen, and scrolls a section into the screen, never under the case or the guide */
+html { scroll-padding: calc(var(--shell-m) + var(--shell-bezel)) 0 var(--shell-dock); }
+body { padding: var(--shell-m) var(--shell-m) 0; }
+
+/* ---------------------------------------------------------------- the case, over the page, the screen cut out of it */
+.shell-case, .shell-screen, .shell-led { position: fixed; z-index: 7; pointer-events: none; }
+.shell-case {
+  inset: 0; padding: var(--shell-m) var(--shell-m) var(--shell-low);
+  background:
+    var(--shell-screw) left 9px top 9px / 12px no-repeat,
+    var(--shell-screw) right 9px top 9px / 12px no-repeat,
+    var(--shell-screw) left 9px bottom 9px / 12px no-repeat,
+    var(--shell-screw) right 9px bottom 9px / 12px no-repeat,
+    var(--shell-grain) 0 0 / 16px 16px,
+    var(--shell-bands) left top / 8px 900px repeat-x,
+    #1a1512;
+  /* its rim: lit along the top and left, shaded along the foot and right */
+  box-shadow: inset 0 2px #5a4a3e, inset 2px 0 #46392f, inset 0 -2px #0b0a09, inset -2px 0 #0d0b09;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* the screen, set into the case: a dark lip, a lit lower edge, its light on the case in three bands; inside, the case's
+   shade along its top and left */
+.shell-screen {
+  inset: var(--shell-m) var(--shell-m) var(--shell-low);
+  border: var(--shell-bezel) solid transparent;
+  border-image: var(--shell-frame) 3 / var(--shell-bezel) stretch;
+  box-shadow:
+    inset 4px 4px 0 rgb(0 0 0 / .3),
+    0 0 0 2px #0b0a09,
+    2px 2px 0 2px #3b3129,
+    0 0 0 8px rgb(var(--shell-glow) / .1),
+    0 0 0 14px rgb(var(--shell-glow) / .065),
+    0 0 0 20px rgb(var(--shell-glow) / .035);
+}
+html[data-sky="day"] { --shell-glow: 255 226 160; }
+/* the power lamp, in the top band at the right */
+.shell-led {
+  top: 0; right: 40px; display: flex; align-items: center; gap: 8px; height: var(--shell-m);
+  color: #6b5f52; font: 8px/1 'Office Pixel', monospace; text-transform: uppercase; -webkit-font-smoothing: none;
+  text-shadow: 0 2px #0b0a09;
+}
+.shell-led::before {
+  content: ''; width: 6px; height: 6px; background: #7be08f;
+  box-shadow: 0 0 0 2px #0b0a09, 0 0 0 4px rgb(123 224 143 / .16), 0 0 0 6px rgb(123 224 143 / .08);
+  animation: shell-led 3.2s steps(1) infinite;
+}
+@keyframes shell-led { 92% { background: #3f7a4c; } }
+
+/* ---------------------------------------------------------------- the guide, docked in the case */
+.office-dialogue {
+  left: 0; right: 0; bottom: 0; width: auto; transform: none;
+  /* the boxes as wide as the building, centered under it */
+  padding: 0 max(calc(var(--shell-m) + 16px), (100% - 1088px) / 2) calc(14px + env(safe-area-inset-bottom));
+  animation: shell-dock-in .36s steps(4, end) both;
+}
+.office-dialogue-board, .office-dialogue-topics { filter: drop-shadow(4px 4px 0 rgb(0 0 0 / .55)); }
+/* the text from the box's top-left, as a game's text box writes it */
+.office-dialogue-page { display: flex; flex-direction: column; justify-content: flex-start; }
+@keyframes shell-dock-in { from { translate: 0 48px; opacity: 0; } 50% { opacity: 1; } }
+/* the speaker grilles either side of the guide, where the window leaves them room */
+@media (min-width: 1400px) {
+  .shell-case {
+    background:
+      var(--shell-screw) left 9px top 9px / 12px no-repeat,
+      var(--shell-screw) right 9px top 9px / 12px no-repeat,
+      var(--shell-screw) left 9px bottom 9px / 12px no-repeat,
+      var(--shell-screw) right 9px bottom 9px / 12px no-repeat,
+      var(--shell-grille) left calc((100% - 1088px) / 4 - 32px + var(--shell-m) / 2) bottom 36px / 64px 72px no-repeat,
+      var(--shell-grille) right calc((100% - 1088px) / 4 - 32px + var(--shell-m) / 2) bottom 36px / 64px 72px no-repeat,
+      var(--shell-grain) 0 0 / 16px 16px,
+      var(--shell-bands) left top / 8px 900px repeat-x,
+      #1a1512;
+  }
+}
+
+/* ---------------------------------------------------------------- the command list (a phone keeps the app's own keys) */
+.office-dialogue-ico { display: none; }
+@media (min-width: 600px) {
+  .office-dialogue { display: grid; grid-template-columns: minmax(0, 1fr) 232px; gap: 12px; }
+  .office-dialogue-page { min-height: 128px; }
+  .office-dialogue-topics {
+    display: flex; flex-direction: column; justify-content: center; gap: 0; margin: 0; padding: 4px 6px;
+    border: 9px solid transparent; border-image: var(--shell-frame) 3 fill / 9px stretch;
+  }
+  .office-dialogue-topics button,
+  .office-dialogue-topics button:hover,
+  .office-dialogue-topics button[aria-pressed="true"] {
+    position: relative; display: flex; align-items: center; gap: 12px; min-height: 30px; padding: 0 8px 0 24px;
+    border: 0; background: none; box-shadow: none; color: #ece2cd; text-align: left; font: 16px/30px 'Office Pixel', monospace;
+  }
+  .office-dialogue-topics button:hover, .office-dialogue-topics button[aria-pressed="true"] { color: #ffd23f; }
+  .office-dialogue-topics button[aria-pressed="true"]::before {
+    content: ''; position: absolute; left: 4px; top: calc(50% - 7px); width: 8px; height: 14px;
+    background: var(--shell-cursor) center / 8px 14px no-repeat;
+    animation: shell-cursor .8s steps(1) infinite;
+  }
+  .office-dialogue-ico { display: block; line-height: 0; }
+}
+@keyframes shell-cursor { 50% { translate: 2px 0; } }
+
+/* ---------------------------------------------------------------- a phone: the screen to the window's edge */
+@media (max-width: 599px) {
+  :root { --shell-m: 0px; --shell-bezel: 6px; --shell-overlap: 16px; --shell-dock: 214px; }
+  .shell-case { background: var(--shell-grain) 0 0 / 16px 16px, var(--shell-bands) left top / 8px 900px repeat-x, #1a1512; }
+  .shell-led { display: none; }
+  .office-dialogue { width: auto; padding: 0 6px calc(6px + env(safe-area-inset-bottom)); }
+  .office-dialogue-board { border-width: 6px; border-image-width: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .office-dialogue, .shell-led::before, .office-dialogue-topics button[aria-pressed="true"]::before { animation: none; }
+}

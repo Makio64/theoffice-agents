@@ -1,0 +1,24 @@
+{
+  "name": "theoffice-voxel",
+  "displayName": "The Office / Voxel",
+  "description": "An alternative 3D voxel office for your local coding agents, rendered with Three.js WebGPU.",
+  "version": "1.0.0",
+  "publisher": "Makio64",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Makio64/theoffice-agents" },
+  "engines": { "vscode": "^1.93.0" },
+  "categories": ["Visualization"],
+  "extensionKind": ["ui"],
+  "main": "./extension.cjs",
+  "files": ["extension.cjs", "server.cjs", "runtime/**", "README.md", "LICENSE", "skills/**"],
+  "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": false },
+  "contributes": {
+    "commands": [{ "command": "theofficeVoxel.open", "title": "The Office / Voxel: Open Live Office" }],
+    "configuration": {
+      "title": "The Office / Voxel",
+      "properties": {
+        "theofficeVoxel.nodePath": { "type": "string", "default": "node", "scope": "machine", "description": "Node.js 24 or newer executable. Use an absolute path if Node is unavailable in the editor's PATH." }
+      }
+    }
+  }
+}

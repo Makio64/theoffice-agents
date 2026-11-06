@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "theoffice-voxel",
+  "version": "1.0.0",
+  "description": "An alternative 3D voxel office of your local coding agents, rendered with Three.js WebGPU. Opens a private local dashboard showing real sessions and project history.",
+  "author": { "name": "Makio64", "url": "https://github.com/Makio64" },
+  "homepage": "https://github.com/Makio64/theoffice-agents",
+  "repository": "https://github.com/Makio64/theoffice-agents",
+  "license": "MIT",
+  "keywords": ["voxel", "webgpu", "agents", "activity", "office", "visualization"],
+  "extensions": {
+    "com.openai": {
+      "hooks": { "hooks": {} },
+      "interface": {
+        "displayName": "The Office / Voxel",
+        "shortDescription": "A 3D voxel office of your local coding agents",
+        "developerName": "Makio64",
+        "category": "Productivity"
+      }
+    }
+  }
+}

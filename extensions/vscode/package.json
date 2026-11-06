@@ -1,0 +1,109 @@
+{
+  "name": "theoffice",
+  "displayName": "The Office",
+  "description": "A live pixel-art office of your coding agents, beside your editor.",
+  "version": "1.0.0",
+  "publisher": "Makio64",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Makio64/theoffice-agents"
+  },
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Visualization"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./extension.cjs",
+  "files": [
+    "extension.cjs",
+    "server.cjs",
+    "runtime/**",
+    "README.md",
+    "LICENSE"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "theoffice.open",
+        "title": "The Office: Open Live Pane",
+        "icon": "$(organization)"
+      },
+      {
+        "command": "theoffice.openEditor",
+        "title": "The Office: Open in Editor",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "theoffice.restart",
+        "title": "The Office: Restart",
+        "icon": "$(refresh)"
+      }
+    ],
+    "configuration": {
+      "title": "The Office",
+      "properties": {
+        "theoffice.nodePath": {
+          "type": "string",
+          "default": "node",
+          "scope": "machine",
+          "description": "Node.js 24 or newer executable. Use an absolute path if Node is unavailable in the editor's PATH."
+        },
+        "theoffice.statusBarHeadcount": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show who is at work in the status bar (\"5 working · 1 hand up\"), lit while an agent needs you. Off: a plain Office button."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "theoffice",
+          "title": "The Office",
+          "icon": "$(organization)"
+        }
+      ]
+    },
+    "views": {
+      "theoffice": [
+        {
+          "type": "webview",
+          "id": "theoffice.sidebar",
+          "name": "The Office",
+          "icon": "$(organization)",
+          "contextualTitle": "The Office"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "theoffice.openEditor",
+          "when": "view == theoffice.sidebar",
+          "group": "navigation@1"
+        },
+        {
+          "command": "theoffice.restart",
+          "when": "view == theoffice.sidebar",
+          "group": "navigation@2"
+        }
+      ]
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onWebviewPanel:theoffice",
+    "onUri"
+  ]
+}

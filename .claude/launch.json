@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["site"],
+      "port": 4173
+    },
+    {
+      "name": "voxel",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "voxel"],
+      "port": 4186
+    },
+    {
+      "name": "promo-editor",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["promo/editor.mjs"],
+      "port": 4517
+    }
+  ]
+}

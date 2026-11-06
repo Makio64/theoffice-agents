@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "makio64",
+  "description": "Plugins by Makio64 (David Ronai). The Office: a fun pixel-art view of what your coding agents are doing, per project and across accounts: Clawd for Claude, and characters of their own for Codex, Gemini, Cursor, Kimi and Grok.",
+  "owner": { "name": "Makio64", "url": "https://github.com/Makio64" },
+  "plugins": [
+    {
+      "name": "theoffice",
+      "source": "./plugin",
+      "description": "A live dashboard of your coding agents, drawn as a pixel-art office. Spot the agent waiting on you, see which projects got the hours, and replay your day, week or month as a timelapse, across Claude Code, Codex, Gemini, Cursor and every account. Type /theoffice.",
+      "category": "productivity",
+      "keywords": ["productivity", "dashboard", "agent-monitoring", "multi-agent", "activity", "analytics", "insights", "status-line", "timelapse", "subagents", "pixel-art", "claude-code", "codex", "gemini", "cursor", "multi-account"],
+      "homepage": "https://github.com/Makio64/theoffice-agents"
+    }
+  ]
+}

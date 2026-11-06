@@ -1,0 +1,18 @@
+{
+  "display_name": "The Office",
+  "description": "A live pixel-art office of your local coding agents in the side pane: who is working right now, today, this week and this month, and a timelapse. Reads activity only while the pane asks for it.",
+  "command": "node",
+  "args": ["../../integrations/antigravity/sidecar.mjs"],
+  "restart_policy": "on-failure",
+  "has_web_ui": true,
+  "ui_config": {
+    "display_name": "The Office",
+    "views": [
+      {
+        "title": "The Office",
+        "path": "/",
+        "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE"
+      }
+    ]
+  }
+}

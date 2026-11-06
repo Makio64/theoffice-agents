@@ -1,0 +1,58 @@
+/* The promo/editor/box.js frame and ink, at the website's two-pixel scale. */
+/* Office Pixel is declared inline in index.html (fonts/office-pixel.woff2), for the loader's first frame. */
+/* Keep guide clearance in the textured ground, with no exposed sky below the footer. */
+@property --dialogue-space { syntax: "<length>"; inherits: false; initial-value: 216px; }
+.has-office-dialogue #street .bedrock { min-height: max(88px, var(--dialogue-space, 216px)); }
+.office-dialogue {
+  --focus: #ffd23f;
+  position: fixed; z-index: 8;
+  left: 50%; bottom: max(16px, env(safe-area-inset-bottom));
+  width: min(800px, calc(100% - 32px)); transform: translateX(-50%);
+  color: #ece2cd; font-family: 'Office Pixel', monospace;
+  -webkit-font-smoothing: none;
+}
+.office-dialogue[hidden] { display: none; }
+.office-dialogue-board {
+  position: relative; border: 9px solid transparent;
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30' shape-rendering='crispEdges'%3E%3Cpath fill='%230b0a09' d='M1 0h28v30H1zM0 1h30v28H0z'/%3E%3Cpath fill='%23ece2cd' d='M2 1h26v28H2zM1 2h28v26H1z'/%3E%3Cpath fill='%230b0a09' d='M2 2h26v26H2z'/%3E%3Cpath fill='%231f1a16' d='M3 3h24v24H3z'/%3E%3Cpath fill='%232e2721' d='M3 3h24v1H3z'/%3E%3C/svg%3E") 3 fill / 9px stretch;
+  filter: drop-shadow(3px 3px 0 #0007);
+}
+.office-dialogue-name { position: absolute; left: 12px; top: -17px; padding: 2px 6px; background: #0b0a09; color: #ffd23f; font-size: 8px; line-height: 16px; pointer-events: none; }
+.office-dialogue-page { display: block; position: relative; width: 100%; min-height: 118px; padding: 22px 40px 24px 18px; text-align: left; font: 16px/28px 'Office Pixel', monospace; }
+.office-dialogue-text { display: block; overflow-wrap: break-word; }
+.office-dialogue-letter { visibility: hidden; }
+.office-dialogue-letter.on { visibility: visible; }
+.office-dialogue-letter.key-word { color: #ffd23f; }
+.office-dialogue-more { position: absolute; right: 12px; bottom: 12px; line-height: 0; }
+.office-dialogue[data-typing="true"] .office-dialogue-more { visibility: hidden; }
+.office-dialogue[data-typing="false"] .office-dialogue-more { animation: dialogue-more 1.2s steps(1) infinite; }
+@keyframes dialogue-more { 50% { translate: 0 2px; visibility: hidden; } }
+.office-dialogue-topics { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+.office-dialogue-deck { display: none; }
+.office-dialogue-topics button { min-height: 36px; padding: 8px 12px; border: 2px solid #ece2cd; background: #1f1a16; color: #ece2cd; box-shadow: 2px 2px #0b0a09; font: 8px/16px 'Office Pixel', monospace; }
+.office-dialogue-topics button:hover, .office-dialogue-topics button[aria-pressed="true"] { color: #ffd23f; border-color: #ffd23f; background: #2e2721; }
+.office-dialogue-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; clip-path: inset(50%); overflow: hidden; white-space: nowrap; }
+.floor-dialogue-trigger { display: inline-flex; align-items: center; gap: inherit; min-height: 28px; text-align: left; font: inherit; }
+.floor-dialogue-trigger:hover { text-decoration: underline; text-underline-offset: 3px; }
+.has-office-dialogue .simple-view img { cursor: pointer; }
+@media (max-width: 599px) {
+  .office-dialogue { width: calc(100% - 16px); bottom: max(8px, env(safe-area-inset-bottom)); }
+  .office-dialogue-page { min-height: 118px; padding: 18px 24px 26px 10px; font-size: 10px; line-height: 22px; }
+  .office-dialogue-name { left: 6px; }
+  .office-dialogue-topics { justify-content: stretch; }
+  .office-dialogue-topics button { flex: 1; padding: 6px 4px; font-size: 8px; }
+  /* Draw the app's own console keys; native buttons retain touch and keyboard interaction. */
+  .office-dialogue-topics.is-app-menu { position: relative; display: block; min-height: 44px; }
+  .is-app-menu .office-dialogue-deck { display: block; pointer-events: none; }
+  .office-dialogue-deck svg { width: 100%; height: auto; }
+  .office-dialogue-topics.is-app-menu button,
+  .office-dialogue-topics.is-app-menu button:hover,
+  .office-dialogue-topics.is-app-menu button[aria-pressed="true"] {
+    position: absolute; top: 0; bottom: 0; left: var(--topic-left); width: var(--topic-width);
+    min-height: 44px; padding: 0; border: 0; background: none; box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .office-dialogue-topics.is-app-menu button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
+@media (max-width: 359px) { .office-dialogue-page { font-size: 9px; line-height: 20px; } }
+@media (prefers-reduced-motion: reduce) { .office-dialogue-more { animation: none !important; } }

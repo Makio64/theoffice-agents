@@ -1,0 +1,583 @@
+/* The Office: the page is the plugin's own building, read from its roof down to the commits line. One art pixel is
+   2 CSS px, the office pictures' own scale: every border, bevel, offset and sprite here is a whole number of them. Text
+   is the Office's own soft type, on the plugin's lit plates (lib/svg-kit.mjs litPlate). Tiles, frames and plates are
+   custom properties (--brick, --fr-sign, --pl-brass...) from art.css, drawn by theme.js and art.js from the plugin's own
+   palette (data.js). */
+
+:root {
+  --font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --gut: 16px;
+  --bw: 1088px;
+  --qw: 8px;
+  --ink: #f4efe4;
+  --ink-sh: #0a0e1f;
+  --focus: #ffcf2e;
+  --lamp: #fff1c4;
+  --lamp2: #ffd98a;
+  --beacon: #ff5a4a;
+  --plate: #16110d;
+  color-scheme: dark;
+}
+html[data-sky="day"] {
+  --ink: #f4efe4;
+  --ink-sh: #23446e;
+  --focus: #2b2620;
+  --lamp: #8a8f96;
+  --lamp2: #a4a9b0;
+  --beacon: #9a4a40;
+  color-scheme: light;
+}
+@media (max-width: 599px) {
+  :root { --gut: 8px; }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--sky-top, #04071a); overflow-x: clip; }
+body {
+  min-height: 100vh; display: flex; flex-direction: column;
+  font: 14px/20px var(--font);
+  color: var(--ink);
+  overflow-x: clip;
+}
+img { display: block; image-rendering: pixelated; }
+svg { display: block; shape-rendering: crispEdges; }
+a { color: inherit; }
+ul { list-style: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* what stays dark by day keeps the yellow ring */
+.term, .sign, .sash, .credit { --focus: #ffcf2e; }
+
+/* the building's column: centered on the page, its left edge on an even pixel */
+.col {
+  position: relative;
+  width: min(var(--bw), round(down, 100% - 2 * var(--gut), 4px));
+  margin-left: max(var(--gut), round(down, (100% - var(--bw)) / 2, 2px));
+}
+
+/* a lit plate: the plugin's own, its corners rounded off, a lit top, a shaded foot, a shadow on the wall (--pl: the plate) */
+.chip, .display, .board, .board b, .plate {
+  border-style: solid; border-width: 4px 6px 6px 4px;
+  border-image: var(--pl) 4 6 6 4 fill / 4px 6px 6px 4px stretch;
+}
+
+/* ---------------------------------------------------------------- the sky, fixed behind the building
+   The plugin's own sky re-banded evenly as the trailer paints it (sky.js), the zenith at the window's top and the
+   horizon at its foot (app.js fits the bands to the window: .fitted); the tower scrolls past it. The stars, clouds and
+   buildings move at different depths (parallax.js), all landing on the street as it enters the window. Stars in its upper
+   half by night, the sun by day, the moon or the sun high beside the tower (over the roof on a narrower page), clouds
+   drifting across in either light; the skyline stands on the horizon at the foot of the page's main (.city), the
+   neighbours either side of the tower (.nbrs). */
+.sky {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: var(--sky-img) left bottom repeat-x, var(--sky-top, #04071a);
+}
+.sky.fitted { --sky-img: var(--sky-active); }
+.stars { position: absolute; left: 0; top: 0; line-height: 0; }
+.moon, .sun { position: absolute; top: 96px; left: round(down, 75% + 247px, 2px); line-height: 0; }
+.sun { top: 94px; left: round(down, 75% + 245px, 2px); }
+@media (max-width: 1199px) {
+  .moon { top: 4px; left: round(down, 50% - 25px, 2px); }
+  .sun { top: 2px; left: round(down, 50% - 27px, 2px); }
+}
+.clouds { position: absolute; inset: 0; }
+.cloud { position: absolute; left: 0; line-height: 0; animation: cloud var(--dur, 300s) steps(var(--n, 800)) var(--dl, 0s) infinite; transform: translateX(var(--x, 100vw)); }
+@keyframes cloud { from { transform: translateX(var(--from)); } to { transform: translateX(var(--to)); } }
+.cloud .cb { fill: var(--cl-body); }
+.cloud .cr { fill: var(--cl-rim); }
+.cloud .cu { fill: var(--cl-under); }
+html[data-sky="day"] .stars, html[data-sky="day"] .moon { display: none; }
+html[data-sky="night"] .sun { display: none; }
+/* the skyline: on the horizon at the window's foot, behind the neighbours, until the page's own street comes up */
+.city { position: sticky; bottom: 0; height: 0; z-index: -1; }
+.far { position: absolute; left: 0; bottom: 0; line-height: 0; }
+html[data-sky="night"] .far .d, html[data-sky="day"] .far .n { display: none; }
+/* the neighbours: either side of the tower, behind its quoins, standing on its street (app.js draws them) */
+.nbrs { position: absolute; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; }
+.nb { position: absolute; bottom: 0; line-height: 0; }
+.nb:empty { display: none; }
+html[data-sky="night"] .nb .d, html[data-sky="day"] .nb .n { display: none; }
+/* Scroll depth only moves scenery; cloud drift keeps its own horizontal animation. */
+/* Each layer owns its offset; its SVG paths never need to inherit scroll updates. */
+@property --parallax-y {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+.stars, .moon, .sun, .far, .nb { transform: translate3d(0, var(--parallax-y, 0px), 0); }
+.cloud { translate: 0 var(--parallax-y, 0px); }
+@media (prefers-reduced-motion: reduce) {
+  .stars, .moon, .sun, .far, .nb { transform: none; }
+  .cloud { translate: none; }
+}
+/* the night's lights: stars twinkling, windows going out and back on, beacons blinking */
+.tw { animation: tw var(--t, 6s) steps(1) var(--dl, 0s) infinite; }
+.blink { animation: tw 1.6s steps(1) var(--dl, 0s) infinite; }
+@keyframes tw { 0%, 62% { visibility: visible; } 63%, 100% { visibility: hidden; } }
+.twk { animation: twk var(--t, 3s) steps(1) var(--dl, 0s) infinite; }
+@keyframes twk { 0%, 54% { opacity: 1; } 55%, 79% { opacity: .3; } 80%, 100% { opacity: 1; } }
+
+/* ---------------------------------------------------------------- the header, over the sky */
+.bar { display: flex; align-items: center; gap: 10px; padding-top: 8px; z-index: 3; }
+.logo { display: flex; align-items: center; gap: 10px; min-width: 44px; min-height: 44px; font-weight: 700; text-decoration: none; }
+.logo-name { white-space: nowrap; text-shadow: 2px 2px 0 var(--ink-sh); }
+.bar-gap { flex: 1; }
+.chip { --pl: var(--pl-brass); padding: 0 2px; font-size: 12px; font-weight: 700; line-height: 16px; color: var(--plate); white-space: nowrap; }
+.chip:empty { display: none; }
+
+/* ---------------------------------------------------------------- buttons: lit keys, brass plaques, steel keys */
+.btn {
+  --u1: #c4c9cf; --u2: #a4a9b0; --h1: #dde1e6; --h2: #b4b9c0; --d1: #8a8f96; --d2: #7d828a; --split: 10px;
+  --f1: var(--u1); --f2: var(--u2);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 38px; padding: 2px 10px;
+  font: 700 13px/20px var(--font); text-decoration: none; white-space: nowrap;
+  color: var(--btn-ink, #26282c);
+  border-style: solid; border-width: 6px 4px 8px;
+  border-image: var(--fr-up) 6 4 8 / 6px 4px 8px stretch;
+  background:
+    repeating-linear-gradient(90deg, var(--f1) 0 2px, var(--f2) 2px 4px) 0 var(--split) / 100% 2px no-repeat padding-box,
+    linear-gradient(var(--f1) 0 var(--split), var(--f2) 0) padding-box;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.btn .ico { flex: none; }
+.btn .i2 { fill: var(--i2); }
+.btn.steel {
+  --fr-up: var(--steel-up); --fr-hover: var(--steel-hover); --fr-down: var(--steel-down);
+  --u1: #c4c9cf; --u2: #a4a9b0; --h1: #dde1e6; --h2: #b4b9c0; --d1: #8a8f96; --d2: #7d828a;
+  --btn-ink: #23262b; --i2: #5d6168;
+}
+.btn.brass {
+  --fr-up: var(--brass-up); --fr-hover: var(--brass-hover); --fr-down: var(--brass-down);
+  --u1: #e6c48c; --u2: #c9a26b; --h1: #f0d4a2; --h2: #d8b27a; --d1: #b8925c; --d2: #a8844f;
+  --btn-ink: #3a2a1a; --i2: #8f6d43;
+}
+.btn.lit {
+  --fr-up: var(--lit-up); --fr-hover: var(--lit-hover); --fr-down: var(--lit-down);
+  --u1: #ffe27a; --u2: #ffcf2e; --h1: #fff0a8; --h2: #ffdc58; --d1: #ffd447; --d2: #f2bd24;
+  --btn-ink: #3a2a10; --i2: #b07d12;
+}
+/* hovered: a pixel up, its side a pixel deeper; pressed: sunk into its depth, the bevel turned round */
+.btn:hover { border-width: 4px 4px 10px; border-image: var(--fr-hover) 4 4 10 / 4px 4px 10px stretch; --f1: var(--h1); --f2: var(--h2); }
+.btn:active, .btn[aria-selected="true"] {
+  border-width: 10px 4px 4px; border-image: var(--fr-down) 10 4 4 / 10px 4px 4px stretch; --f1: var(--d1); --f2: var(--d2);
+}
+/* the selected tab: a floor key latched in, lit amber */
+.tab[aria-selected="true"] {
+  --fr-down: var(--lit-down); --d1: #ffe27a; --d2: #ffcf2e; --btn-ink: #3a2a10; --i2: #b07d12; cursor: default;
+}
+.btn.sq { padding: 0 6px; }
+
+/* the day / night switch: a steel key with a sun and a moon, the sky's own lit */
+.toggle .tg { display: flex; gap: 8px; }
+.toggle { --sun1: #6d7279; --sun0: #6d7279; --sun2: #6d7279; --moon1: #f3ead0; --moon2: #c9bfa0; }
+html[data-sky="day"] .toggle { --sun1: #f6d860; --sun0: #fff0a8; --sun2: #e8a838; --moon1: #6d7279; --moon2: #6d7279; }
+.toggle .sun1 { fill: var(--sun1); } .toggle .sun0 { fill: var(--sun0); } .toggle .sun2 { fill: var(--sun2); }
+.toggle .moon1 { fill: var(--moon1); } .toggle .moon2 { fill: var(--moon2); }
+
+/* ---------------------------------------------------------------- the roof: the sign and the terminal on their legs */
+.roof { position: relative; z-index: 1; }
+.stands { display: grid; grid-template-columns: 492px minmax(0, 1fr); gap: 20px; align-items: stretch; margin-top: 4px; z-index: 2; }
+.sign {
+  --w: calc(round(down, 100% - 12px, 32px) + 12px);
+  --bb: 6px;
+  position: relative;
+  display: flex; flex-direction: column;
+  width: var(--w);
+  margin-left: round(down, (100% - var(--w)) / 2, 2px);
+  border-style: solid; border-width: 6px;
+  border-image: var(--fr-sign) 6 / 6px stretch;
+  background: var(--board, #17120e) padding-box;
+  text-align: center;
+}
+.bulbs { flex: none; height: 8px; background: var(--bulbs-a) 0 0 / 32px 8px repeat-x; animation: marquee 1.2s steps(1) infinite; }
+.bulbs.top { margin-top: 6px; }
+.bulbs.bottom { margin-top: auto; margin-bottom: 6px; animation-delay: -.6s; }
+@keyframes marquee { 0%, 100% { background-image: var(--bulbs-a); } 50% { background-image: var(--bulbs-b); } }
+.neon { --nw: 380px; width: var(--nw); margin: 6px 0 0 round(down, (100% - var(--nw)) / 2, 2px); }
+.neon .narrow { display: none; }
+.ng1 { fill: var(--ng1, #584717); }
+.ng2 { fill: var(--ng2, #332912); }
+.flick { opacity: 0; animation: flick 7s steps(1) infinite; }
+@keyframes flick { 0%, 44% { opacity: 0; } 45%, 49% { opacity: 1; } 50%, 54% { opacity: 0; } 55%, 64% { opacity: 1; } 65%, 100% { opacity: 0; } }
+.rail { flex: none; height: 4px; margin: 6px 12px 0; background: linear-gradient(#5d6168 0 2px, #2b2e33 2px); }
+.sign h1 { margin: 6px 12px 0; font-size: 18px; line-height: 24px; font-weight: 700; color: #f4efe4; text-shadow: 2px 2px 0 #a8533a; }
+.lede { margin: 2px 16px 6px; font-size: 13px; line-height: 18px; color: #e6c48c; text-wrap: balance; }
+
+/* The console keeps its pixel frame, with the same readable type as the rest of the page. The final command gets
+   a modest amber accent; its name sits on the frame's top like a game window's title. */
+.term {
+  --bb: 10px;
+  position: relative; min-width: 0; display: flex; flex-direction: column;
+  border-style: solid; border-width: 10px 10px 10px 8px;
+  border-image: var(--fr-box) 10 10 10 8 fill / 10px 10px 10px 8px stretch;
+}
+.box-title {
+  position: absolute; z-index: 1; top: -16px; left: 14px; padding: 0 6px;
+  font: 700 13px/20px var(--font); color: #ece2cd; background: #0b0a09;
+  box-shadow: 0 0 0 2px #0b0a09; white-space: nowrap;
+}
+.screen {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  padding: 12px 14px 10px 16px; color: #ece2cd;
+  font: 13px/20px var(--font); font-variant-ligatures: none;
+}
+.line { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 2px 0; }
+.line .pr { flex: none; color: #d77757; user-select: none; }
+.cmd { font: inherit; font-variant-ligatures: none; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.line.note { min-height: 24px; color: #aba08d; font-size: 11px; line-height: 18px; }
+/* /theoffice stays selectable text, highlighted with a yellow bar and its own copy key. */
+.line.go {
+  min-height: 46px; margin: 8px -14px 0 -16px; padding: 4px 14px 4px 16px;
+  font-size: 18px; line-height: 26px; font-weight: 700; color: #ffd23f;
+  background: #2e2721; box-shadow: inset 4px 0 0 #ffd23f;
+}
+.line.go .cmd { white-space: nowrap; }
+/* a long command breaks at its spaces, never inside `--marketplace` or the repository's name */
+.cmd .keep { white-space: nowrap; }
+/* a command that wraps keeps its prompt on its first line */
+.line:has(.keep) .pr, .line:has(.keep) .cmd { align-self: flex-start; }
+.line.go .cmd::after { content: ''; display: inline-block; width: 8px; height: 18px; margin-left: 6px; vertical-align: -3px; background: currentColor; animation: caret 1s steps(1) infinite; }
+html[data-typing] .line.go .cmd::after { visibility: hidden; }
+.caret { position: relative; display: inline-block; width: 0; height: 1em; vertical-align: -2px; }
+.caret::after { content: ''; position: absolute; left: 1px; top: 0; width: .6em; height: 1em; background: currentColor; animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+/* the console types its lines in, each out of sight until its turn; they show by themselves if the script never ran */
+html[data-typing] .term .line { visibility: hidden; animation: shown 0s 5s forwards; }
+html[data-typing] .term .line.on { visibility: visible; animation: none; }
+.rest { visibility: hidden; }
+@keyframes shown { to { visibility: visible; } }
+/* a line's copy key, plain as the box's ink */
+.key { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin-left: auto; color: #7d7466; -webkit-tap-highlight-color: transparent; }
+.key:hover { color: #ece2cd; background: #2e2721; }
+.copy .ico { width: 16px; height: 16px; }
+.key.ok { color: #9ab86a; }
+.btn.copy.ok { --btn-ink: #2f5a1a; }
+
+/* their legs, the catwalks, the props on the roof deck behind the parapet */
+.roofline { height: 44px; z-index: 1; }
+.stands .leg { position: absolute; top: calc(100% + var(--bb)); width: 16px; height: 52px; background: var(--truss) 0 0 / 16px 16px repeat-y; }
+.stands .catwalk {
+  position: absolute; left: 64px; right: 64px; top: calc(100% + var(--bb)); height: 8px;
+  background: linear-gradient(#8a8f96 0 2px, #5d6168 2px 6px, #2b2e33 6px);
+}
+.prop { position: absolute; bottom: -6px; }
+/* the cat and the pigeons on the coping */
+.parapet .prop { bottom: auto; z-index: 3; }
+.prop.cat { top: -12px; }
+.prop.pigeon { top: -8px; }
+.beacon { fill: var(--beacon); animation: beacon 1.6s steps(1) infinite; }
+html[data-sky="day"] .beacon { animation: none; }
+@keyframes beacon { 50% { fill: #5a2420; } }
+.parapet { height: 18px; z-index: 2; background: var(--brick) 0 2px / 32px 24px, #5a4334; }
+.parapet::before { content: ''; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: #2f241e; }
+.spill {
+  position: absolute; z-index: 1; top: 0; left: 0; width: 492px; height: 6px;
+  background: var(--spill) center top / 640px 6px no-repeat; pointer-events: none;
+}
+html[data-sky="day"] .spill { display: none; }
+.coping {
+  position: absolute; left: -6px; right: -6px; top: 0; height: 8px;
+  background: linear-gradient(#b29d7d 0 2px, #8a765c 2px 6px, #5c4c3b 6px);
+  clip-path: polygon(0 0, 100% 0, 100% 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, 2px 8px, 2px 6px, 0 6px);
+}
+.coping::after { content: ''; position: absolute; inset: 0 0 auto; height: 2px; background: var(--roofline-glow, transparent); }
+.cornice {
+  position: relative; z-index: 2; height: 20px; margin: 0 -8px;
+  background: linear-gradient(#2f241e, #2f241e) 0 100% / 100% 2px no-repeat, var(--cornice) 0 0 / 48px 18px repeat-x;
+  clip-path: polygon(0 0, 100% 0, 100% 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, calc(100% - 4px) 8px, calc(100% - 4px) 14px,
+    calc(100% - 6px) 14px, calc(100% - 6px) 18px, calc(100% - 8px) 18px, calc(100% - 8px) 20px, 8px 20px, 8px 18px, 6px 18px,
+    6px 14px, 4px 14px, 4px 8px, 2px 8px, 2px 6px, 0 6px);
+}
+.cornice-row { z-index: 2; }
+
+/* ---------------------------------------------------------------- the tower: brick, quoins, a ledge under every floor */
+main { position: relative; z-index: 1; }
+.tower { z-index: 1; background: var(--brick) 0 0 / 32px 24px, #5a4334; }
+.upper { position: relative; }
+.upper::before, .upper::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: var(--qw); z-index: 2; pointer-events: none;
+  background: var(--quoin-l4) 0 0 / var(--qw) 24px repeat-y;
+}
+.upper::after { right: 0; background-image: var(--quoin-r4); }
+.floor { position: relative; padding: 32px calc(var(--qw) + 32px); }
+.ledge {
+  position: relative; z-index: 3; height: 10px; margin: 0 -4px;
+  background: linear-gradient(#b29d7d 0 2px, #8a765c 2px 6px, #5c4c3b 6px 8px, #2f241e 8px);
+  clip-path: polygon(0 0, 100% 0, 100% 6px, calc(100% - 2px) 6px, calc(100% - 2px) 8px, calc(100% - 4px) 8px, calc(100% - 4px) 10px,
+    4px 10px, 4px 8px, 2px 8px, 2px 6px, 0 6px);
+}
+
+/* a window: the stone lintel and its keystone, the sash, the sill */
+.win { display: flex; flex-direction: column; align-items: center; }
+.lintel {
+  position: relative; align-self: stretch; height: 12px;
+  background: linear-gradient(#a39886 0 2px, #8a8072 2px 10px, #5c5248 10px);
+}
+.key-stone { position: absolute; left: 50%; top: -4px; width: 20px; height: 18px; transform: translateX(-10px); background: var(--keystone); }
+.sash {
+  border-style: solid; border-width: 8px;
+  border-image: var(--fr-sash) 8 / 8px stretch;
+  background: #0f0c0a padding-box;
+}
+.sill {
+  align-self: stretch; height: 10px; margin: 0 -8px;
+  background: linear-gradient(#cfc2aa 0 2px, #b5a58e 2px 6px, #7d6f5d 6px 8px, #2f241e 8px);
+  clip-path: polygon(0 0, 100% 0, 100% 8px, calc(100% - 2px) 8px, calc(100% - 2px) 10px, 2px 10px, 2px 8px, 0 8px);
+}
+
+/* ---------------------------------------------------------------- the views: floor keys and a caption, then the rooms
+   The rooms are the plugin's own, floors of this tower: its drawing cut to them (build.mjs), as wide as the tower, its
+   walls and corner stones the tower's. */
+.floor.menu-floor { padding-top: 14px; padding-bottom: 14px; }
+.menu { display: flex; align-items: stretch; gap: 10px; max-width: 976px; margin: 0 auto; }
+.keys { flex: none; display: flex; gap: 6px; align-items: center; }
+.display {
+  --pl: var(--pl-dark);
+  flex: 1; min-width: 0; min-height: 46px; display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; font-size: 13px; line-height: 18px; color: #f3ead0; text-align: center; text-wrap: balance;
+}
+.view-status { display: flex; gap: 8px; flex: 1; min-width: 0; }
+#quiet { flex: none; }
+#quiet[hidden] { display: none; }
+#quiet[aria-pressed="true"] { --fr-down: var(--lit-down); --d1: #ffe27a; --d2: #ffcf2e; }
+/* the plugin's own keys (app.js draws lib/svg-menu.mjs): the console's top deck, each tab laid over its key with nothing of
+   its own to show, and the caption on the deck under it, its LED glass in amber between two brass rivets */
+.menu.drawn { flex-direction: column; gap: 0; }
+.menu.drawn .keys { position: relative; display: block; }
+.menu.drawn .deck svg { width: 100%; height: auto; }
+.menu.drawn .tab, .menu.drawn .tab:hover, .menu.drawn .tab:active, .menu.drawn .tab[aria-selected="true"] {
+  position: absolute; top: 0; bottom: 0; min-height: 0; padding: 0; border: 0; border-image: none; background: none;
+}
+.menu.drawn .tab > * { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.menu.drawn .display {
+  min-height: 0; padding: 4px 12px 6px; border: 0; border-image: none; border-radius: 0 0 10px 10px;
+  background: var(--cn-rivet) left 4px center / 4px 4px no-repeat, var(--cn-rivet) right 4px center / 4px 4px no-repeat, var(--cn-plate, #241c17);
+  box-shadow: inset 1px 0 #fff3, inset -1px 0 #fff3, inset 0 -1px #fff3;
+}
+.menu.drawn .display span {
+  flex: 1; min-height: 28px; display: flex; align-items: center; justify-content: center; padding: 4px 12px;
+  background: var(--cn-led, #14100c); box-shadow: 0 0 0 2px #00000080; border-radius: 2px;
+  color: var(--cn-ink, #ff9d5c); font-weight: 700;
+}
+.rooms { position: relative; z-index: 3; background: #14120f; }
+.rooms img { width: 100%; height: auto; }
+/* the tower's ground floor: the plugin's own street front (build.mjs ground()), its walls and corner stones the tower's */
+.front { position: relative; z-index: 3; }
+.front img { width: 100%; height: auto; }
+
+/* ---------------------------------------------------------------- the facts: three lit rooms, then the feature list */
+.facts .highlights { display: grid; grid-template-columns: repeat(3, min(296px, round(down, (100% - 80px) / 3, 4px))); justify-content: center; gap: 40px; }
+.feature-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 40px; max-width: 968px; margin: 40px auto 0; color: #f4efe4; }
+.feature-list li { display: flex; flex-direction: column; min-width: 0; }
+.feature-copy { flex: 1; margin-top: 14px; border-style: solid; border-width: 4px 6px 6px 4px; border-image: var(--pl-board) 4 6 6 4 fill / 4px 6px 6px 4px stretch; padding: 8px 14px; }
+.feature-list h3 { margin-bottom: 4px; font-size: 14px; line-height: 20px; }
+.feature-list p { font-size: 13px; line-height: 20px; }
+html[data-sky="day"] .feature-list { color: #2b2620; }
+.fact { display: flex; flex-direction: column; align-items: center; }
+.fact:nth-child(1) { --pl-n: var(--pl-live); }
+.fact:nth-child(2) { --pl-n: var(--pl-every); }
+.fact:nth-child(3) { --pl-n: var(--pl-local); }
+.fact .win, .feature-list .win { width: 100%; }
+.fact .sash, .feature-list .sash { width: calc(100% - 16px); }
+.room {
+  position: relative; height: 136px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 0;
+  background: var(--room) 0 0 / 8px auto repeat-x, var(--room-floor, #4a2f20);
+  overflow: hidden;
+}
+.room .scene { position: relative; }
+.feature-visual { height: 168px; align-items: center; background: #14120f; }
+.feature-visual img { width: 100%; height: auto; }
+.room .t2, .room .t3, .room .armB { opacity: 0; }
+.room .t1 { animation: frame3 2.4s steps(1) infinite; }
+.room .t2 { animation: frame3 2.4s steps(1) -1.6s infinite; }
+.room .t3 { animation: frame3 2.4s steps(1) -.8s infinite; }
+.room .armA { animation: legs .36s steps(1) infinite; }
+.room .armB { animation: legs .36s steps(1) -.18s infinite; }
+@keyframes frame3 { 0% { opacity: 1; } 33.33%, 100% { opacity: 0; } }
+.board {
+  --pl: var(--pl-board);
+  width: 100%; flex: 1; margin-top: 14px; padding: 4px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.board b { --pl: var(--pl-n); padding: 0 4px; font-size: 13px; line-height: 18px; color: var(--plate); }
+.board span { color: var(--board-ink, #f4efe4); }
+html[data-sky="day"] .board span { --board-ink: #2b2620; }
+
+/* the rooms' lamps and the street's: lit by night, cold by day */
+.lamp { fill: var(--lamp); }
+.lamp2 { fill: var(--lamp2); }
+
+/* ---------------------------------------------------------------- an inhabited office floor, cut away */
+.lobby { padding-top: 28px; padding-bottom: 32px; }
+.hall {
+  position: relative; max-width: 1000px; margin: 0 auto;
+  border-style: solid; border-width: 8px;
+  border-image: var(--fr-hall) 8 / 8px stretch;
+  background: var(--hall) 0 0 / 8px auto repeat-x, var(--hall-wall, #4a3d33);
+  padding: 72px 0 0;
+}
+.hall .beam {
+  position: absolute; left: 0; right: 0; top: 0; height: 16px;
+  background: linear-gradient(#221e1a 0 12px, #4a4038 12px 14px, #17120e 14px);
+}
+.hall .pendant { position: absolute; top: 16px; }
+.hall .decor { position: absolute; top: 30px; }
+@media (max-width: 599px) { .hall .decor { display: none; } }
+.office-life { position: relative; overflow: hidden; }
+.office-life > svg, .office-life > img { display: block; width: 100%; height: auto; }
+
+/* ---------------------------------------------------------------- the street and the commits line */
+.street { position: relative; z-index: 2; overflow-x: clip; flex: 1; display: flex; flex-direction: column; background: var(--rock) 0 0 / 128px 32px, #110f0d; }
+.walk { position: relative; height: 24px; background: var(--walk) 0 0 / 48px 24px repeat-x; }
+/* a lamp each side of the building (--tl: the tower's left edge), where the page is wide enough for one */
+.walk { --tl: max(0px, round(down, (100% - var(--bw)) / 2, 2px)); }
+.walk .lamp-post { position: absolute; bottom: 10px; z-index: 2; display: none; }
+/* by night each lamp's light in flat bands (theme.js): a halo round its glass, a pool on the slabs round its foot */
+.walk .pool { position: absolute; top: 0; width: 88px; height: 24px; background: var(--pool) 0 0 / 88px 24px no-repeat; display: none; }
+.walk .lamp-post .halo { position: absolute; left: -13px; top: -14px; width: 48px; height: 48px; background: var(--halo) 0 0 / 48px 48px no-repeat; }
+.walk .lamp-post.l { left: calc(var(--tl) - 60px); }
+.walk .pool.l { left: calc(var(--tl) - 93px); }
+.walk .lamp-post.r { left: calc(var(--tl) + var(--bw) + 38px); }
+.walk .pool.r { left: calc(var(--tl) + var(--bw) + 5px); }
+.walk .pool.door { left: calc(var(--tl) + var(--at) - 44px); background-image: var(--pool-front); }
+/* and the street front's light on the slabs under it, wherever its drawing puts its lamps, windows and door (footer.js) */
+.walk .lights { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.walk .lights i { position: absolute; top: 0; height: 24px; background: 0 0 / 100% 100% no-repeat; }
+.walk .lights .foot { width: 88px; background-image: var(--pool-front); }
+.walk .lights .shop { width: 96px; background-image: var(--spill-shop); }
+.walk .lights .door { width: 112px; background-image: var(--spill-door); }
+@media (min-width: 1248px) { .walk .lamp-post, .walk .pool { display: block; } }
+@media (min-width: 1104px) { .walk .pool.door { display: block; } }
+html[data-sky="day"] .walk .pool, html[data-sky="day"] .walk .halo, html[data-sky="day"] .walk .lights { display: none; }
+.walker { position: absolute; left: 0; bottom: 8px; z-index: 3; animation: walk var(--walk-dur, 60s) steps(var(--walk-n, 400)) var(--walk-delay, -20s) infinite; transform: translateX(-80px); }
+.walker svg { width: calc(50px * var(--k, 1)); height: auto; }
+.walker svg + svg { position: absolute; left: 0; top: 0; }
+.walker .a { animation: legs .4s steps(1) infinite; }
+.walker .b { opacity: 0; animation: legs .4s steps(1) -.2s infinite; }
+@keyframes walk { from { transform: translateX(-80px); } to { transform: translateX(calc(var(--walk-n, 400) * 4px - 80px)); } }
+@keyframes legs { 0% { opacity: 1; } 50% { opacity: 0; } }
+.road {
+  height: 36px;
+  background:
+    repeating-linear-gradient(90deg, #8a7f5a 0 32px, transparent 32px 72px) 0 16px / 100% 2px no-repeat,
+    linear-gradient(#8a8072 0 2px, #6a625a 2px 4px, #2a2520 4px 6px, #1d1b19 6px 34px, #141210 34px);
+}
+/* Across the road, the far curb and its sidewalk, the trailer's: the curb lit along its top, slabs with their joints */
+.far-walk {
+  height: 22px;
+  background:
+    linear-gradient(90deg, #4a433b 0 2px, #0000 2px) 10px 6px / 20px 14px repeat-x,
+    linear-gradient(#6e655a 0 2px, #4a433b 2px 4px, #6e655a 4px 6px, #5a5249 6px 20px, #3a342e 20px);
+}
+/* Under it, the ground in section, the trailer's (art.js SOIL): soil in bands darker down, stones in it. Through it the
+   plugin's own commits line (build.mjs ground()), as wide as the tower and lit where it runs under it: its soil (the
+   page's), the tunnel (rows 6 to 33 of the picture), then soil. Beyond it, at a
+   whole size only, the tunnel goes on unlit: its wall, the line's stripe, its rail; the train fades into that dark as
+   it leaves the light (the fades over its rows 18 to 34, under the station sign) */
+.underground {
+  position: relative;
+  background:
+    linear-gradient(#2b2622 0 4px, #151311 4px 28px, #6c4030 28px 30px, #0e0d0c 30px 54px, #6a625a 54px 56px, #1a1714 56px 60px, #2b2622 60px) 0 8px / 100% 64px no-repeat,
+    var(--stones) 0 0 / 256px 320px,
+    var(--soil-bands) 0 0 / 8px 320px repeat-x,
+    #1f1814;
+}
+.tracks { position: relative; container-type: inline-size; width: min(var(--bw), 100%); margin-left: max(0px, round(down, (100% - var(--bw)) / 2, 2px)); }
+.tracks img { width: 100%; height: auto; }
+.tracks::before, .tracks::after {
+  content: ''; position: absolute; top: calc(36px * var(--picture-scale, 1)); height: calc(32px * var(--picture-scale, 1)); width: 32px; pointer-events: none;
+  background: linear-gradient(90deg, #0e0d0c 0 8px, #0e0d0cc0 8px 16px, #0e0d0c80 16px 24px, #0e0d0c40 24px 32px);
+}
+.tracks::before { left: 0; }
+.tracks::after { right: 0; transform: scaleX(-1); }
+.credit {
+  position: relative; width: fit-content; max-width: calc(100% - 16px); margin: 12px auto 28px;
+  border-style: solid; border-width: 4px; border-image: var(--fr-station) 4 fill / 4px stretch;
+  padding: 6px 14px; color: #f3ead0; text-align: center;
+}
+.credit a { display: inline-block; font-weight: 700; color: #ffcf2e; text-decoration: none; text-shadow: 2px 2px 0 #0d1428; line-height: 24px; padding: 10px 0; margin: -10px 0; }
+.credit a:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+/* the bedrock, and over it a pipe across the whole street, lit along its top, a collar every 48 pixels (the trailer's) */
+.bedrock {
+  min-height: 120px; flex: 1;
+  background:
+    linear-gradient(90deg, #4a535d 0 6px, #0000 6px) 40px 14px / 96px 12px repeat-x,
+    linear-gradient(#7b8693 0 2px, #56606c 2px 6px, #3e464f 6px 8px, #0d0a0880 8px 10px) 0 16px / 100% 10px no-repeat,
+    var(--seam) 0 0 / 8px 4px repeat-x,
+    var(--deep) 0 0 / 688px 720px repeat-x, #090807;
+}
+
+/* by day the street is as calm as the sky */
+html[data-sky="day"] .road {
+  background:
+    repeating-linear-gradient(90deg, #b5a58e 0 32px, transparent 32px 72px) 0 16px / 100% 2px no-repeat,
+    linear-gradient(#8a8072 0 2px, #6a625a 2px 4px, #4a4640 4px 6px, #3f3c38 6px 34px, #2f2c29 34px);
+}
+
+/* ---------------------------------------------------------------- narrower pages */
+@media (max-width: 1119px) {
+  :root { --gut: 8px; }
+  .menu { position: relative; z-index: 3; }
+}
+@media (max-width: 1023px) {
+  .menu { flex-direction: column; gap: 6px; }
+  .display { min-height: 34px; }
+  .keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.6fr); }
+  .facts ul { grid-template-columns: minmax(0, 640px); gap: 24px; }
+  .fact { flex-direction: row; align-items: stretch; gap: 24px; }
+  .fact .win { width: 296px; flex: none; }
+  .fact .board { margin: 0; }
+  .floor { padding-left: calc(var(--qw) + 16px); padding-right: calc(var(--qw) + 16px); }
+}
+@media (max-width: 979px) {
+  .stands { grid-template-columns: 332px minmax(0, 1fr); gap: 12px; }
+  .neon { --nw: 285px; }
+  .neon .wide { display: none; }
+  .neon .narrow { display: block; }
+  .sign h1 { font-size: 16px; line-height: 20px; }
+  .lede { font-size: 12px; line-height: 16px; }
+  .spill { width: 332px; }
+}
+@media (max-width: 759px) {
+  /* the sign over the terminal: the terminal alone stands on the roof */
+  .stands { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .sign .leg, .sign .catwalk, .spill { display: none; }
+}
+@media (max-width: 699px) {
+  .bar .gh span:last-child { display: none; }
+}
+@media (max-width: 899px) {
+  .feature-list { grid-template-columns: minmax(0, 1fr); max-width: 464px; }
+}
+@media (max-width: 599px) {
+  .logo-name { display: none; }
+  .facts .highlights { grid-template-columns: minmax(0, 296px); gap: 32px; }
+  .feature-list { grid-template-columns: minmax(0, 1fr); }
+  .fact { flex-direction: column; align-items: center; gap: 0; }
+  .fact .win { width: 100%; }
+  .fact .board { margin-top: 14px; }
+  .prop.wide { display: none; }
+  .floor { padding: 28px calc(var(--qw) + 8px); }
+  .floor.menu-floor { padding-top: 12px; padding-bottom: 12px; }
+  /* two rows: Office, Today, Week over Month, What they did */
+  .keys { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .keys .btn { grid-column: span 2; padding-left: 4px; padding-right: 4px; }
+  .keys .btn:nth-child(n + 4) { grid-column: span 3; }
+  .hall { padding-top: 56px; }
+  .credit { padding: 6px 10px; }
+}
+/* a finger needs more room than a pointer */
+@media (pointer: coarse) {
+  .key { width: 44px; height: 44px; margin-top: -12px; margin-bottom: -12px; }
+  .btn { min-height: 46px; }
+}
+
+@media (max-width: 359px) {
+  .keys .btn .ico { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; }
+  .walker { transform: translateX(round(down, 30vw, 4px)); }
+}
