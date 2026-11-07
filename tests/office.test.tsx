@@ -2113,24 +2113,31 @@ test('a click on the strip turns the page: the key is drawn pressed while held, 
   await ui.unmount()
 })
 
-test('a pane wider than the desktop draws an image pages with the text row: a strip held to 4096 px would not span it', WITH_PEEK, async ($, on) => {
+test('a pane wider than the building holds it at the width of the site: the menu, the strip and the drawing in 124 cells, centered', WITH_PEEK, async ($, on) => {
   const w = engine(on)
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
   await $.command.run(command('month'))
   await w.clock.settle()
-  const wide = await $.ui.mount(pane('desktop', 460))
-  expect(await wide.find({ key: 'period' })).toBeUndefined()
-  expect(await labelOf(wide)).toBe('Sep → now')
-  expect((await wide.find({ key: 'period-older' }))?.props.hotkey).toBe('p')
-  // and so does the menu: its tabs are Buttons, with their icons and badges
-  expect(await wide.find({ key: 'tabs' })).toBeUndefined()
-  expect((await wide.find({ key: 'tab-month' }))?.text).toBe(tabText('tab-month', 'Month'))
-  await wide.unmount()
-  // 455 columns still take the pixel strip, and the pixel menu on it
-  const ui = await $.ui.mount(pane('desktop', 455))
-  expect((await stripOf(ui))?.width).toBe(4095)
-  expect((await menuOf(ui, 'tabs'))?.width).toBe(4095)
+  // past 124 cells (about the site's 1088 px), every width draws the same: a column of 124 cells in the pane's middle,
+  // the pixel strip and the pixel menu on it, as wide as the drawing (stripWidth(124))
+  for (const columns of [125, 300, 460]) {
+    const ui = await $.ui.mount(pane('desktop', columns))
+    expect((await ui.find({ key: 'pane-held' }))?.props).toMatchObject({ alignItems: 'center', width: '100%' })
+    expect((await ui.find({ key: 'pane-column' }))?.props).toMatchObject({ width: 124 })
+    expect((await stripOf(ui))?.width).toBe(1116)
+    expect((await menuOf(ui, 'tabs'))?.width).toBe(1116)
+    expect(await sourceOf(ui)).toMatch(/^<svg [^>]*width="1116"/)
+    await ui.unmount()
+  }
+  // 124 cells and under: the pane's own width, nothing held
+  const ui = await $.ui.mount(pane('desktop', 124))
+  expect(await ui.find({ key: 'pane-held' })).toBeUndefined()
+  expect((await stripOf(ui))?.width).toBe(1116)
   await ui.unmount()
+  // the terminal's text keeps every column
+  const term = await $.ui.mount(pane('terminal', 200))
+  expect(await term.find({ key: 'pane-held' })).toBeUndefined()
+  await term.unmount()
 })
 
 test('the newest press wins: a page asked while another is read waits for it, the pages passed by are never read, and the tab keeps its drawing meanwhile', WITH_PEEK, async ($, on) => {

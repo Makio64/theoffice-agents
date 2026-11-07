@@ -58,8 +58,8 @@
 // ElevenLabs), always; the pane makes no other sound.
 import { atom, read, update } from 'claude-code'
 import type {
-  BoxProps, ButtonProps, ElementConstructor, EngineInterface, FsEntry, Register, RenderElement, RenderNode, TextProps,
-  Timer, UiOpenResult, UiPane,
+  BoxProps, ButtonProps, ElementConstructor, EngineInterface, FsEntry, Register, RenderElement, RenderInput, RenderNode,
+  TextProps, Timer, UiOpenResult, UiPane,
 } from 'claude-code'
 
 import type { OfficeBacks, OfficeFacts, OfficeMonthFormat, OfficeMonthPart, OfficeProgress, OfficeTab, OfficeTimeline, OfficeUnit } from '../types'
@@ -2395,10 +2395,24 @@ function stripWidth(columns: number): number {
 }
 
 /**
- * The widest image the desktop draws: past it the tree is refused, and a strip held to it would no longer span its
- * region, a click's share of the one no more its share of the other. A pane that wide pages with the text row.
+ * The most cells a drawing surface lays the pane out in: the site's building stops at 1088 CSS px (site/style.css
+ * `--bw`), and 124 desktop cells of about 8.75 px hold about as much. So the building stops growing there instead of
+ * stretching across a wide window, and the menu, the strip and the drawing (at most stripWidth(124), 1116 px) stay well
+ * under the widest image the desktop draws (4096 px, past which it refuses the tree).
  */
-const STRIP_MAX_PX = 4096
+const WIDEST_COLUMNS = 124
+
+/**
+ * The pane's tree in a pane wider than WIDEST_COLUMNS: laid out in that many cells and centered, the pane's own ground
+ * either side, so its menu, its strip and its drawing keep one width and line up as in a narrower pane.
+ */
+function centered(Box: ElementConstructor<BoxProps>, tree: RenderElement): RenderElement {
+  return (
+    <Box key="pane-held" flexDirection="column" alignItems="center" width="100%">
+      <Box key="pane-column" flexDirection="column" width={WIDEST_COLUMNS}>{tree}</Box>
+    </Box>
+  )
+}
 
 // A page of the past drawn with the floor of now over it, per page and floor (so the same pair is the same facts, which
 // the drawing compares by)
@@ -2648,261 +2662,269 @@ export const register: Register = on => {
     return shown && after ? { ...heard, props: { ...shown, keys: exportKeys(after), prompt: askWords(after) } } : heard
   })
 
+  // The pane: the terminal's text in every column it has; a drawing surface's menu, strip and drawing in WIDEST_COLUMNS
+  // at most, centered in a wider pane (centered), so the building stops growing there as the site's does
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const view = await read($, tab) // subscribes: a tab press redraws
-    const isQuiet = await read($, quiet) // and so does Quiet pressed (on the Live tab: anywhere else its key is hidden)
-    const isZoomed = await read($, zoom) // and Zoom, on every tab
     const columns = Math.max(20, Math.floor(e.props.bodyColumns || 0))
-    const choose = (next: OfficeTab) => void selectTab($, next)
-    const toggleQuietKey = () => void toggleQuiet($)
-    const toggleZoomKey = () => void toggleZoom($)
+    if (e.surface === 'terminal' || columns <= WIDEST_COLUMNS) return paneTree($, e, columns)
+    return centered($.ui.resolve(e).Box, await paneTree($, e, WIDEST_COLUMNS))
+  })
+}
 
-    // the Timelapse: the tabs, its own row, then its replay, one gap apart. It reads only its own facts (no other run
-    // redraws it) and draws the newest kept for the range shown, so a range picked again is drawn at once while its run
-    // goes on. The runs never compare it: what this surface drew of the other tabs is forgotten, as on a tab switch
-    if (view === 'timelapse') {
-      const shownLapse = await read($, lapse) // subscribes: a range press redraws
-      const held = await read($, lapseFacts) // and so do its facts landing
-      const facts = lapseLatest[shownLapse] ?? (held?.timeline?.kind === shownLapse ? held : null)
-      const isSaving = await read($, lapseExporting) // and the Export Button follows its run
-      const chooseLapse = (next: Lapse) => void selectLapse($, next)
-      const save = () => void exportLapse($)
-      drawings.delete(e.surface)
-      if (e.surface === 'terminal') {
-        const { Box, Button, Text } = $.ui.resolve(e)
-        const tabs = tabRow(Box, Button, view, choose)
-        const controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, null)
-        if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
-        try {
-          const lines = lapseText(facts, columns, await read($, frame))
-          return (
-            <Box flexDirection="column" gap={1}>
-              {tabs}
-              {controls}
-              <Box flexDirection="column">{lines.map(line => drawLine(Text, line))}</Box>
-            </Box>
-          )
-        } catch (error) {
-          return broken(Box, Text, tabs, error, controls, true)
-        }
-      }
-      const elements = $.ui.resolve(e)
-      const { Box, Button, Svg, Text } = elements
-      const saved = await read($, lapseSaved) // and so does an export landing, which names its page
-      const page = saved !== null && pageLapse(saved) === shownLapse ? saved : null // the range on screen's only
-      // the pixel menu on the desktop: the tabs and, flush under them, the ranges and Export; else their Buttons
-      const width = stripWidth(columns)
-      let tabs: RenderElement
-      let controls: RenderElement | undefined
-      if (e.surface === 'desktop' && width <= STRIP_MAX_PX && 'Client' in elements) {
-        // each Client is written as h('Client', …) with its fixed module, so a reader of the source sees which code loads
-        const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed), width, joined: true }
-        const lapseProps: MenuProps = { row: MENU_LAPSE, keys: lapseKeys(shownLapse, isSaving), width, joined: false, under: true }
-        menus.set(e.surface, { tabs: tabsProps, lapse: lapseProps })
-        const keys = [...tabButtons(Button, view, choose, false), zoomButton(Button, isZoomed, toggleZoomKey, false), ...lapseButtons(Button, shownLapse, chooseLapse, save, isSaving)]
-        const tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
-        const lapseMenu = h('Client', { key: MENU_LAPSE, module: './menu.tsx', width: '100%', props: lapseProps })
-        tabs = pixelMenu(Box, tabsMenu, true, lapseMenu, keys)
-        controls = page ? savedLine(Text, page) : undefined
-      } else {
-        menus.delete(e.surface)
-        tabs = tabRow(Box, Button, view, choose, true, [zoomButton(Button, isZoomed, toggleZoomKey, true)])
-        controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, page)
-      }
+/** The pane's tree laid out in `columns` cells. */
+async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: number): Promise<RenderElement> {
+  const view = await read($, tab) // subscribes: a tab press redraws
+  const isQuiet = await read($, quiet) // and so does Quiet pressed (on the Live tab: anywhere else its key is hidden)
+  const isZoomed = await read($, zoom) // and Zoom, on every tab
+  const choose = (next: OfficeTab) => void selectTab($, next)
+  const toggleQuietKey = () => void toggleQuiet($)
+  const toggleZoomKey = () => void toggleZoom($)
+
+  // the Timelapse: the tabs, its own row, then its replay, one gap apart. It reads only its own facts (no other run
+  // redraws it) and draws the newest kept for the range shown, so a range picked again is drawn at once while its run
+  // goes on. The runs never compare it: what this surface drew of the other tabs is forgotten, as on a tab switch
+  if (view === 'timelapse') {
+    const shownLapse = await read($, lapse) // subscribes: a range press redraws
+    const held = await read($, lapseFacts) // and so do its facts landing
+    const facts = lapseLatest[shownLapse] ?? (held?.timeline?.kind === shownLapse ? held : null)
+    const isSaving = await read($, lapseExporting) // and the Export Button follows its run
+    const chooseLapse = (next: Lapse) => void selectLapse($, next)
+    const save = () => void exportLapse($)
+    drawings.delete(e.surface)
+    if (e.surface === 'terminal') {
+      const { Box, Button, Text } = $.ui.resolve(e)
+      const tabs = tabRow(Box, Button, view, choose)
+      const controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, null)
       if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
       try {
-        // one self-animating loop, a card like every tab; the same facts at the same width are the same string,
-        // so a redraw the engine makes for its own reasons never reloads the frame: only new facts start it over
-        const source = lapseSource(e.surface, facts, svgWidth(columns), isZoomed)
+        const lines = lapseText(facts, columns, await read($, frame))
         return (
           <Box flexDirection="column" gap={1}>
             {tabs}
             {controls}
-            <Svg source={source} alt={lapseAlt(source)} isInteractive {...svgBox(source)} />
+            <Box flexDirection="column">{lines.map(line => drawLine(Text, line))}</Box>
           </Box>
         )
       } catch (error) {
         return broken(Box, Text, tabs, error, controls, true)
       }
     }
-
-    lapseDrawn.delete(e.surface) // the replay left this surface: a press draws it again
-
-    // the tab's page of the past (read on a tab that pages alone, so a page turned redraws only those): 0 for now
-    const unit = UNIT_OF[view]
-    const shownBacks = unit ? await read($, backs) : pickedBacks
-    const back = unit ? shownBacks[unit] : 0
-    const range = rangeOf(view, shownBacks)
-    // only the facts this tab draws are read (so another range's refresh never redraws it); the drawing then draws the
-    // newest of them, which a run keeps without a write when they draw the same (isNewDrawing). A page of the past draws
-    // its own facts, kept or held, and while it is read (it subscribes) what this surface drew of the tab stays
-    const held = range ? await heldOf($, range) : await read($, snapshot)
-    const page = range === 'past' ? safely(() => pageOn(view, shownBacks), null) : null
-    const isReading = range === 'past' && (await read($, pastReading))
-    const drawn = drawings.get(e.surface)
-    let facts = held === null ? null : latest[range ?? 'all'] ?? held
-    let isKept = false // the tab keeps its last drawing while its page is read
-    if (range === 'past') {
-      const own = page ? pages.get(page.key) ?? (isPage(held, page.unit, page.key) ? held : null) : null
-      // its days as read, the floor of now over them (it subscribes to the week's facts, which carry the floor)
-      facts = own && withFloor(own, latest.all ?? (await read($, snapshot)))
-      if (facts === null && isReading && drawn?.view === view) {
-        facts = drawn.facts
-        isKept = true
-      }
-    }
-    // a first light holds the floor alone: the Live tab draws it, a tab that is all counts waits for the week
-    if (facts?.first_light === true && view !== 'all') facts = null
-    // the strip under the tabs that page: the page's name on the calendar of today's facts
-    const today = dayNow ?? facts?.now.local_date
-    const strip: StripProps | null = unit && today ? { unit, back, today, width: stripWidth(columns), busy: isReading } : null
-    const name = strip ? safely(() => pageName(strip.unit, strip.back, strip.today), '') : ''
-    const step = (s: StepSpec) => void stepPast($, s)
-    // the Month's export: its key on the strip, the row it opens, the file it saved of the page on screen (each read on
-    // the Month alone, so no other tab redraws for them)
-    const isMonth = view === 'month'
-    const ask: MonthAsk = isMonth ? await read($, monthAsk) : null
-    const isSavingMonth = isMonth && (await read($, monthExporting))
-    const savedMonth = isMonth ? await read($, monthSaved) : null
-    const savedFile = savedMonth && savedMonth.page === monthPageKey(back) ? savedMonth.file : null
-    const toggle = () => void toggleExport($)
-    const answer = (id: string) => void answerExport($, id)
-    if (strip && isMonth) strip.exporter = exporterOf(ask, isSavingMonth)
-    // while the facts are not there: why, when a run failed, else the waiting room with how far the read is (it
-    // subscribes to the progress the watcher reads)
-    const problem = async () => (range ? await read($, rangeTrouble) : await read($, trouble))
-    const wait = async () => {
-      const p = await read($, progress)
-      return waitLines(waitOf(range), name, p && p.key === waitedKey() ? p : null)
-    }
-    // a page read while the tab keeps its last drawing: once its run says how far it is (a read that takes a while),
-    // that is said over the drawing, in text, so the drawing's frame never reloads for it; a quick turn says nothing
-    let over: RenderElement | null = null
-    if (isKept) {
-      const p = await read($, progress)
-      const { Box, Text } = $.ui.resolve(e)
-      if (p && p.key === waitedKey()) over = waitBlock(Box, Text, waitLines('past', name, p))
-    }
-    if (facts !== null && !isKept) roomNights.delete(waitOf(range))
-
-    // a drawing that throws would make the engine drop the pane: each branch shows why instead, the next snapshot redraws
-    // a terminal has no Svg: it draws the text version, its tabs and rows as Buttons
-    if (e.surface === 'terminal') {
-      const { Box, Button, Text } = $.ui.resolve(e)
-      const tabs = tabRow(Box, Button, view, choose)
-      const row = strip ? periodRow(Box, Button, Text, strip, name, step, isMonth ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []) : undefined
-      const controls = stack(Box, 'month-controls', [row, ask === null ? null : exportRow(Box, Button, Text, ask, answer)])
-      if (facts === null) {
-        drawings.delete(e.surface)
-        const why = await problem()
-        return why ? pending(Box, Text, tabs, waiting(why, range, name), controls) : waitingRoom(Box, Text, tabs, await wait(), controls)
-      }
-      const text = textView(view)
-      // only the floor plan moves, so only it follows the frame clock
-      const at = text === 'live' ? await read($, frame) : 0
-      try {
-        const lines = renderOffice(facts, { view: text, width: columns, frame: at })
-        drawings.set(e.surface, { kind: 'text', view, columns, facts })
-        return (
-          <Box flexDirection="column" gap={1}>
-            {tabs}
-            {controls}
-            {over}
-            <Box flexDirection="column">{lines.map(line => drawLine(Text, line))}</Box>
-          </Box>
-        )
-      } catch (error) {
-        drawings.delete(e.surface)
-        return broken(Box, Text, tabs, error, controls, false)
-      }
-    }
-
-    // desktop, vscode, mobile: the tab's animated pixel art (SMIL in a sandboxed frame, it never reads `frame`)
     const elements = $.ui.resolve(e)
     const { Box, Button, Svg, Text } = elements
-    // the pixel menu and the strip on the desktop, the one surface here that runs a Client (VS Code's table lists none,
-    // though its resolve hands one that draws nothing), unless the pane is wider than an image may be; else their Buttons
+    const saved = await read($, lapseSaved) // and so does an export landing, which names its page
+    const page = saved !== null && pageLapse(saved) === shownLapse ? saved : null // the range on screen's only
+    // the pixel menu on the desktop: the tabs and, flush under them, the ranges and Export; else their Buttons
     const width = stripWidth(columns)
-    const isPixel = e.surface === 'desktop' && width <= STRIP_MAX_PX && 'Client' in elements
-    // the Month's export row: a deck of the console, flush under a pixel strip under the pixel menu; else Buttons
-    const pixelAsk = ask !== null && isPixel && strip ? ask : null
-    const pixelStrip = strip && isPixel ? { ...strip, joined: true, ...(pixelAsk ? { hangs: true } : {}) } : null
-    if (pixelStrip) strips.set(e.surface, pixelStrip)
-    const toggleKey = isMonth && strip ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []
-    // the strip flush under the tabs as one console, the export row flush under it; Buttons' rows a gap apart
-    const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed), width, joined: !!pixelStrip }
-    const askProps: MenuProps | null = pixelAsk === null ? null
-      : { row: MENU_EXPORT, keys: exportKeys(pixelAsk), width, joined: false, under: true, prompt: askWords(pixelAsk) }
-    // Each Client is written as h('Client', …) with its fixed module, so a reader of the source sees which code loads. The
-    // pixel strip (hooks/period.tsx) draws the strip and posts the page a click asks for (ui.message), the
-    // menu (hooks/menu.tsx) the tabs and the export row; their keys stay as hidden Buttons beside them (pixelMenu, or a
-    // Box of their own under Button tabs), so p, n and c turn a page there too.
-    const stripRow = strip && !pixelStrip ? periodRow(Box, Button, Text, strip, name, step, toggleKey) : null // its Buttons
-    let under: Drawn = stripRow
-    let tabsMenu: Drawn = null
-    let askMenu: Drawn = null
-    if (isPixel) {
-      if (pixelStrip) under = h('Client', { key: STRIP, module: './period.tsx', width: '100%', props: pixelStrip })
-      tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
-      if (askProps) askMenu = h('Client', { key: MENU_EXPORT, module: './menu.tsx', width: '100%', props: askProps })
-    }
-    const askRow = ask !== null && pixelAsk === null ? exportRow(Box, Button, Text, ask, answer) : null
-    const saved = savedFile ? savedLine(Text, savedFile, 'month-saved') : null
     let tabs: RenderElement
     let controls: RenderElement | undefined
-    if (tabsMenu) {
-      menus.set(e.surface, { tabs: tabsProps, ...(askProps ? { export: askProps } : {}) })
-      const keys = [
-        ...tabButtons(Button, view, choose, false), ...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, false)] : []),
-        zoomButton(Button, isZoomed, toggleZoomKey, false),
-        ...(pixelStrip ? [...stepButtons(Button, pixelStrip.back, step), ...toggleKey] : []), ...(pixelAsk === null ? [] : exportButtons(Button, pixelAsk, answer)),
-      ]
-      tabs = pixelMenu(Box, tabsMenu, !!pixelStrip, under, keys, askMenu)
-      controls = stack(Box, 'month-controls', [askRow, saved])
+    if (e.surface === 'desktop' && 'Client' in elements) {
+      // each Client is written as h('Client', …) with its fixed module, so a reader of the source sees which code loads
+      const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed), width, joined: true }
+      const lapseProps: MenuProps = { row: MENU_LAPSE, keys: lapseKeys(shownLapse, isSaving), width, joined: false, under: true }
+      menus.set(e.surface, { tabs: tabsProps, lapse: lapseProps })
+      const keys = [...tabButtons(Button, view, choose, false), zoomButton(Button, isZoomed, toggleZoomKey, false), ...lapseButtons(Button, shownLapse, chooseLapse, save, isSaving)]
+      const tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
+      const lapseMenu = h('Client', { key: MENU_LAPSE, module: './menu.tsx', width: '100%', props: lapseProps })
+      tabs = pixelMenu(Box, tabsMenu, true, lapseMenu, keys)
+      controls = page ? savedLine(Text, page) : undefined
     } else {
       menus.delete(e.surface)
-      tabs = tabRow(Box, Button, view, choose, true, [...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, true)] : []), zoomButton(Button, isZoomed, toggleZoomKey, true)])
-      // the strip's keys hidden beside it, as the menu holds them
-      const paging = pixelStrip ? (
-        <Box key="menu" flexDirection="column">
-          {under}
-          <Box key="menu-keys" display="none">
-            {stepButtons(Button, pixelStrip.back, step)}
-            {toggleKey}
-          </Box>
-        </Box>
-      ) : stripRow
-      controls = stack(Box, 'month-controls', [paging, askRow, saved])
+      tabs = tabRow(Box, Button, view, choose, true, [zoomButton(Button, isZoomed, toggleZoomKey, true)])
+      controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, page)
     }
+    if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
+    try {
+      // one self-animating loop, a card like every tab; the same facts at the same width are the same string,
+      // so a redraw the engine makes for its own reasons never reloads the frame: only new facts start it over
+      const source = lapseSource(e.surface, facts, svgWidth(columns), isZoomed)
+      return (
+        <Box flexDirection="column" gap={1}>
+          {tabs}
+          {controls}
+          <Svg source={source} alt={lapseAlt(source)} isInteractive {...svgBox(source)} />
+        </Box>
+      )
+    } catch (error) {
+      return broken(Box, Text, tabs, error, controls, true)
+    }
+  }
+
+  lapseDrawn.delete(e.surface) // the replay left this surface: a press draws it again
+
+  // the tab's page of the past (read on a tab that pages alone, so a page turned redraws only those): 0 for now
+  const unit = UNIT_OF[view]
+  const shownBacks = unit ? await read($, backs) : pickedBacks
+  const back = unit ? shownBacks[unit] : 0
+  const range = rangeOf(view, shownBacks)
+  // only the facts this tab draws are read (so another range's refresh never redraws it); the drawing then draws the
+  // newest of them, which a run keeps without a write when they draw the same (isNewDrawing). A page of the past draws
+  // its own facts, kept or held, and while it is read (it subscribes) what this surface drew of the tab stays
+  const held = range ? await heldOf($, range) : await read($, snapshot)
+  const page = range === 'past' ? safely(() => pageOn(view, shownBacks), null) : null
+  const isReading = range === 'past' && (await read($, pastReading))
+  const drawn = drawings.get(e.surface)
+  let facts = held === null ? null : latest[range ?? 'all'] ?? held
+  let isKept = false // the tab keeps its last drawing while its page is read
+  if (range === 'past') {
+    const own = page ? pages.get(page.key) ?? (isPage(held, page.unit, page.key) ? held : null) : null
+    // its days as read, the floor of now over them (it subscribes to the week's facts, which carry the floor)
+    facts = own && withFloor(own, latest.all ?? (await read($, snapshot)))
+    if (facts === null && isReading && drawn?.view === view) {
+      facts = drawn.facts
+      isKept = true
+    }
+  }
+  // a first light holds the floor alone: the Live tab draws it, a tab that is all counts waits for the week
+  if (facts?.first_light === true && view !== 'all') facts = null
+  // the strip under the tabs that page: the page's name on the calendar of today's facts
+  const today = dayNow ?? facts?.now.local_date
+  const strip: StripProps | null = unit && today ? { unit, back, today, width: stripWidth(columns), busy: isReading } : null
+  const name = strip ? safely(() => pageName(strip.unit, strip.back, strip.today), '') : ''
+  const step = (s: StepSpec) => void stepPast($, s)
+  // the Month's export: its key on the strip, the row it opens, the file it saved of the page on screen (each read on
+  // the Month alone, so no other tab redraws for them)
+  const isMonth = view === 'month'
+  const ask: MonthAsk = isMonth ? await read($, monthAsk) : null
+  const isSavingMonth = isMonth && (await read($, monthExporting))
+  const savedMonth = isMonth ? await read($, monthSaved) : null
+  const savedFile = savedMonth && savedMonth.page === monthPageKey(back) ? savedMonth.file : null
+  const toggle = () => void toggleExport($)
+  const answer = (id: string) => void answerExport($, id)
+  if (strip && isMonth) strip.exporter = exporterOf(ask, isSavingMonth)
+  // while the facts are not there: why, when a run failed, else the waiting room with how far the read is (it
+  // subscribes to the progress the watcher reads)
+  const problem = async () => (range ? await read($, rangeTrouble) : await read($, trouble))
+  const wait = async () => {
+    const p = await read($, progress)
+    return waitLines(waitOf(range), name, p && p.key === waitedKey() ? p : null)
+  }
+  // a page read while the tab keeps its last drawing: once its run says how far it is (a read that takes a while),
+  // that is said over the drawing, in text, so the drawing's frame never reloads for it; a quick turn says nothing
+  let over: RenderElement | null = null
+  if (isKept) {
+    const p = await read($, progress)
+    const { Box, Text } = $.ui.resolve(e)
+    if (p && p.key === waitedKey()) over = waitBlock(Box, Text, waitLines('past', name, p))
+  }
+  if (facts !== null && !isKept) roomNights.delete(waitOf(range))
+
+  // a drawing that throws would make the engine drop the pane: each branch shows why instead, the next snapshot redraws
+  // a terminal has no Svg: it draws the text version, its tabs and rows as Buttons
+  if (e.surface === 'terminal') {
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const tabs = tabRow(Box, Button, view, choose)
+    const row = strip ? periodRow(Box, Button, Text, strip, name, step, isMonth ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []) : undefined
+    const controls = stack(Box, 'month-controls', [row, ask === null ? null : exportRow(Box, Button, Text, ask, answer)])
     if (facts === null) {
       drawings.delete(e.surface)
       const why = await problem()
-      if (why) return pending(Box, Text, tabs, waiting(why, range, name), controls)
-      // the room where the surface draws pixel art, the same drawing for the whole wait
-      const room = roomSource(waitOf(range), svgWidth(columns))
-      const what = { week: "this week's sessions", today: "today's sessions", month: 'last month and this one', past: name || 'a page of the past' }[waitOf(range)]
-      const alt = `The Office is reading ${what}: Clawd at the archive desk, the calendar's days lighting up one by one`
-      return waitingRoom(Box, Text, tabs, await wait(), controls, <Svg source={room} alt={alt} isInteractive {...svgBox(room)} />)
+      return why ? pending(Box, Text, tabs, waiting(why, range, name), controls) : waitingRoom(Box, Text, tabs, await wait(), controls)
     }
+    const text = textView(view)
+    // only the floor plan moves, so only it follows the frame clock
+    const at = text === 'live' ? await read($, frame) : 0
     try {
-      // a card: the scene with its own sky and ground, rounded corners and a hairline edge (lib/svg.mjs `card`). The pane
-      // keeps a gutter around what a plugin draws, which a transparent drawing's street, line and tunnel ran into as a
-      // hard cut; a card ends there by design, in any theme. The drawing comes right under the tabs, one gap apart, with
-      // no caption: its own title says what the tab shows. The surface may cap the drawing's width and keep its height;
-      // the sliver that leaves (the drawing hangs from the top of its box) falls below it. The source stays the same
-      // string while the facts draw nothing new (pixelSource): its clocks tick by themselves
-      const source = await pixelSource($, e.surface, facts, view, svgWidth(columns), view === 'all' && isQuiet, isZoomed)
+      const lines = renderOffice(facts, { view: text, width: columns, frame: at })
+      drawings.set(e.surface, { kind: 'text', view, columns, facts })
       return (
         <Box flexDirection="column" gap={1}>
           {tabs}
           {controls}
           {over}
-          <Svg source={source} alt={altText(facts, view)} isInteractive {...svgBox(source)} />
+          <Box flexDirection="column">{lines.map(line => drawLine(Text, line))}</Box>
         </Box>
       )
     } catch (error) {
       drawings.delete(e.surface)
       return broken(Box, Text, tabs, error, controls, false)
     }
-  })
+  }
+
+  // desktop, vscode, mobile: the tab's animated pixel art (SMIL in a sandboxed frame, it never reads `frame`)
+  const elements = $.ui.resolve(e)
+  const { Box, Button, Svg, Text } = elements
+  // the pixel menu and the strip on the desktop, the one surface here that runs a Client (VS Code's table lists none,
+  // though its resolve hands one that draws nothing); else their Buttons
+  const width = stripWidth(columns)
+  const isPixel = e.surface === 'desktop' && 'Client' in elements
+  // the Month's export row: a deck of the console, flush under a pixel strip under the pixel menu; else Buttons
+  const pixelAsk = ask !== null && isPixel && strip ? ask : null
+  const pixelStrip = strip && isPixel ? { ...strip, joined: true, ...(pixelAsk ? { hangs: true } : {}) } : null
+  if (pixelStrip) strips.set(e.surface, pixelStrip)
+  const toggleKey = isMonth && strip ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []
+  // the strip flush under the tabs as one console, the export row flush under it; Buttons' rows a gap apart
+  const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed), width, joined: !!pixelStrip }
+  const askProps: MenuProps | null = pixelAsk === null ? null
+    : { row: MENU_EXPORT, keys: exportKeys(pixelAsk), width, joined: false, under: true, prompt: askWords(pixelAsk) }
+  // Each Client is written as h('Client', …) with its fixed module, so a reader of the source sees which code loads. The
+  // pixel strip (hooks/period.tsx) draws the strip and posts the page a click asks for (ui.message), the
+  // menu (hooks/menu.tsx) the tabs and the export row; their keys stay as hidden Buttons beside them (pixelMenu, or a
+  // Box of their own under Button tabs), so p, n and c turn a page there too.
+  const stripRow = strip && !pixelStrip ? periodRow(Box, Button, Text, strip, name, step, toggleKey) : null // its Buttons
+  let under: Drawn = stripRow
+  let tabsMenu: Drawn = null
+  let askMenu: Drawn = null
+  if (isPixel) {
+    if (pixelStrip) under = h('Client', { key: STRIP, module: './period.tsx', width: '100%', props: pixelStrip })
+    tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
+    if (askProps) askMenu = h('Client', { key: MENU_EXPORT, module: './menu.tsx', width: '100%', props: askProps })
+  }
+  const askRow = ask !== null && pixelAsk === null ? exportRow(Box, Button, Text, ask, answer) : null
+  const saved = savedFile ? savedLine(Text, savedFile, 'month-saved') : null
+  let tabs: RenderElement
+  let controls: RenderElement | undefined
+  if (tabsMenu) {
+    menus.set(e.surface, { tabs: tabsProps, ...(askProps ? { export: askProps } : {}) })
+    const keys = [
+      ...tabButtons(Button, view, choose, false), ...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, false)] : []),
+      zoomButton(Button, isZoomed, toggleZoomKey, false),
+      ...(pixelStrip ? [...stepButtons(Button, pixelStrip.back, step), ...toggleKey] : []), ...(pixelAsk === null ? [] : exportButtons(Button, pixelAsk, answer)),
+    ]
+    tabs = pixelMenu(Box, tabsMenu, !!pixelStrip, under, keys, askMenu)
+    controls = stack(Box, 'month-controls', [askRow, saved])
+  } else {
+    menus.delete(e.surface)
+    tabs = tabRow(Box, Button, view, choose, true, [...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, true)] : []), zoomButton(Button, isZoomed, toggleZoomKey, true)])
+    // the strip's keys hidden beside it, as the menu holds them
+    const paging = pixelStrip ? (
+      <Box key="menu" flexDirection="column">
+        {under}
+        <Box key="menu-keys" display="none">
+          {stepButtons(Button, pixelStrip.back, step)}
+          {toggleKey}
+        </Box>
+      </Box>
+    ) : stripRow
+    controls = stack(Box, 'month-controls', [paging, askRow, saved])
+  }
+  if (facts === null) {
+    drawings.delete(e.surface)
+    const why = await problem()
+    if (why) return pending(Box, Text, tabs, waiting(why, range, name), controls)
+    // the room where the surface draws pixel art, the same drawing for the whole wait
+    const room = roomSource(waitOf(range), svgWidth(columns))
+    const what = { week: "this week's sessions", today: "today's sessions", month: 'last month and this one', past: name || 'a page of the past' }[waitOf(range)]
+    const alt = `The Office is reading ${what}: Clawd at the archive desk, the calendar's days lighting up one by one`
+    return waitingRoom(Box, Text, tabs, await wait(), controls, <Svg source={room} alt={alt} isInteractive {...svgBox(room)} />)
+  }
+  try {
+    // a card: the scene with its own sky and ground, rounded corners and a hairline edge (lib/svg.mjs `card`). The pane
+    // keeps a gutter around what a plugin draws, which a transparent drawing's street, line and tunnel ran into as a
+    // hard cut; a card ends there by design, in any theme. The drawing comes right under the tabs, one gap apart, with
+    // no caption: its own title says what the tab shows. The surface may cap the drawing's width and keep its height;
+    // the sliver that leaves (the drawing hangs from the top of its box) falls below it. The source stays the same
+    // string while the facts draw nothing new (pixelSource): its clocks tick by themselves
+    const source = await pixelSource($, e.surface, facts, view, svgWidth(columns), view === 'all' && isQuiet, isZoomed)
+    return (
+      <Box flexDirection="column" gap={1}>
+        {tabs}
+        {controls}
+        {over}
+        <Svg source={source} alt={altText(facts, view)} isInteractive {...svgBox(source)} />
+      </Box>
+    )
+  } catch (error) {
+    drawings.delete(e.surface)
+    return broken(Box, Text, tabs, error, controls, false)
+  }
 }
