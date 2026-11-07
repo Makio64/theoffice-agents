@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "theoffice",
   "displayName": "The Office",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A live dashboard of your coding agents, drawn as a pixel-art office. Spot the agent waiting on you, see which projects got the hours, and replay your day, week or month as a timelapse, across Claude Code, Codex, Gemini, Cursor and every account. Type /theoffice.",
   "author": { "name": "Makio64", "url": "https://github.com/Makio64" },
   "homepage": "https://theoffice.makio.io",

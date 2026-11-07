@@ -132,7 +132,13 @@ const SAVED_TOAST_MS = 10_000 // a toast that names a file stays long enough to 
 const PAGE_RE = /^(?:\/|[A-Za-z]:[\\/])[^\x00-\x1f\x7f]{1,1000}\.html$/
 // The file a Month export names on its first line: an absolute path to the page, the SVG, the CSV or the JSON it saved.
 const FILE_RE = /^(?:\/|[A-Za-z]:[\\/])[^\x00-\x1f\x7f]{1,1000}\.(?:html|svg|csv|json)$/
-const USAGE = "Usage: /theoffice [live|today|week|month|work|timelapse] [open|close]. With no word it opens or closes The Office; a tab's name opens it on that tab."
+const USAGE = "Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there)."
+// The browser's office (scripts/dashboard.mjs): one local server for the machine (`--reuse`), opened on the pane's tab.
+// Its first line is the page's address, a capability URL on this computer only.
+const BROWSER_WORD = 'browser'
+const BROWSER_HOTKEY = 'o'
+const BROWSER_TIMEOUT_MS = 20_000
+const BROWSER_URL_RE = /^http:\/\/127\.0\.0\.1:\d{1,5}\/\?token=[\w-]{32}(?:&[\w=&-]*)?$/
 // A live session's record (~/.claude/sessions/<pid>.json); the <pid>.<hash>.key files beside them are never touched.
 const SESSION_RE = /^\d+\.json$/
 const SESSION_ID_RE = /^[A-Za-z0-9-]{1,80}$/
@@ -316,6 +322,9 @@ let isPaneOpen = false
 let isPaneShown = false // open, placed and not behind another tab: only then does the frame clock run
 let markedUp: boolean | undefined // what the `onScreen` state value was last written as (markScreen)
 let hasTerminal = false // a terminal draws text, which reads `frame`; elsewhere the pixel art animates itself
+// The session began in a terminal (a console): The Office opens in the browser there, never as the text pane. A terminal
+// attached to a session that began elsewhere (the desktop draws the pixel art) still draws the pane's text.
+let isConsole = false
 let lastStatus: string | undefined
 let strikes = 0 // failed runs in a row while there is no snapshot
 let skip = 0 // heartbeats left to sit out after those
@@ -359,6 +368,7 @@ let pickedLapse: Lapse = 'week' // the range the timelapse runs follow; the draw
 const lapseLatest: Record<Lapse, OfficeFacts | null> = { yesterday: null, week: null, month: null }
 const isLapseRunning: Record<Lapse, boolean> = { yesterday: false, week: false, month: false }
 let isExporting = false // one export at a time: a press while one runs is ignored
+let isOpeningBrowser = false // one browser open at a time: a press while one runs is ignored
 let savedLapse: Lapse | null = null // the range of the page in `lapseSaved`, when its name does not say (pageLapse)
 let isMonthExporting = false // one Month export at a time: a press while one runs is ignored
 // What each surface's timelapse drew last: the same facts at the same width hand the frame the same string without
@@ -1736,8 +1746,51 @@ async function openPane($: EngineInterface, row: UiPane | undefined, next?: Offi
   return opened
 }
 
-/** The person pressed Open The Office in the band: the pane opens or comes forward, and a toast says why it waits. */
+/**
+ * Opens The Office in the person's browser (scripts/dashboard.mjs `--detach --reuse --open`), on `asked` or the pane's
+ * tab, page, range, Quiet and Zoom: the desktop pane's pixel art, its menu and keys, kept live by the server. A server
+ * already running is opened again rather than started twice; it stops by itself once no page has been open for half an
+ * hour. Hands back the page's address, or why there is none in a few words of our own (never what the run printed).
+ */
+async function openInBrowser($: EngineInterface, asked?: OfficeTab): Promise<{ url: string } | { why: string }> {
+  const view = asked ?? picked
+  const argv = ['node', `${$.plugin.root}/scripts/dashboard.mjs`, '--detach', '--reuse', '--open', '--view', view === 'all' ? 'live' : view]
+  const unit = UNIT_OF[view]
+  if (unit && pickedBacks[unit]) argv.push('--back', String(pickedBacks[unit]))
+  if (view === 'timelapse') argv.push('--range', pickedLapse)
+  try {
+    if (view === 'all' && (await read($, quiet))) argv.push('--quiet')
+    if (await read($, zoom)) argv.push('--zoom')
+    const ran = await $.process.run(argv, { timeoutMs: BROWSER_TIMEOUT_MS })
+    if (ran.exitCode !== 0) return { why: `the server exited with code ${ran.exitCode}` }
+    const url = (ran.stdout.split('\n', 1)[0] ?? '').trim()
+    return BROWSER_URL_RE.test(url) ? { url } : { why: 'the server named no page' }
+  } catch (error) {
+    return { why: `the server did not start (${errorText(error)})` }
+  }
+}
+
+/** The pane's Browser key: The Office opens in the browser, and a toast says so, or why not. */
+async function pressBrowser($: EngineInterface): Promise<void> {
+  if (isOpeningBrowser) return
+  isOpeningBrowser = true
+  try {
+    const opened = await openInBrowser($)
+    if ('why' in opened) {
+      $.ui.log(`theoffice: the browser's office did not open: ${opened.why}`, { to: 'debug' })
+      $.ui.toast(`The Office could not open in your browser: ${opened.why}.`)
+    } else $.ui.toast('The Office is open in your browser, in pixel art. It updates by itself.', { timeoutMs: SAVED_TOAST_MS })
+  } finally {
+    isOpeningBrowser = false
+  }
+}
+
+/**
+ * The person pressed Open The Office in the band: the pane opens or comes forward, and a toast says why it waits. In a
+ * console The Office opens in the browser instead.
+ */
 async function pressOpen($: EngineInterface): Promise<void> {
+  if (isConsole) return pressBrowser($)
   try {
     const opened = await openPane($, await paneRow($))
     if (!opened.isPlaced) $.ui.toast(`The Office opens when there is room (${opened.reason}).`)
@@ -1880,15 +1933,16 @@ async function pixelSource($: EngineInterface, surface: string, facts: OfficeFac
 /**
  * What `/theoffice` was asked: a leading `/` dropped, case ignored. No word at all toggles; `open` and `close` say
  * which (`close` wins over every other word); a tab's name (TAB_WORDS) opens or raises the pane on that tab, the last
- * one named winning; any other word makes it `unknown`, which changes nothing, so a typo or a word from an older
- * version never closes or opens the pane.
+ * one named winning; `browser` opens The Office in the browser instead, on the tab named or the pane's; any other word
+ * makes it `unknown`, which changes nothing, so a typo or a word from an older version never closes or opens the pane.
  */
-function readCommand(args: unknown): { action: 'toggle' | 'open' | 'close' | 'unknown'; tab?: OfficeTab } {
+function readCommand(args: unknown): { action: 'toggle' | 'open' | 'close' | 'browser' | 'unknown'; tab?: OfficeTab } {
   const words = String(args ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean).map(w => w.replace(/^\/+/, ''))
-  if (words.some(word => word !== 'open' && word !== 'close' && !TAB_WORDS.has(word))) return { action: 'unknown' }
+  if (words.some(word => word !== 'open' && word !== 'close' && word !== BROWSER_WORD && !TAB_WORDS.has(word))) return { action: 'unknown' }
   if (words.includes('close')) return { action: 'close' }
   let tab: OfficeTab | undefined
   for (const word of words) tab = TAB_WORDS.get(word) ?? tab
+  if (words.includes(BROWSER_WORD)) return tab ? { action: 'browser', tab } : { action: 'browser' }
   if (tab) return { action: 'open', tab }
   return { action: words.includes('open') ? 'open' : 'toggle' }
 }
@@ -2141,6 +2195,18 @@ function tabRow(
       {tabButtons(Button, selected, choose, hasIcons)}
       {switches}
     </Box>
+  )
+}
+
+/**
+ * The Browser key as a Button (`browser`, hotkey o), where the pane draws text (a terminal): the same tab in pixel art,
+ * in the person's browser. A press only calls `open`.
+ */
+function browserButton(Button: ElementConstructor<ButtonProps>, open: () => void): RenderElement {
+  return (
+    <Button key="browser" hotkey={BROWSER_HOTKEY} variant="secondary" onPress={open}>
+      ⧉ Browser
+    </Button>
   )
 }
 
@@ -2497,12 +2563,13 @@ function textView(view: FreshTab): View {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     hasTerminal = e.surface === 'terminal'
+    isConsole = e.surface === 'terminal'
     // A refused name (another command already answers to /theoffice) costs the command alone: the band's button still
     // opens the pane, and the rest of the start runs.
     await $.command.register({
       name: 'theoffice',
-      description: 'Open or close The Office: a live, pixel-art pane of your coding agents',
-      argumentHint: '[live|today|week|month|work|timelapse|close]',
+      description: 'Open or close The Office: a live, pixel-art pane of your coding agents (in a terminal, in your browser)',
+      argumentHint: '[live|today|week|month|work|timelapse|close|browser]',
     }).catch(error => $.ui.log(`theoffice: /theoffice is not registered (${errorText(error)}); the band's button still opens the pane`, { to: 'debug' }))
     await restoreTab($).catch(() => undefined)
     await restoreQuiet($).catch(() => undefined)
@@ -2548,17 +2615,25 @@ export const register: Register = on => {
 
   // The person typed the command, so the open counts as asked (the band's Button is the other way in). With no word it
   // toggles: a pane on screen closes, one that is open but behind another tab (or waiting undrawn) comes forward
-  // instead. `open` opens or raises, `close` closes, a tab's name opens or raises it on that tab; a word it does not
-  // know only gets the usage line.
+  // instead. `open` opens or raises, `close` closes, a tab's name opens or raises it on that tab, `browser` opens it in
+  // the browser (the pane is left as it is); a word it does not know only gets the usage line. In a console every word
+  // that opens opens the browser instead, on the tab named or the one picked last: no text pane, no fallback to one.
   on('command.run', { command: 'theoffice' }, async ($, e) => {
     const asked = readCommand(e.args)
     if (asked.action === 'unknown') return { text: USAGE }
+    if (asked.action === 'browser' || (isConsole && asked.action !== 'close')) {
+      if (isConsole && asked.tab) await pickTab($, asked.tab) // the console's next /theoffice opens it there again
+      const opened = await openInBrowser($, asked.tab)
+      if ('why' in opened) return { text: `The Office could not open in your browser: ${opened.why}.` }
+      return { text: `The Office is open in your browser, in pixel art, and updates by itself: ${opened.url}\nIt stops by itself half an hour after its last page closes.` }
+    }
     const row = await paneRow($)
     const isShown = row !== undefined && row.isShown && row.isPlaced
 
     if (asked.action === 'close' || (isShown && asked.action === 'toggle')) {
       if (row) await $.ui.close({ id: PANE })
       setPane($, false)
+      if (!row && isConsole) return { text: 'The Office runs in your browser here: close its tab, or press Stop server on it.' }
       return { text: row ? 'The Office is closed.' : 'The Office was not open.' }
     }
 
@@ -2693,7 +2768,7 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
     drawings.delete(e.surface)
     if (e.surface === 'terminal') {
       const { Box, Button, Text } = $.ui.resolve(e)
-      const tabs = tabRow(Box, Button, view, choose)
+      const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($))])
       const controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, null)
       if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
       try {
@@ -2812,7 +2887,7 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
   // a terminal has no Svg: it draws the text version, its tabs and rows as Buttons
   if (e.surface === 'terminal') {
     const { Box, Button, Text } = $.ui.resolve(e)
-    const tabs = tabRow(Box, Button, view, choose)
+    const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($))])
     const row = strip ? periodRow(Box, Button, Text, strip, name, step, isMonth ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []) : undefined
     const controls = stack(Box, 'month-controls', [row, ask === null ? null : exportRow(Box, Button, Text, ask, answer)])
     if (facts === null) {

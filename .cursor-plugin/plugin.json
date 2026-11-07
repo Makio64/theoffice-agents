@@ -1,7 +1,7 @@
 {
   "name": "theoffice",
   "displayName": "The Office",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A live pixel-art office of your local coding agents, with native editor views and an interactive office in supported agent chats.",
   "author": { "name": "Makio64", "url": "https://github.com/Makio64" },
   "homepage": "https://github.com/Makio64/theoffice-agents",

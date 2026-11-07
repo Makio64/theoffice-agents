@@ -11,8 +11,8 @@ import { createHash } from 'node:crypto'
 import { gunzipSync } from 'node:zlib'
 import { startDashboard, renderDashboard } from '../plugin/lib/dashboard.mjs'
 import { monthStats } from '../plugin/lib/month-stats.mjs'
-import { dashboardArgs, detachDashboard } from '../plugin/scripts/dashboard.mjs'
-import { emptyFacts, monthFacts, timelapseFacts } from './helpers/facts.mjs'
+import { addressFor, dashboardArgs, detachDashboard, readyFile, runningDashboard } from '../plugin/scripts/dashboard.mjs'
+import { SAMPLE, clone, emptyFacts, monthFacts, timelapseFacts } from './helpers/facts.mjs'
 import { fileURLToPath } from 'node:url'
 import { permits } from './helpers/permits.mjs'
 
@@ -43,11 +43,13 @@ test('the capability URL serves the dashboard and existing renderer outputs, wit
   const html = await page.text()
   assert.match(html, /What they did/)
   assert.match(html, /Timelapse/)
-  assert.match(html, /Text version/)
+  assert.match(html, /import\('\/lib\/'\+name\)/, 'the console is drawn by the pane\'s own modules, served here')
+  assert.match(html, /Stop server/)
   assert.doesNotMatch(html, /<(?:script|link|img)\b[^>]*(?:src|href)=/)
   const script = /<script nonce="[^"]+">([\s\S]*)<\/script>/.exec(html)[1]
   assert.doesNotThrow(() => new vm.Script(script))
   assert.match(page.headers.get('content-security-policy'), /default-src 'none'/)
+  assert.match(page.headers.get('content-security-policy'), /script-src 'nonce-[\w-]+' 'self';/)
   assert.doesNotMatch(page.headers.get('content-security-policy'), /frame-ancestors/)
   assert.equal(page.headers.get('x-frame-options'), null, 'the editor may embed this capability URL')
   assert.equal(page.headers.get('referrer-policy'), 'no-referrer')
@@ -216,8 +218,12 @@ test('only a capability-protected same-origin POST can stop its own dashboard', 
 })
 
 test('the launcher rejects malformed ports and unsupported flags', () => {
-  assert.deepEqual(dashboardArgs(['--port', '0', '--open', '--detach']), { port: 0, open: true, detach: true, child: false })
-  for (const args of [['--port'], ['--port', '1;echo'], ['--port', '-1'], ['--port', '65536'], ['--host', '0.0.0.0'], ['--child']]) assert.throws(() => dashboardArgs(args))
+  assert.deepEqual(dashboardArgs(['--port', '0', '--open', '--detach']), { port: 0, open: true, detach: true, child: false, reuse: false, idleMs: 0 })
+  assert.deepEqual(dashboardArgs(['--detach', '--reuse']), { port: 0, open: false, detach: true, child: false, reuse: true, idleMs: 30 * 60_000 }, 'a reused server stops itself when left alone')
+  assert.equal(dashboardArgs(['--reuse', '--idle', '0']).idleMs, 0)
+  assert.equal(dashboardArgs(['--idle', '5']).idleMs, 5 * 60_000)
+  assert.equal(dashboardArgs(['--zoom']).selection.zoom, true)
+  for (const args of [['--port'], ['--port', '1;echo'], ['--port', '-1'], ['--port', '65536'], ['--host', '0.0.0.0'], ['--child'], ['--idle'], ['--idle', '-1'], ['--idle', '1.5']]) assert.throws(() => dashboardArgs(args))
 })
 
 test('explicit start views, calendar pages and quiet mode survive detached startup', async (t) => {
@@ -335,4 +341,235 @@ test('native pane preferences survive a changed server port in private cache sto
   app = await startDashboard({ preferenceFile, renderer: async () => drawing() })
   const restored = new URL(app.url);restored.pathname = '/preferences'
   assert.deepEqual(await (await fetch(restored)).json(), preferences)
+})
+
+const json = async (url) => (await fetch(url)).json()
+const tick = (ms = 10) => new Promise((resolve) => setTimeout(resolve, ms))
+async function until(check, ms = 2000) {
+  for (const end = Date.now() + ms; Date.now() < end; await tick()) if (check()) return true
+  return check()
+}
+function routeOf(url, route, query = {}) {
+  const target = new URL(url)
+  target.pathname = route
+  for (const key of [...target.searchParams.keys()]) if (key !== 'token') target.searchParams.delete(key)
+  for (const [key, value] of Object.entries(query)) target.searchParams.set(key, String(value))
+  return target
+}
+/** Opens the event stream; `next(pattern)` reads it until what came so far matches. */
+async function listen(url) {
+  const controller = new AbortController()
+  const response = await fetch(routeOf(url, '/events'), { signal: controller.signal })
+  const reader = response.body.getReader()
+  let text = ''
+  return {
+    response,
+    async next(pattern) {
+      while (!pattern.test(text)) {
+        const { value, done } = await reader.read()
+        if (done) break
+        text += Buffer.from(value).toString()
+      }
+      const said = text
+      text = ''
+      return said
+    },
+    close() { controller.abort() },
+  }
+}
+
+test('zoom, width and quiet reach the drawing as the pane draws them, within bounds', async (t) => {
+  const seen = []
+  const app = await startDashboard({ renderer: async (selection) => { seen.push(selection);return drawing(selection.view) } })
+  t.after(() => app.close())
+  for (const [query, expected] of [
+    [{ view: 'live', quiet: 1, zoom: 1, width: 640 }, { view: 'live', range: 'week', back: 0, quiet: true, zoom: true, width: 640 }],
+    [{ view: 'week', quiet: 1, back: 1 }, { view: 'week', range: 'week', back: 1 }],
+    [{ view: 'timelapse', range: 'month', zoom: 0, width: 2400 }, { view: 'timelapse', range: 'month', back: 0, width: 2400 }],
+  ]) {
+    assert.equal((await fetch(endpoint(app.url, query))).status, 200, JSON.stringify(query))
+    assert.deepEqual(seen.at(-1), expected)
+  }
+  for (const query of [{ width: 100 }, { width: 5000 }, { width: '640px' }, { width: '0640' }, { width: '' }, { zoom: 2 }, { zoom: 'yes' }]) {
+    assert.equal((await fetch(endpoint(app.url, query))).status, 400, JSON.stringify(query))
+  }
+  const facts = clone(SAMPLE)
+  const plain = await renderDashboard({ view: 'live', range: 'week', back: 0, width: 640 }, { collectFacts: async () => facts })
+  const zoomed = await renderDashboard({ view: 'live', range: 'week', back: 0, width: 640, zoom: true }, { collectFacts: async () => facts })
+  assert.match(plain.svg, /^<svg [^>]*width="640"/)
+  assert.notEqual(zoomed.svg, plain.svg, 'Zoom draws the art bigger')
+  assert.equal(plain.today, facts.now.local_date)
+  assert.match(plain.alt, /^The Office, the live office/)
+})
+
+test('the same office comes back as the same drawing; a desk changing tools waits a minute; a hand going up does not', async () => {
+  const facts = clone(SAMPLE)
+  const now = Date.parse(facts.now.iso)
+  const selection = { view: 'live', range: 'week', back: 0 }
+  const render = (f, at, previous) => renderDashboard(selection, { collectFacts: async () => f, now: at, ...(previous ? { previous } : {}) })
+  const first = await render(facts, now)
+  assert.equal(await render(clone(facts), now + 5_000, first), first)
+  const busy = clone(facts)
+  const desk = busy.live.desks.findIndex((d) => d.state === 'working')
+  busy.live.desks[desk].activity = { ...busy.live.desks[desk].activity, kind: 'reading', tool: 'Read', label: 'another-file.md' }
+  assert.equal(await render(busy, now + 10_000, first), first, 'a new tool within the minute is not worth a reload')
+  const later = await render(busy, now + 61_000, first)
+  assert.notEqual(later, first, 'after the minute it is drawn')
+  assert.notEqual(later.svg, first.svg)
+  const asking = clone(facts)
+  asking.live.desks[desk].state = 'asking'
+  assert.notEqual(await render(asking, now + 10_000, first), first, 'a hand going up is drawn at once')
+})
+
+test('a nudge drops the drawings of now, a drawing that comes out the same keeps its revision, and the watch runs while a page listens', async (t) => {
+  let tell = null
+  let watches = 0
+  let stops = 0
+  const watcher = ({ onChange }) => { watches++;tell = onChange;return { stop() { stops++ } } }
+  let calls = 0
+  let same = true
+  const app = await startDashboard({ watcher, renderer: async (selection, { previous } = {}) => {
+    calls++
+    return previous && same ? previous : drawing(`${selection.view} ${calls}`)
+  } })
+  t.after(() => app.close())
+  const first = await json(endpoint(app.url))
+  assert.equal(watches, 0, 'nothing is watched until a page listens')
+  const page = await listen(app.url)
+  assert.equal(page.response.status, 200)
+  assert.match(page.response.headers.get('content-type'), /^text\/event-stream/)
+  assert.equal(page.response.headers.get('cache-control'), 'no-store')
+  await page.next(/retry: 3000/)
+  assert.equal(watches, 1)
+  assert.equal((await json(endpoint(app.url))).revision, first.revision)
+  assert.equal(calls, 1, 'without a nudge the drawing is served from the cache')
+  tell('state')
+  assert.match(await page.next(/event: change/), /data: \{"why":"state"\}/)
+  assert.equal((await json(endpoint(app.url))).revision, first.revision, 'the same drawing keeps its revision')
+  assert.equal(calls, 2, 'the nudge dropped the cached drawing')
+  same = false
+  tell('activity')
+  await page.next(/activity/)
+  const moved = await json(endpoint(app.url))
+  assert.notEqual(moved.revision, first.revision)
+  assert.equal(moved.svg, drawing('live 3').svg)
+  const past = endpoint(app.url, { view: 'week', back: 1 })
+  const page1 = await json(past)
+  tell('beat')
+  await page.next(/beat/)
+  assert.equal((await json(past)).revision, page1.revision, 'a page of the past stays as it was read')
+  const second = await listen(app.url)
+  await second.next(/retry/)
+  assert.equal(watches, 1, 'one watch for every page')
+  page.close()
+  await tick(50)
+  assert.equal(stops, 0, 'another page still listens')
+  second.close()
+  assert.ok(await until(() => stops === 1), 'the watch stops when the last page leaves')
+  for (const query of [{ view: 'week' }, { file: '/etc/passwd' }]) assert.equal((await fetch(routeOf(app.url, '/events', query))).status, 400)
+  const withoutToken = routeOf(app.url, '/events');withoutToken.searchParams.delete('token')
+  assert.equal((await fetch(withoutToken)).status, 403)
+  assert.equal((await rawRequest(routeOf(app.url, '/events'), { origin: 'https://attacker.invalid' })).status, 403)
+})
+
+test('closing the server says goodbye on every open stream and does not wait on them', async () => {
+  const app = await startDashboard({ watcher: () => ({ stop() {} }), renderer: async () => drawing() })
+  const page = await listen(app.url)
+  await page.next(/retry/)
+  const closed = app.close()
+  assert.match(await page.next(/event: bye/), /event: bye/)
+  await Promise.race([closed, tick(2000).then(() => { throw new Error('close waited on an open stream') })])
+  assert.equal(app.isClosed, true)
+})
+
+test('the console modules are served as they are, to this server\'s own host, and nothing else of lib/', async (t) => {
+  const app = await startDashboard({ renderer: async () => drawing() })
+  t.after(() => app.close())
+  const lib = new URL('../plugin/lib/', import.meta.url)
+  for (const name of ['svg-menu.mjs', 'svg-period.mjs', 'svg-console.mjs', 'period.mjs']) {
+    const response = await fetch(new URL(`/lib/${name}`, app.url))
+    assert.equal(response.status, 200, name)
+    assert.match(response.headers.get('content-type'), /^text\/javascript/)
+    assert.equal(response.headers.get('cache-control'), 'no-store')
+    const source = await response.text()
+    assert.equal(source, fs.readFileSync(new URL(name, lib), 'utf8'))
+    for (const [, from] of source.matchAll(/^import\b[^'"]*['"]([^'"]+)['"]/gm)) assert.match(from, /^\.\/(svg-console|period)\.mjs$/, `${name} imports only the console's parts`)
+  }
+  for (const name of ['collect.mjs', 'dashboard.mjs', 'cache.mjs', 'svg-menu.mjs?x=1', '%2e%2e/scripts/office.mjs', 'svg-menu.js']) {
+    assert.notEqual((await fetch(new URL(`/lib/${name}`, app.url))).status, 200, name)
+  }
+  assert.equal((await rawRequest(new URL('/lib/svg-menu.mjs', app.url), { host: 'attacker.invalid' })).status, 403)
+  assert.equal((await rawRequest(new URL('/lib/svg-menu.mjs', app.url), { method: 'POST' })).status, 405)
+})
+
+test('the waiting room is the pane\'s own drawing, a card at the width asked', async (t) => {
+  const app = await startDashboard({ renderer: async () => drawing() })
+  t.after(() => app.close())
+  for (const [query, kind] of [[{ view: 'month' }, 'month'], [{ view: 'today' }, 'today'], [{ view: 'week', back: 2 }, 'past'], [{ view: 'live' }, 'week']]) {
+    const response = await fetch(routeOf(app.url, '/waiting', { ...query, width: 640 }))
+    assert.equal(response.status, 200)
+    assert.match(response.headers.get('content-type'), /^image\/svg\+xml/)
+    const svg = await response.text()
+    assert.match(svg, /^<svg [^>]*width="640"/)
+    assert.ok(svg.includes(`data-loading="${kind}"`), kind)
+  }
+  assert.equal((await fetch(routeOf(app.url, '/waiting', { width: 9 }))).status, 400)
+})
+
+test('a server left with no page stops itself after idleMs; a listening page keeps it', async () => {
+  const app = await startDashboard({ watcher: () => ({ stop() {} }), renderer: async () => drawing(), idleMs: 60 })
+  const page = await listen(app.url)
+  await page.next(/retry/)
+  await tick(250)
+  assert.equal(app.isClosed, false, 'an open page keeps the server')
+  page.close()
+  await Promise.race([app.whenClosed, tick(3000)])
+  assert.equal(app.isClosed, true)
+  await assert.rejects(fetch(app.url))
+  await assert.rejects(startDashboard({ idleMs: -1 }))
+})
+
+test('--reuse finds the running server, hands it back on the tab asked for, and lets go of one that no longer answers', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'theoffice-ready-'))
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }))
+  const file = readyFile(dir)
+  assert.equal(await runningDashboard(file), null)
+  const app = await startDashboard({ renderer: async () => drawing() })
+  fs.writeFileSync(file, JSON.stringify({ url: app.url, pid: process.pid }))
+  assert.equal(await runningDashboard(file), app.url)
+  const month = new URL(addressFor(app.url, { view: 'month', range: 'week', back: 1 }))
+  assert.equal(month.searchParams.get('token'), new URL(app.url).searchParams.get('token'))
+  assert.equal(month.searchParams.get('view'), 'month')
+  assert.equal(month.searchParams.get('back'), '1')
+  assert.equal(new URL(addressFor(month.href)).searchParams.has('view'), false, 'no tab asked: the page opens where it was left')
+  await app.close()
+  assert.equal(await runningDashboard(file), null)
+  for (const url of ['https://example.com/?token=' + 'a'.repeat(32), 'http://127.0.0.1:1/other?token=' + 'a'.repeat(32), 'http://127.0.0.1:1/?token=short']) {
+    fs.writeFileSync(file, JSON.stringify({ url }))
+    assert.equal(await runningDashboard(file), null, url)
+  }
+})
+
+test('two launches with --reuse share one server and its address stays private', { skip: process.platform === 'win32' && 'permissions' }, async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'theoffice-reuse-'))
+  const script = fileURLToPath(new URL('../plugin/scripts/dashboard.mjs', import.meta.url))
+  const env = { ...process.env, THEOFFICE_CACHE_DIR: dir, THEOFFICE_NO_OPEN: '1' }
+  const launch = async (...args) => {
+    const child = spawn(process.execPath, [script, '--detach', '--reuse', ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] })
+    let out = ''
+    child.stdout.on('data', (chunk) => { out += chunk })
+    await once(child, 'exit')
+    return out.trim()
+  }
+  const first = await launch('--view', 'week')
+  const ready = JSON.parse(fs.readFileSync(readyFile(dir), 'utf8'))
+  t.after(() => { try { process.kill(ready.pid, 'SIGTERM') } catch {} fs.rmSync(dir, { recursive: true, force: true }) })
+  assert.equal(permits(readyFile(dir), 0o600), 0o600)
+  const second = await launch('--view', 'month', '--back', '1')
+  assert.equal(new URL(second).port, new URL(first).port)
+  assert.equal(new URL(second).searchParams.get('token'), new URL(first).searchParams.get('token'))
+  assert.equal(new URL(second).searchParams.get('view'), 'month')
+  assert.equal((await fetch(second)).status, 200)
+  process.kill(ready.pid, 'SIGTERM')
+  assert.ok(await until(() => !fs.existsSync(readyFile(dir)), 3000), 'a stopped server forgets its address')
 })

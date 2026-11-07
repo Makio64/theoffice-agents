@@ -80,6 +80,7 @@ type Lapse = OfficeTimeline['kind']
 const LAPSE: Record<Lapse, OfficeFacts> = { yesterday: lapseFacts('yesterday'), week: lapseFacts('week'), month: lapseFacts('month') }
 /** Where an export saves the page of `range`, as `timelapse <range> --export` prints it on its first line. */
 const PAGE = (range: string) => `/Users/clawd/.cache/theoffice/pixel/timelapse-${range}.html`
+const BROWSER_URL = `http://127.0.0.1:51993/?token=${'t'.repeat(32)}&view=week&range=week&back=1`
 /**
  * What a Month export saves, as `month --export <part> --as <format>` prints it on its first line: the page for a PNG, a
  * GIF or a video (the browser makes them), else the file itself; `key` the month's name (`month-2026-09`).
@@ -92,6 +93,8 @@ const TABS = [
 ] as const
 const ICON: Record<string, string> = { 'tab-all': '◉', 'tab-today': '◷', 'tab-week': '▥', 'tab-month': '▤', 'tab-work': '▨', 'tab-timelapse': '▶' }
 /** The Timelapse's own row under the tabs: each range, then Export, as [key, hotkey, text]. */
+/** The terminal's Browser key, after the tabs: the same tab in pixel art in the browser. */
+const BROWSER_KEY = ['browser', 'o', '⧉ Browser']
 const LAPSE_ROW = [['lapse-yesterday', 'y', 'Yesterday'], ['lapse-week', 'w', 'Week'], ['lapse-month', 'm', 'Month'], ['lapse-export', 'e', '⤓ Export']] as const
 /** The strip's keys as Buttons (its row off the pixel art, its hidden hotkeys on the desktop), as [key, hotkey, text]. */
 const STEP_ROW = [['period-older', 'p', '◀'], ['period-newer', 'n', '▶'], ['period-now', 'c', 'Now']] as const
@@ -154,7 +157,9 @@ function engine(on: On, store: Record<string, unknown> = {}, now = 0) {
     lapses: Object.fromEntries((['yesterday', 'week', 'month'] as const).map(r => [r, { exitCode: 0, stdout: JSON.stringify(LAPSE[r]) }])) as Record<Lapse, Answer>,
     exported: undefined as Answer | undefined,
     monthExported: undefined as Answer | undefined,
-    delay: { lapse: 0, export: 0, month: 0 },
+    /** What scripts/dashboard.mjs answers (the Browser key, /theoffice browser): its page's address by default. */
+    browser: undefined as Answer | undefined,
+    delay: { lapse: 0, export: 0, month: 0, browser: 0 },
     toasts: [] as { text: string; timeoutMs?: number }[],
     plays: [] as Play[],
     cueMs: 300,
@@ -244,6 +249,12 @@ function engine(on: On, store: Record<string, unknown> = {}, now = 0) {
       return { value: { exitCode: world.light.exitCode ?? 0, stdout: world.light.stdout ?? '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     world.runs.push({ argv: e.argv, timeoutMs: e.init?.timeoutMs, stdin: e.init?.stdin })
+    if (String(e.argv[1]).endsWith('/scripts/dashboard.mjs')) {
+      if (world.delay.browser) await clock.sleep(world.delay.browser)
+      const a = world.browser ?? { exitCode: 0, stdout: `${BROWSER_URL}\n` }
+      if (a.error) throw new Error(a.error)
+      return { value: { exitCode: a.exitCode ?? 0, stdout: a.stdout ?? '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     if (world.gate) await world.gate
     const [, , view, range, flag] = e.argv
     if (view === 'month' && e.argv.includes('--export')) {
@@ -703,7 +714,7 @@ test('with no snapshot yet, a change seen during a failing run waits for the bac
 test('the looks follow the pane: every 1.5 s on screen, none off screen; the text stops with it', WITH_PEEK, async ($, on) => {
   const w = engine(on)
   claudeDir(w)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
   const looks = () => w.fsCalls.filter(c => c.op === 'list').length
@@ -1128,7 +1139,7 @@ test('two surfaces drawing the pane keep a drawing each: a redraw of one never h
 
 test('on a terminal the runs compare the text: a new minute that changes it is drawn, the same text is not', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
   const ui = await $.ui.mount(pane('terminal', 100))
@@ -1211,6 +1222,15 @@ test('the command toggles the pane, and open and close say so', WITH_PEEK, async
   expect((await $.command.run(command('close'))).text).toBe('The Office is closed.')
   expect(w.isUp).toBe(false)
 })
+
+/**
+ * A session begun on the desktop with a terminal attached to it: the one place the pane still draws its text (a session
+ * begun in a terminal, a console, opens The Office in the browser instead).
+ */
+async function attachedTerminal($: { session: { start: (init: { cwd: string; surface: 'desktop'; isInteractive: boolean }) => Promise<unknown>; attach: (init: { surface: 'terminal'; clientId: string }) => Promise<unknown> } }) {
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await $.session.attach({ surface: 'terminal', clientId: 'terminal:default' })
+}
 
 /** What mounting the band above the prompt on `surface` takes; `hasSurvey` while a survey holds it. */
 function band<S extends 'terminal' | 'desktop'>(surface: S, hasSurvey = false) {
@@ -1317,13 +1337,13 @@ test('/theoffice takes open, close or a tab; any other word only gets the usage 
   // its one command (PEEK's two test commands are registered beside it)
   expect(w.commands.map(c => c.name).filter(name => name !== 'peek' && name !== 'close-by-hand')).toEqual(['theoffice'])
   const registered = w.commands.find(c => c.name === 'theoffice')
-  expect(registered?.argumentHint).toBe('[live|today|week|month|work|timelapse|close]')
+  expect(registered?.argumentHint).toBe('[live|today|week|month|work|timelapse|close|browser]')
   expect(registered?.description).toContain('pixel-art')
 
   expect((await $.command.run(command(''))).text).toBe('The Office is open.')
   // the old style words (and their flags) are words it does not know: on a pane that is on screen none of them closes it
   for (const word of ['pixel', 'ascii', 'PIXEL', '--style pixel', '--style=ascii', '/pixel', 'banana', 'open banana', 'close pixel', 'week banana', 'constructor', 'what they did']) {
-    expect((await $.command.run(command(word))).text).toBe("Usage: /theoffice [live|today|week|month|work|timelapse] [open|close]. With no word it opens or closes The Office; a tab's name opens it on that tab.")
+    expect((await $.command.run(command(word))).text).toBe("Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there).")
   }
   expect((await peek($)).tab).toBe(null)
   expect(w.opens).toBe(1)
@@ -1381,7 +1401,7 @@ test("a tab's name after /theoffice opens the pane on that tab, raises a hidden 
 
 test('the frame clock stops while the pane is behind another tab and starts again once it is back', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
 
@@ -1484,7 +1504,7 @@ test('every surface draws the pixel office: block glyphs on a terminal, the SVG 
 
 test('the collector runs on a change or the minute\'s heartbeat, never on a timer of the pane; the text moves only while open', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await w.clock.settle()
   expect(w.runs).toHaveLength(1)
 
@@ -1756,7 +1776,7 @@ test('a narrow dock gets lines that fit: none wider than the pane', WITH_PEEK, a
 
 test('the terminal pane follows the animation frame', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
 
@@ -1812,10 +1832,11 @@ test('the tab row: Office, Today, Week, Month, What they did, Timelapse, each wi
     const ui = await $.ui.mount(pane(surface, 100))
     const buttons = await ui.findAll({ type: 'Button' })
     // the terminal's Buttons say their names; VS Code's and mobile's carry their icons; the desktop's are hidden. Where
-    // the Live tab is pixel art, its Quiet and the Zoom come after them (a terminal draws text: neither there)
+    // the Live tab is pixel art, its Quiet and the Zoom come after them (a terminal draws text: neither there, but the
+    // Browser key, which opens the same tab in pixel art in the browser)
     const icons = surface === 'vscode' || surface === 'mobile'
     const row = icons ? TABS.map(([k, h, l]) => [k, h, tabText(k, l)]) : TABS.map(t => [...t])
-    const quiet = surface === 'terminal' ? [] : [['live-quiet', 'q', icons ? '⊘ Quiet' : 'Quiet'], ['zoom', 'z', icons ? '⊕ Zoom' : 'Zoom']]
+    const quiet = surface === 'terminal' ? [BROWSER_KEY] : [['live-quiet', 'q', icons ? '⊘ Quiet' : 'Quiet'], ['zoom', 'z', icons ? '⊕ Zoom' : 'Zoom']]
     expect(buttons.map(b => [b.key, b.props.hotkey, b.text])).toEqual([...row, ...quiet])
     expect(buttons.map(b => b.props.variant)).toEqual(['primary', 'secondary', 'secondary', 'secondary', 'secondary', 'secondary', ...quiet.map(() => 'secondary')])
     expect(await ui.find({ key: 'mode' })).toBeUndefined()
@@ -2744,7 +2765,7 @@ test('a closed pane lets go of the pages read, keeps the pages picked, and reads
 
 test('every tab renders on the terminal and the desktop', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
 
@@ -2795,7 +2816,7 @@ test('every tab renders on the terminal and the desktop', WITH_PEEK, async ($, o
 
 test('switching tabs leaks no timers: one heartbeat, and the frame clock only on the Office tab and the Timelapse', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('open'))
   await w.clock.settle()
   const ui = await $.ui.mount(pane('terminal', 100))
@@ -2906,7 +2927,7 @@ test('the terminal always draws text, never an Svg, with no switch; a desktop at
       expect(await ui.find({ type: 'Svg' })).toBeUndefined()
       expect(await ui.find({ key: 'mode' })).toBeUndefined()
       expect(await ui.find({ key: 'tabs' })).toBeUndefined()
-      expect((await ui.findAll({ type: 'Button' })).map(b => b.key)).toEqual(TABS.map(t => t[0]))
+      expect((await ui.findAll({ type: 'Button' })).map(b => b.key)).toEqual([...TABS.map(t => t[0]), 'browser'])
       const colors = new Set((await ui.findAll({ type: 'Text' })).map(t => t.props.color).filter(Boolean))
       expect(colors.has(ROLE_TERM.busy.color)).toBe(true) // the theme's colors
       expect([...colors].some(c => /^#/.test(String(c)))).toBe(false)
@@ -3167,12 +3188,12 @@ test('a kept range that is no range leaves the week', WITH_PEEK, async ($, on) =
 
 test('a terminal draws the text replay, which the frame clock moves only while the Timelapse is on screen as text', WITH_PEEK, async ($, on) => {
   const w = engine(on)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await attachedTerminal($) // the text pane is a terminal's attached to a session begun elsewhere: a console opens the browser
   await $.command.run(command('timelapse'))
   await w.clock.settle()
   const ui = await $.ui.mount(pane('terminal', 100))
   // the tabs and its row, no Svg, the replay from its first frame
-  expect((await ui.findAll({ type: 'Button' })).map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), ...LAPSE_ROW.map(r => [...r])])
+  expect((await ui.findAll({ type: 'Button' })).map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), BROWSER_KEY, ...LAPSE_ROW.map(r => [...r])])
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
   expect((await peek($)).frame).toBe(0)
   const first = await artLines(ui)
@@ -3683,4 +3704,86 @@ test('a quick run of presses turns two pages at once at most', WITH_PEEK, async 
   await w.clock.settle()
   expect(w.plays).toHaveLength(3)
   await ui.unmount()
+})
+
+test('in a console The Office opens in the browser: /theoffice, a tab\'s name and the band, never the text pane', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await w.clock.settle()
+  const browsers = () => w.runs.filter(r => String(r.argv[1]).endsWith('/scripts/dashboard.mjs'))
+  const said = (url: string) => `The Office is open in your browser, in pixel art, and updates by itself: ${url}\nIt stops by itself half an hour after its last page closes.`
+
+  expect((await $.command.run(command(''))).text).toBe(said(BROWSER_URL))
+  expect(browsers().at(-1)?.argv.slice(2)).toEqual(['--detach', '--reuse', '--open', '--view', 'live'])
+  expect((await $.command.run(command('week'))).text).toBe(said(BROWSER_URL))
+  expect(browsers().at(-1)?.argv.slice(2)).toEqual(['--detach', '--reuse', '--open', '--view', 'week'])
+  expect((await peek($)).tab).toBe('week') // kept: the next /theoffice opens the Week again
+  await $.command.run(command('open'))
+  expect(browsers().at(-1)?.argv.slice(2)).toEqual(['--detach', '--reuse', '--open', '--view', 'week'])
+  await $.command.run(command('timelapse'))
+  expect(browsers().at(-1)?.argv.slice(2)).toEqual(['--detach', '--reuse', '--open', '--view', 'timelapse', '--range', 'week'])
+  expect(w.opens).toBe(0)
+  expect(w.isUp).toBe(false)
+  expect((await $.command.run(command('close'))).text).toBe('The Office runs in your browser here: close its tab, or press Stop server on it.')
+  expect((await $.command.run(command('banana'))).text).toMatch(/^Usage: /)
+
+  // the band's Open The Office opens it there too, one at a time
+  const ui = await $.ui.mount(band('terminal'))
+  w.delay.browser = 2_000
+  const before = browsers().length
+  await ui.press({ key: 'open-office' })
+  await w.clock.advance(1_000)
+  await ui.press({ key: 'open-office' }) // one is under way: ignored
+  await w.clock.advance(1_000)
+  await w.clock.settle()
+  w.delay.browser = 0
+  expect(browsers()).toHaveLength(before + 1)
+  expect(w.toasts.at(-1)).toEqual({ text: 'The Office is open in your browser, in pixel art. It updates by itself.', timeoutMs: 10_000 })
+  expect(w.opens).toBe(0)
+
+  // no fallback to text: when the browser cannot open, it says why, in its own words
+  w.browser = { exitCode: 3, stdout: '' }
+  expect((await $.command.run(command(''))).text).toBe('The Office could not open in your browser: the server exited with code 3.')
+  for (const stdout of ['http://evil.example/?token=x\n', 'Listening\n', `${BROWSER_URL.replace('127.0.0.1', '0.0.0.0')}\n`]) {
+    w.browser = { exitCode: 0, stdout }
+    expect((await $.command.run(command('browser'))).text).toBe('The Office could not open in your browser: the server named no page.')
+  }
+  w.browser = { error: 'spawn node ENOENT' }
+  expect((await $.command.run(command('month'))).text).toMatch(/^The Office could not open in your browser: the server did not start \(.+\)\.$/)
+  await ui.press({ key: 'open-office' })
+  await w.clock.settle()
+  expect(w.toasts.at(-1)?.text).toMatch(/^The Office could not open in your browser: the server did not start/)
+  expect(w.opens).toBe(0)
+  await ui.unmount()
+})
+
+test('a terminal attached to the pane has a Browser key for the tab on screen; /theoffice browser opens any tab and leaves the pane as it is', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await attachedTerminal($)
+  await $.command.run(command('week'))
+  await w.clock.settle()
+  expect(w.opens).toBe(1)
+  const ui = await $.ui.mount(pane('terminal', 100))
+  const key = await ui.find({ key: 'browser' })
+  expect(key?.props.hotkey).toBe('o')
+  expect(key?.text).toBe('⧉ Browser')
+  const browsers = () => w.runs.filter(r => String(r.argv[1]).endsWith('/scripts/dashboard.mjs'))
+
+  await ui.press({ key: 'period-older' })
+  await w.clock.settle()
+  await ui.press({ key: 'browser' })
+  await w.clock.settle()
+  expect(browsers().map(r => [r.argv.slice(2), r.timeoutMs])).toEqual([[['--detach', '--reuse', '--open', '--view', 'week', '--back', '1'], 20_000]])
+  expect(w.toasts.at(-1)).toEqual({ text: 'The Office is open in your browser, in pixel art. It updates by itself.', timeoutMs: 10_000 })
+
+  expect((await $.command.run(command('browser timelapse'))).text).toContain(BROWSER_URL)
+  expect(browsers().at(-1)?.argv.slice(2)).toEqual(['--detach', '--reuse', '--open', '--view', 'timelapse', '--range', 'week'])
+  expect((await peek($)).tab).toBe('week') // the pane stays where it is
+  expect(w.opens).toBe(1)
+  await ui.unmount()
+
+  // where the pane draws the pixel art itself there is no Browser key
+  const desk = await $.ui.mount(pane('desktop', 100))
+  expect(await desk.find({ key: 'browser' })).toBeUndefined()
+  await desk.unmount()
 })

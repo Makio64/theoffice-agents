@@ -233,15 +233,17 @@ Use the folder the plugin was installed to (for Antigravity, `~/.gemini/config/p
 npm run dashboard
 ```
 
-This opens a browser page with Live, Today, Week, Month, What they did, and Timelapse tabs, calendar navigation, Quiet labels, keyboard shortcuts, and the full text backup. Current views refresh every five seconds while visible. The replay has playback, a scrubber, speed controls, and local GIF/video/SVG export; Month exports its calendar, directory, whole picture, or statistics. The server listens only on `127.0.0.1` and its URL contains a random access token. Nothing is uploaded. Use **Stop dashboard** to end the standalone server, or Ctrl+C in its foreground terminal.
+This opens the Claude desktop pane in a browser page: the same pixel-art console on top (the six tabs, Quiet and Zoom, the ◀ ▶ strip that pages through the past, the Timelapse's ranges and the Month's export row, drawn by the pane's own modules), the same card drawing under it, and the same keys. The server pushes a nudge to the page when your agents' files move (a hand going up shows within two seconds), and the page redraws only when the drawing changed; with no stream it falls back to asking every five seconds while visible. The Timelapse's Export opens the replay's player (scrubber, speed, GIF/video/SVG); Month exports its calendar, directory, whole picture, or statistics. The server listens only on `127.0.0.1` and its URL contains a random access token. Nothing is uploaded. Use **Stop server** to end the standalone server, or Ctrl+C in its foreground terminal.
+
+In Claude Code in a terminal, `/theoffice` opens The Office this way instead of a pane (optionally on a tab: `/theoffice month`), as does **🏢 Open The Office** above the prompt; there is no text pane to fall back to. `/theoffice browser` opens it from the desktop app too.
 
 An agent can launch it without holding a terminal open:
 
 ```bash
-node plugin/scripts/dashboard.mjs --open --detach
+node plugin/scripts/dashboard.mjs --open --detach --reuse
 ```
 
-Open a requested view directly with `--view month --back 1`, `--view timelapse --range yesterday`, or `--view live --quiet`. Inside the page, keys **1–6** select views, **p/n/c** navigate periods, and **q** toggles Quiet labels. The last selection is remembered locally; explicit launch flags take precedence.
+`--reuse` keeps one server for the computer: a second launch opens the running one on the tab asked for instead of starting another, and a server started with it stops by itself 30 minutes after its last page closes (`--idle <minutes>` sets another wait, `0` never). Open a requested view directly with `--view month --back 1`, `--view timelapse --range yesterday`, `--view live --quiet`, or `--zoom`. Inside the page, keys **1–6** select views, **p/n/c** page through the past, **q** toggles Quiet labels, **z** Zoom, **y/w/m** pick the replay's range, **e** opens Export and **b** goes back. The last selection is remembered locally; explicit launch flags take precedence.
 
 ### Editor pane for Cursor and Antigravity
 

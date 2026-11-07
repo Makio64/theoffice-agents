@@ -33,17 +33,17 @@ When the user asks to open the office, keep it live, or see a dashboard, prefer 
    - When the record has a numeric `pane`, the App runs The Office as a side pane: end your reply with the pill `[The Office](sidecar://theoffice/office/)`, exactly that link, which opens it beside the chat. It opens on the tab picked last; name the key for the requested tab (1 Live, 2 Today, 3 Week, 4 Month, 5 What they did, 6 Timelapse).
    - Otherwise preserve the record's token and append only the selected `view`, `range`, and `back` query fields. Open it with the host's browser-panel tool if available, or show an **Open The Office** link: Antigravity opens conversation links in its built-in side-panel browser.
    - If the record is absent or the endpoint is stale, use the fallback below; never invent a ready URL or a pill.
-4. **Claude Code:** `/theoffice` uses Claude's native live pane when its function-hooks mod is supported (Claude Code 2.1.308 or newer). `/theoffice today`, `week`, `month`, `work`, or `timelapse` picks a tab. In a terminal, that pane draws text.
+4. **Claude Code:** `/theoffice` uses Claude's native live pane when its function-hooks mod is supported (Claude Code 2.1.308 or newer). `/theoffice today`, `week`, `month`, `work`, or `timelapse` picks a tab. In a terminal, `/theoffice` opens The Office in the browser instead (the desktop pane's pixel art, kept live), never as text; `/theoffice browser` does the same anywhere. When a terminal user asks to see the office in pixel art, visually, or in the browser, run `node "/absolute/path/to/theoffice/scripts/dashboard.mjs" --detach --reuse --open --view <view>` and say it opened (its first line is the page's address).
 
 If no native integration is available, start the bundled dashboard:
 
 ```sh
-node "/absolute/path/to/theoffice/scripts/dashboard.mjs" --detach --view live
+node "/absolute/path/to/theoffice/scripts/dashboard.mjs" --detach --reuse --view live
 ```
 
-Use `--view month --back 1` for last month, or `--view timelapse --range yesterday` for yesterday's replay. This prints a local capability URL. Open it beside the conversation with the host's browser-panel tool when available; in Codex desktop, use `open_in_codex` as above. If the host has no embedded browser, add `--open` to launch the system browser, or give the user an **Open The Office** link. A foreground alternative omits `--detach`; leave that process running in the host's background terminal if supported. Never copy raw agent activity into a browser URL.
+Use `--view month --back 1` for last month, or `--view timelapse --range yesterday` for yesterday's replay. This prints a local capability URL; `--reuse` opens the server already running instead of starting another, and stops it by itself half an hour after its last page closes. Open it beside the conversation with the host's browser-panel tool when available; in Codex desktop, use `open_in_codex` as above. If the host has no embedded browser, add `--open` to launch the system browser, or give the user an **Open The Office** link. A foreground alternative omits `--detach`; leave that process running in the host's background terminal if supported. Never copy raw agent activity into a browser URL.
 
-The dashboard has the same six views and period navigation. Its controls provide timelapse playback, exports, Quiet labels, and keyboard shortcuts when available. **Stop dashboard** ends the standalone server. A managed sidecar or MCP server owns its own process lifecycle. Do not promise an IDE extension API in hosts that provide only skills and an embedded browser.
+The dashboard is the desktop pane's pixel console in a page: the same six views, the period strip, Quiet and Zoom, the Timelapse's player and exports, the Month's export row, and the same keys. It redraws by itself as the agents work. **Stop server** ends the standalone server. A managed sidecar or MCP server owns its own process lifecycle. Do not promise an IDE extension API in hosts that provide only skills and an embedded browser.
 
 ## Views and arguments
 

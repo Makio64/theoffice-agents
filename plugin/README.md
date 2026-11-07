@@ -27,7 +27,7 @@ Subagents are **interns** and workflows hold **meetings**.
 
 ## Look around
 
-Type `/theoffice` to open the pane beside the chat (and again to close it), or just ask Claude: *"what are my agents doing?"*, *"show me this week's tower"*. Six tabs, one key each:
+Type `/theoffice` to open the pane beside the chat (and again to close it; in a terminal it opens in your browser), or just ask Claude: *"what are my agents doing?"*, *"show me this week's tower"*. Six tabs, one key each:
 
 | Key | Tab | What you get |
 | --- | --- | --- |
@@ -47,6 +47,8 @@ Type `/theoffice` to open the pane beside the chat (and again to close it), or j
 </table>
 
 **Reading the room:** a raised hand ✋ means it's waiting on you · a ✓ on its screen means done, your turn · a mug in the kitchen means a break until its background job reports back · a coat on the rack means it just went home. `q` takes the words off, `z` zooms in, and the ◀ ▶ strip pages back through the past.
+
+**In a terminal**, `/theoffice` (or a tab's name after it, or **🏢 Open The Office** above the prompt) opens The Office in your browser: the same pixel art, menu and keys as the desktop app's pane, redrawn as your agents work. `/theoffice browser` does the same from the desktop app.
 
 ## Install
 
@@ -82,7 +84,7 @@ Everything The Office runs, reads and writes, so you can decide before you insta
 - **Asks [novibenolife](https://novibenolife.com), if you have it,** about the agents it has no reader for (`novi <range> --facts --no-ingest`). `THEOFFICE_NO_NOVI=1` turns it off.
 - **Writes only its own cache:** the plugin data folder Claude Code gives it (under `~/.claude/plugins/data/`), else `~/.cache/theoffice/`, readable by you only. Drawings and exports you ask for (a timelapse, a month calendar) go in that cache's `pixel/` folder.
 - **Plays one sound**, a page turn, when you switch tabs or pages.
-- **Opens a browser page only when you ask** (an export with *open*, or the dashboard): a local server on `127.0.0.1` with a random access token.
+- **Opens a browser page only when you ask** (`/theoffice browser`, the terminal pane's **⧉ Browser** key, an export with *open*, or the dashboard): a local server on `127.0.0.1` with a random access token. One such server runs per computer: while it runs its address is kept in the cache (`dashboard-ready.json`, readable by you only) so the next open reuses it, and it stops by itself half an hour after its last page closes. While a page is open, the server looks every second and a half at your Claude sessions' records (`~/.claude/sessions/*.json`, which say a session's status) and at the size and time of their transcripts and of the other agents' session files, to know when to redraw. It reads no transcript's contents for that.
 - **Sends nothing.** No network requests, no uploads, no telemetry.
 
 ### The programs the pane runs
@@ -98,12 +100,13 @@ The pane runs only `node`, on the plugin's own script, through Claude Code's `$.
 | The Timelapse tab | `node <plugin>/scripts/office.mjs timelapse <yesterday\|week\|month> --json` |
 | You press Export on the Timelapse | `node <plugin>/scripts/office.mjs timelapse <range> --export --open` |
 | You press Export on the Month | `node <plugin>/scripts/office.mjs month [--back <N>] --export <calendar\|directory\|whole\|stats> --as <png\|svg\|gif\|video\|html\|csv\|json> --open [--stdin]` |
+| You open The Office in a terminal (`/theoffice [tab]`, **🏢 Open The Office**), or type `/theoffice browser [tab]` | `node <plugin>/scripts/dashboard.mjs --detach --reuse --open --view <tab> [--back <N>] [--range <range>] [--quiet] [--zoom]` |
 
-`office.mjs` itself runs `git` and `novi` as described above, and an export's `--open` hands the saved file to your system's opener (`open` on macOS, `xdg-open` on Linux, `start` on Windows), which shows it in your browser.
+`office.mjs` itself runs `git` and `novi` as described above, and an export's `--open` hands the saved file to your system's opener (`open` on macOS, `xdg-open` on Linux, `start` on Windows), which shows it in your browser. `dashboard.mjs` starts the local server in the background (or finds the one already running), hands its page's address to the same opener, and prints that address.
 
 ### What goes where
 
-The mod reads local files with `$.fs.read` (its own cache and the times your session folders changed) and its only way out is `$.process.run`, which starts `node` on the plugin's own `scripts/office.mjs` with the commands above. Nothing it reads, and nothing from your conversation (its `prompt.submit` hook never reads the prompt), goes anywhere but that script, and the script sends nothing off your computer.
+The mod reads local files with `$.fs.read` (its own cache and the times your session folders changed) and its only way out is `$.process.run`, which starts `node` on the plugin's own `scripts/office.mjs` (or `scripts/dashboard.mjs`, for the browser) with the commands above. Nothing it reads, and nothing from your conversation (its `prompt.submit` hook never reads the prompt), goes anywhere but that script, and the script sends nothing off your computer.
 
 - **To its own script, nothing else:** the arguments above and, for a Month export with `--stdin`, the month's activity the pane already shows, on the script's standard input, so the file matches the screen. The script writes the export into the plugin's cache folder.
 - **Back to the pane:** the script's answer (activity counts, session titles, project names) as JSON on its standard output.
@@ -115,7 +118,7 @@ The pane also reads, with Claude Code's own file calls (`$.fs`), the collector's
 
 - `session.start`, `session.attach`: registers `/theoffice`, restores the pane's last tab and settings, and starts its timers.
 - `prompt.submit`, `turn.complete`: ask the pane to look for new activity a moment later. They never read your prompt or Claude's reply, and pass both on unchanged.
-- `command.run` (`/theoffice`): opens or closes the pane.
+- `command.run` (`/theoffice`): opens or closes the pane; in a terminal, or with `browser`, opens The Office in your browser instead.
 - `ui.render`: draws the pane, and the **🏢 Open The Office** button above the prompt while the pane is closed.
 - `ui.message`: a click on the pixel menu (`hooks/menu.tsx`) or the page strip (`hooks/period.tsx`), the two small views drawn inside the pane.
 - `ui.close`: notes that you closed the pane.
