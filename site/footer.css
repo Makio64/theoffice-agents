@@ -15,6 +15,22 @@
 .simple-office #street .line.go .cmd::after { height: 1em; vertical-align: -2px; }
 .simple-office #street .key { width: 36px; height: 36px; }
 .simple-office #street .copy .ico { width: 18px; height: 18px; }
+/* the two ways in, each a panel under its own title with its own ink (Claude Code orange, Claude Desktop blue), an
+   "or" between them, then the step they share */
+.simple-office #street .way { --way: #d77757; margin: 0 -6px; padding: 6px 6px 2px 10px; background: #1f1a16; box-shadow: inset 4px 0 0 var(--way); }
+.simple-office #street .way.desktop { --way: #7fb0d6; }
+.simple-office #street .way-head { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin: 0; font: 700 15px/22px var(--font); color: #ece2cd; }
+.simple-office #street .way-ico { flex: none; display: block; width: 20px; height: 20px; color: var(--way); }
+.simple-office #street .way-ico .ico { display: block; width: 100%; height: 100%; }
+.simple-office #street .way-ico .i2 { fill: #ece2cd; }
+.simple-office #street .way-name { color: var(--way); }
+.simple-office #street .way-how { margin-left: auto; font-size: 12px; font-weight: 400; color: #aba08d; }
+.simple-office #street .way .line .pr { color: var(--way); }
+/* the prompt wraps like the command does: its > stays on its first line */
+.simple-office #street .way .line .pr, .simple-office #street .way .line .cmd { align-self: flex-start; }
+.simple-office #street .or { display: flex; align-items: center; gap: 12px; margin: 8px 0; font-size: 12px; line-height: 18px; color: #aba08d; }
+.simple-office #street .or::before, .simple-office #street .or::after { content: ''; flex: 1; height: 2px; background: #3d342c; }
+.simple-office #street .line.note.then { margin-top: 10px; }
 .simple-office #street .footer-requirements { margin: 10px 0 0; color: #b9aa94; text-align: center; font-size: 12px; line-height: 20px; }
 .simple-office #street .credit { margin: 8px auto 24px; font-size: 11px; line-height: 20px; }
 .simple-office #street .bedrock { min-height: 88px; }
@@ -30,6 +46,9 @@
   .simple-office #street .line { gap: 6px; min-height: 34px; }
   .simple-office #street .line.note { min-height: 28px; font-size: 12px; line-height: 20px; }
   .simple-office #street .line.go { margin: 0; padding: 2px 0; font-size: 14px; line-height: 21px; }
+  .simple-office #street .way { margin: 0 -4px; padding: 6px 4px 2px 10px; }
+  .simple-office #street .way-head { font-size: 14px; line-height: 20px; }
+  .simple-office #street .way-how { flex-basis: 100%; margin-left: 30px; font-size: 11px; line-height: 16px; }
   .simple-office #street .key { width: 36px; height: 40px; margin-top: 0; margin-bottom: 0; }
   .simple-office #street .footer-requirements { font-size: 11px; line-height: 19px; }
 }

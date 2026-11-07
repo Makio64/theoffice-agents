@@ -30,7 +30,7 @@ const PAGES = {
     'Coding, testing, reading and more:\ntheir tool calls become a picture of the work.',
   ],
   install: [
-    'Ready to move in? Install */theoffice*\nin Claude Code with the commands below.',
+    'Ready to move in? Install */theoffice*\nfrom *Claude Code* or *Claude Desktop* below.',
     'Then open a *new session* and type */theoffice*.\nYour own agents will be waiting inside.',
   ],
   sky: [

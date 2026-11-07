@@ -493,6 +493,9 @@ export const ICON = {
   work: ['......XX.X', '.....XX..X', '.....XXXXX', '....XXXx..', '...XXXx...', '..XXXx....', '.XXXx.....', 'XXXx......', 'X.XX......', 'X..X......'],
   install: ['....XX....', '....XX....', '....XX....', '....XX....', '.XXXXXXXX.', '..XXXXXX..', '...XXXX...', 'X...XX...X', 'X........X', 'XXXXXXXXXX'],
   cat: ['X........X', 'XX......XX', 'XXXXXXXXXX', 'XXXXXXXXXX', 'XX.XXXX.XX', 'XXxXXXXxXX', 'XXXX..XXXX', '.XXXXXXXX.', '..XXXXXX..', '..........'],
+  // the install console's two ways in: a terminal for Claude Code, a monitor on its stand for Claude Desktop
+  terminal: ['XXXXXXXXXX', 'XXXXXXXXXX', 'X........X', 'X.x......X', 'X..x.....X', 'X...x....X', 'X..x.....X', 'X.x.xxxx.X', 'X........X', 'XXXXXXXXXX'],
+  desktop: ['XXXXXXXXXX', 'X........X', 'X.xxxxx..X', 'X........X', 'X.xxx....X', 'X........X', 'XXXXXXXXXX', '....XX....', '...XXXX...', '.XXXXXXXX.'],
   copy: ['XXXXX...', 'X...X...', 'X.XXXXXX', 'X.X....X', 'XXX....X', '..X....X', '..X....X', '..XXXXXX'],
   check: ['........', '.......X', '......XX', 'X....XX.', 'XX..XX..', '.XXXX...', '..XX....', '........'],
 }

@@ -111,7 +111,9 @@ export function mountFooter({ animationsReady = Promise.resolve() } = {}) {
   const listeners = new AbortController();
   const timers = new Set();
   let figure;
-  const copy = (index, text) => `<button class="key copy" type="button" data-copy="${index}"${text ? ` data-text="${attr(text)}"` : ''} aria-label="Copy ${['install command', 'open command', 'install prompt'][index]}" title="Copy ${text ? 'prompt' : 'command'}">${art.iconSvg('copy')}</button>`;
+  const copy = (index, text) => `<button class="key copy" type="button" data-copy="${index}"${text ? ` data-text="${attr(text)}"` : ''} aria-label="Copy ${['the Claude Code install command', 'the open command', 'the Claude Desktop install prompt'][index]}" title="Copy ${text ? 'prompt' : 'command'}">${art.iconSvg('copy')}</button>`;
+  // each way in under its own title, so Claude Code's command and Claude Desktop's prompt never read as one list
+  const way = (id, icon, name, how) => `<h3 class="way-head" id="${id}"><span class="way-ico" aria-hidden="true">${art.iconSvg(icon)}</span><span class="way-name">Install from ${name}</span><span class="way-how">${how}</span></h3>`;
   footer.innerHTML = `
     <div class="walk" id="walk" aria-hidden="true"></div>
     <div class="road" aria-hidden="true"></div>
@@ -122,11 +124,16 @@ export function mountFooter({ animationsReady = Promise.resolve() } = {}) {
         <div class="term" id="install" role="group" aria-labelledby="move-in">
           <h2 class="box-title" id="move-in">Move in.</h2>
           <div class="screen">
-            <div class="line note"><span class="cmd">Run in Claude Code</span></div>
-            <div class="line"><span class="pr" aria-hidden="true">&gt;</span><code class="cmd">${shown(COMMANDS[0])}</code>${copy(0)}</div>
-            <div class="line note"><span class="cmd"># in the desktop app, paste this prompt instead</span></div>
-            <div class="line"><span class="pr" aria-hidden="true">&gt;</span><code class="cmd">${PROMPT}</code>${copy(2, PROMPT)}</div>
-            <div class="line note"><span class="cmd"># then, in a new session</span></div>
+            <div class="way code" role="group" aria-labelledby="way-code">
+              ${way('way-code', 'terminal', 'Claude Code', 'type it in the terminal')}
+              <div class="line"><span class="pr" aria-hidden="true">&gt;</span><code class="cmd">${shown(COMMANDS[0])}</code>${copy(0)}</div>
+            </div>
+            <div class="or" aria-hidden="true"><span>or</span></div>
+            <div class="way desktop" role="group" aria-labelledby="way-desktop">
+              ${way('way-desktop', 'desktop', 'Claude Desktop', 'paste it into a chat')}
+              <div class="line"><span class="pr" aria-hidden="true">&gt;</span><code class="cmd">${PROMPT}</code>${copy(2, PROMPT)}</div>
+            </div>
+            <div class="line note then"><span class="cmd"># then, in a new session</span></div>
             <div class="line go"><span class="pr" aria-hidden="true">&gt;</span><code class="cmd">${COMMANDS[1]}</code>${copy(1)}</div>
           </div>
         </div>
