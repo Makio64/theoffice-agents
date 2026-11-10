@@ -1378,6 +1378,34 @@ export function streetFront(ctx, top, h, IX0, IX1) {
   return { facade: front.facade, street: joints + front.glow + front.street + passersBy(ctx, groundY) }
 }
 
+// Who of each room is drawn when the floor has more desks than the drawing holds (`budget`): room → its desks drawn, in
+// their own order. Seated first, the sessions somebody opened that are at work or need them; then a script's workers
+// (`worker`) at work; then the rest. Each time a desk goes to each room in turn, so no room takes the floor: a factory's
+// fifty workers leave every project its desks, and theirs is the room the "+N more" is of.
+function seatsOf(rooms, budget) {
+  const rank = (d) => (IDLE_CLASSES.has(d.cls) && !NEEDY.has(d.cls) ? 2 : d.worker ? 1 : 0)
+  const want = rooms.map((r) => ({ r, n: 0 }))
+  let left = Math.max(0, budget)
+  for (const k of [0, 1, 2]) {
+    for (const w of want) w.most = w.r.seated.filter((d) => rank(d) <= k).length
+    for (let gave = true; gave && left > 0;) {
+      gave = false
+      for (const w of want) {
+        if (left > 0 && w.n < w.most) {
+          w.n++
+          left--
+          gave = true
+        }
+      }
+    }
+  }
+  return new Map(want.map(({ r, n }) => {
+    if (n >= r.seated.length) return [r, r.seated]
+    const first = new Set([...r.seated].sort((a, b) => rank(a) - rank(b)).slice(0, n))
+    return [r, r.seated.filter((d) => first.has(d))]
+  }))
+}
+
 // Live floor items: one room per project with seated desks (desks capped), the MEETING ROOM and the KITCHEN; with
 // nobody in, the dark rooms of today's busiest projects and the night kitchen, in one band.
 function liveItems(ctx, IW) {
@@ -1398,11 +1426,10 @@ function liveItems(ctx, IW) {
     let trophy = null
     const seated = desks.filter((d) => d.cls !== 'break' && Number.isFinite(ms(d.started_at)))
     if (seated.length > 1) trophy = seated.reduce((a, d) => (ms(d.started_at) < ms(a.started_at) ? d : a))
-    let budget = ctx.caps.desks
+    const seats = seatsOf(rooms, ctx.caps.desks)
     for (const r of rooms) {
-      const take = r.seated.slice(0, Math.max(0, budget))
+      const take = seats.get(r)
       hidden += r.seated.length - take.length
-      budget -= take.length
       if (!take.length) continue
       items.push({ ...roomItem(r.name, take, IW, ctx.color(r.name), ctx.quiet), all: r.all, trophy })
     }

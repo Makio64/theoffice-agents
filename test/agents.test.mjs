@@ -254,6 +254,45 @@ describe('live: every agent at its own desk', () => {
     assert.equal(d.title, 'Préparer la démo')
     assert.equal(d.project, 'app', "the conversation's own notes folder (brain/<id>) is not a project")
   })
+
+  test("Antigravity headless runs (a script's workers): their folder is the workspace the app has them under, the throwaway folders of one script are one room, a run that called finish has left", async () => {
+    const r3 = fs.mkdtempSync(path.join(os.tmpdir(), 'theoffice-factory-'))
+    try {
+      const cli = path.join(r3, '.gemini', 'antigravity-cli')
+      // a temp folder as macOS names one, under both of its names: each worker has a folder of its own in it
+      const T = '/var/folders/zz/office/T'
+      const ids = Object.fromEntries(['sure', 'letters', 'over', 'lost'].map((k, i) => [k, `f0f0f0f0-0000-4000-8000-00000000000${i + 1}`]))
+      const run = (id, lines, mtime) => writeLines(path.join(cli, 'brain', id, '.system_generated', 'logs', 'transcript.jsonl'), lines, mtime)
+      const asked = (ms) => ({ step_index: 0, source: 'USER_EXPLICIT', type: 'USER_INPUT', status: 'DONE', created_at: ago(ms), content: 'check this' })
+      // the prompt and nothing else yet: no tool call ever names a folder
+      run(ids.sure, [asked(60e3)], NOW - 60e3)
+      run(ids.letters, [asked(50e3)], NOW - 50e3)
+      run(ids.lost, [asked(40e3)], NOW - 40e3)
+      // its answer handed in with `finish`, whose result is its last line: the process is gone
+      run(ids.over, [asked(240e3),
+        { step_index: 1, source: 'MODEL', type: 'PLANNER_RESPONSE', status: 'DONE', created_at: ago(130e3), input_tokens: 10, output_tokens: 5, tool_calls: [{ name: 'finish', args: '{}' }] },
+        { step_index: 2, source: 'MODEL', type: 'GENERIC', status: 'DONE', created_at: ago(120e3) },
+      ], NOW - 120e3)
+      // one name in twenty is all letters (`qwhzkrtp`): of the family once a sure one was seen, which the cache remembers
+      writeJson(path.join(cli, 'cache', 'last_conversations.json'), {
+        [`/private${T}/calib-m4yheshe`]: ids.sure, [`/private${T}/calib-qwhzkrtp`]: ids.letters, [`${T}/calib-59i85au_`]: ids.over,
+      })
+      const cacheDir = path.join(r3, 'cache')
+      const read = () => collect({ view: 'live', home: r3, cacheDir, now: FROZEN, novi: false, git: false, agents: 'gemini' })
+      await read()
+      const f = await read()
+      const room = path.join(T, 'calib')
+      assert.deepEqual(f.live.desks.map((d) => [d.project, d.project_path, d.state, d.worker ?? false]).sort(), [
+        ['(unknown)', '(unknown)', 'working', false],
+        ['calib', room, 'working', true],
+        ['calib', room, 'working', true],
+      ], 'the run nobody has a workspace for stays unknown; the one that finished has no desk')
+      assert.deepEqual(f.live.recently_left.map((l) => [l.agent, l.project]), [['gemini', 'calib']], 'it is seen out, as a session whose process ended')
+      assert.deepEqual(f.projects.filter((p) => p.name.startsWith('calib')).map((p) => [p.name, p.sessions]), [['calib', 3]], 'one project for the family')
+    } finally {
+      cleanup(r3)
+    }
+  })
 })
 
 describe('history: every agent books into the same projects', () => {

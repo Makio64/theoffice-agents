@@ -97,7 +97,7 @@ const tzOffsets = () => `|${new Date(2026, 0, 15).getTimezoneOffset()}|${new Dat
 const sameZone = (tz) => typeof tz === 'string' && tz.endsWith(tzOffsets())
 
 export function emptyCache() {
-  return { v: CACHE_VERSION, tz: tzSignature(), files: {}, wf: {}, git: {}, novi: {}, slugs: {}, repos: {}, links: {} }
+  return { v: CACHE_VERSION, tz: tzSignature(), files: {}, wf: {}, git: {}, novi: {}, slugs: {}, repos: {}, links: {}, families: {} }
 }
 
 // ---------------------------------------------------------------- validation
@@ -206,6 +206,7 @@ function sanitize(c) {
     slugs: keep(c.slugs, (_, v) => v === null || typeof v === 'string'),
     repos: keep(c.repos, (k, v) => path.isAbsolute(k) && isNum(v)),
     links: keep(c.links, (_, e) => isObj(e) && isNum(e.m) && isNum(e.at) && optStr(e.p) && optStr(e.w)),
+    families: keep(c.families, (k, v) => path.isAbsolute(k) && v === 1),
     ...(typeof c.claude === 'string' ? { claude: c.claude } : {}),
     ...(isNum(c.savedAt) ? { savedAt: c.savedAt } : {}),
     ...(isNum(c.coldAt) ? { coldAt: c.coldAt } : {}),

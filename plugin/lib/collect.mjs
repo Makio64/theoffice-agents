@@ -357,6 +357,28 @@ function lineHandler(e, ctl = { incremental: false, rescan: false }) {
 const WORKTREE_RE = /^(.+?)[\\/]\.claude[\\/]worktrees[\\/]([^\\/]+)/
 const SCRATCH_RE = /^(?:\/private)?\/tmp\/claude-\d+\/(-[^/]+)\/[0-9a-f-]{36}(?:\/|$)/
 
+// The temp folders a script makes its throwaway folders in, whatever account or machine wrote the transcript
+const TMP_ROOT_RE = /^(?:\/private)?(?:\/tmp|\/var\/tmp|\/var\/folders\/[^/]+\/[^/]+\/T)$/
+// `<prefix>-<6 to 10 random characters>`, as mkdtemp, Python's tempfile (its characters count `_`) and mktemp name one
+const TMP_NAME_RE = /^(.*?[A-Za-z0-9])[-.]+([A-Za-z0-9_]{6,10})$/
+
+/**
+ * A throwaway folder made for one run, right under a temp folder, as the family it is one of:
+ * `…/T/data-factory-SB2Np4` → `{ path: '…/T/data-factory', name: 'data-factory', sure }`, null for any other
+ * folder. A script that hands each of its workers a folder of its own would otherwise open a room per worker. `sure`:
+ * its end looks drawn at random (a digit, both cases or a `_`). One in twenty is all letters, as `/tmp/my-server` is, a
+ * folder somebody named: that one is of a family only once a sure one was seen in it (makeResolver keeps them).
+ */
+export function tempFamily(dir, tmp = os.tmpdir()) {
+  const root = path.dirname(dir)
+  if (!TMP_ROOT_RE.test(root) && root !== tmp.replace(/[\\/]+$/, '')) return null
+  const m = TMP_NAME_RE.exec(path.basename(dir))
+  if (!m) return null
+  const sure = /\d/.test(m[2]) || m[2].includes('_') || (/[a-z]/.test(m[2]) && /[A-Z]/.test(m[2]))
+  // one family whichever of macOS's two names for the folder the agent wrote (`/private/var/…` is `/var/…`)
+  return { path: path.join(root.replace(/^\/private(?=\/(?:tmp|var)\/)/, ''), m[1]), name: m[1], sure }
+}
+
 /** A Windows path's drive letter in capitals (`c:\app` → `C:\app`); any other path as it is. */
 function winDrive(p, platform = process.platform) {
   return platform === 'win32' && /^[a-z]:/.test(p) ? p[0].toUpperCase() + p.slice(1) : p
@@ -404,11 +426,14 @@ function pathFromSlug(ctx, slug) {
  *  1. `<repo>/.claude/worktrees/<name>` → repo + worktree (35 such cwds no longer exist, so regex first);
  *  2. scratchpads `/(private/)tmp/claude-<uid>/<enc>/<uuid>/…` → the project whose enc() is `<enc>`;
  *  3. else the git toplevel found by walking up for `.git` (a `.git` FILE is a worktree → its main repo),
- *     starting from the nearest existing ancestor when the dir was deleted; else the cwd itself.
+ *     starting from the nearest existing ancestor when the dir was deleted;
+ *  4. else a throwaway folder's family (tempFamily, `temp: true`: its sessions are a script's workers); else the cwd itself.
  */
 function makeResolver(ctx) {
   const memo = new Map()
   const tops = new Map()
+  // the families of throwaway folders seen so far (tempFamily), kept from run to run
+  const families = (ctx.cache.families ??= {})
   const home = os.homedir()
   let known = null
   let knownGen = -1
@@ -488,7 +513,7 @@ function makeResolver(ctx) {
     // one project whatever case its drive letter was typed in (`c:\app` from one shell, `C:\app` from another)
     const c = winDrive(String(cwd ?? '').replace(/[\\/]+$/, ''))
     const m = memo.get(c)
-    if (m && (!m.weak || m.gen === ctx.knownGen)) return m
+    if (m && (!m.weak || m.gen === ctx.knownGen) && !(m.kin && families[m.kin])) return m
     let r
     let wt = WORKTREE_RE.exec(c)
     if (wt && wt[1] === home) wt = null   // ~/.claude/worktrees/<x> is not a worktree of the home folder
@@ -501,7 +526,15 @@ function makeResolver(ctx) {
       r = /^-[^\\/]+$/.test(c) ? fromSlug(c) : { path: c, name: path.basename(c) || c, worktree: null, git: false }
     } else {
       const top = gitTop(c)
-      r = top ? { path: top.path, worktree: top.worktree, git: true } : { path: c, worktree: null, git: false }
+      const fam = top ? null : tempFamily(c)
+      if (fam?.sure && !families[fam.path]) {
+        families[fam.path] = 1
+        ctx.dirty = true
+      }
+      if (top) r = { path: top.path, worktree: top.worktree, git: true }
+      else if (fam && families[fam.path]) r = { path: fam.path, name: fam.name, worktree: null, git: false, temp: true }
+      // `kin`: the family it would be of, asked again once that family is known
+      else r = { path: c, worktree: null, git: false, ...(fam ? { kin: fam.path } : {}) }
     }
     r.name ??= path.basename(r.path) || r.path
     memo.set(c, r)
@@ -843,6 +876,7 @@ function buildDesk(ctx, home, r) {
     entrypoint: r.entrypoint ?? tail.entrypoint ?? null,
     interns,
     meetings,
+    ...(proj.temp ? { worker: true } : {}),
     _sid: sid,
   }
 }

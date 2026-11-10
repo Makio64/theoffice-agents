@@ -11,7 +11,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { collect, findOnPath, guarded, isHumanPrompt, localDay, resolveRange, slugRoot } from '../plugin/lib/collect.mjs'
+import { collect, findOnPath, guarded, isHumanPrompt, localDay, resolveRange, slugRoot, tempFamily } from '../plugin/lib/collect.mjs'
 import { ARCHIVE_EVERY_MS, COLD_EVERY_MS, HOT_MS, NEW_FILE_MS, SAVE_EVERY_MS, emptyCache, isNewFile, loadCache, saveCache, tzSignature } from '../plugin/lib/cache.mjs'
 import { progressOf } from '../plugin/lib/collect.mjs'
 import { collectWithRetry, looks16Color, parseArgs, pixelFile, render } from '../plugin/scripts/office.mjs'
@@ -2127,6 +2127,37 @@ describe('windows', () => {
       c.repos['relative/app'] = Date.now()
       assert.ok(saveCache(dir, c))
       assert.deepEqual(Object.keys(loadCache(dir).repos), [repo])
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('a throwaway folder right under a temp folder is one of a family; a folder somebody named, or one elsewhere, is itself', () => {
+    const T = '/private/var/folders/zz/office/T'
+    const family = (dir) => tempFamily(dir, '/nowhere')
+    const at = (root, name, sure) => ({ path: path.join(root, name), name, sure })
+    // mkdtemp's six characters, Python's eight (a `_` among them), mktemp's ten after a dot
+    assert.deepEqual(family(`${T}/data-factory-SB2Np4`), at('/var/folders/zz/office/T', 'data-factory', true), 'macOS: /private/var is /var')
+    assert.deepEqual(family('/var/folders/zz/office/T/data-calib-59i85au_'), at('/var/folders/zz/office/T', 'data-calib', true))
+    assert.deepEqual(family('/var/folders/zz/office/T/data-calib-d_3k2j9a'), at('/var/folders/zz/office/T', 'data-calib', true), 'a `_` inside the random end is no cut')
+    assert.deepEqual(family('/tmp/tmp.aB3dE5fG7h'), at('/tmp', 'tmp', true))
+    // all letters: random or a word, which only its family tells
+    assert.deepEqual(family(`${T}/data-calib-qwhzkrtp`), at('/var/folders/zz/office/T', 'data-calib', false))
+    assert.deepEqual(family('/tmp/my-server'), at('/tmp', 'my', false))
+    // no family: a short or one-word name, a folder deeper in, a folder that is not a temp one
+    for (const dir of ['/tmp/test', '/tmp/app-v2', `${T}/smoke-QOJLQI/app`, '/Users/me/git/app-abc123', '/tmp']) assert.equal(family(dir), null, dir)
+    // the machine's own temp folder, wherever it is
+    const own = path.join(path.parse(process.cwd()).root, 'scratch', 'temp')
+    assert.deepEqual(tempFamily(path.join(own, 'job-a1b2c3'), own + path.sep), { path: path.join(own, 'job'), name: 'job', sure: true })
+    // the families seen are kept from run to run; anything else in their place is dropped
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'theoffice-families-'))
+    try {
+      const c = emptyCache()
+      c.families[path.join(own, 'job')] = 1
+      c.families['relative/job'] = 1
+      c.families[path.join(own, 'other')] = 'yes'
+      assert.ok(saveCache(dir, c))
+      assert.deepEqual(loadCache(dir).families, { [path.join(own, 'job')]: 1 })
     } finally {
       fs.rmSync(dir, { recursive: true, force: true })
     }

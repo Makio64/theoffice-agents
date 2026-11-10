@@ -76,6 +76,8 @@ export type OfficeDesk = {
   entrypoint?: string | null
   interns: OfficeIntern[]
   meetings: OfficeMeeting[]
+  /** Its folder is a throwaway one a script made for the run: a worker of that script, seated after the sessions somebody opened. */
+  worker?: boolean
 }
 
 export type OfficeLiveCounts = {

@@ -11,7 +11,7 @@ const { startDashboard, dashboardSelection } = await import(new URL('lib/dashboa
 export const OFFICE_UI = 'ui://theoffice/dashboard.html'
 const MIME = 'text/html;profile=mcp-app'
 const versions = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25']
-const identity = { name: 'theoffice', version: '1.0.2', title: 'The Office' }
+const identity = { name: 'theoffice', version: '1.0.3', title: 'The Office' }
 const escapeHtml = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 // Where a host lists The Office (Codex's sidebar and its entrypoints): the plugins' icon, inlined so no file is served.
 // A copy with no icon (a test bundle) lists none.
@@ -36,7 +36,7 @@ const send=(method,params)=>parent.postMessage({jsonrpc:'2.0',method,params},'*'
 function show(value){try{const next=new URL(value);if(next.origin!==base.origin||next.searchParams.get('token')!==base.searchParams.get('token'))return;frame.src=next.href;document.getElementById('fallback').href=next.href}catch{}}
 function deepLink(context){const path=context?.['openai/deepLink']?.url;if(typeof path!=='string'||!path.startsWith('/')||path.startsWith('//'))return;const selection=new URL(path,base);const next=new URL(base);for(const key of ['view','range','back'])if(selection.searchParams.has(key))next.searchParams.set(key,selection.searchParams.get(key));show(next.href)}
 window.addEventListener('message',event=>{if(event.source!==parent||!event.data||event.data.jsonrpc!=='2.0')return;const message=event.data;if(message.id==='office-init'&&message.result){send('ui/notifications/initialized',{});send('ui/notifications/size-changed',{height:760});deepLink(message.result.hostContext)}else if(message.method==='ui/notifications/tool-result'){show(message.params?.structuredContent?.url)}else if(message.method==='ui/notifications/host-context-changed'){deepLink(message.params)}else if(message.method==='ui/resource-teardown'&&message.id!==undefined){parent.postMessage({jsonrpc:'2.0',id:message.id,result:{}},'*')}});
-parent.postMessage({jsonrpc:'2.0',id:'office-init',method:'ui/initialize',params:{protocolVersion:'2026-01-26',appInfo:{name:'The Office',version:'1.0.2'},appCapabilities:{availableDisplayModes:['inline','fullscreen']}}},'*');
+parent.postMessage({jsonrpc:'2.0',id:'office-init',method:'ui/initialize',params:{protocolVersion:'2026-01-26',appInfo:{name:'The Office',version:'1.0.3'},appCapabilities:{availableDisplayModes:['inline','fullscreen']}}},'*');
 </script></body></html>`
 }
 

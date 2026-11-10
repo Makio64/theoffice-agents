@@ -715,10 +715,19 @@ function antigravityTail(lines) {
     if (o.type === 'USER_INPUT') {
       t.open = true
       t.pending = null
+      t.over = false
+    } else if (t.over) {
+      continue   // what follows a run's last word (its `finish` reporting back) says nothing more
     } else if (o.type === 'PLANNER_RESPONSE') {
       const calls = Array.isArray(o.tool_calls) ? o.tool_calls : []
       t.open = calls.length > 0 || o.status === 'RUNNING'
-      if (calls.length) {
+      if (calls.some((c) => c?.name === 'finish')) {
+        // a headless run (`agy --print`) hands in its answer with `finish` and its process ends: nobody is left at the desk
+        t.open = false
+        t.pending = null
+        t.end = 'done'
+        t.over = true
+      } else if (calls.length) {
         const c = geminiCall(calls.at(-1))
         t.pending = pendingOf(c.name, c.input, ts)
       } else t.pending = null
@@ -794,6 +803,9 @@ function geminiCliTail(records) {
   return t
 }
 
+/** Antigravity's workspaces by conversation, read once a run: run (ctx) → its file → `Map<conversation, workspace>` (cwdOf). */
+const WORKSPACES = new WeakMap()
+
 const gemini = {
   id: 'gemini',
   walk(ctx, home) {
@@ -856,6 +868,25 @@ const gemini = {
     const msgs = Array.isArray(doc) ? doc : Array.isArray(doc?.messages) ? doc.messages : []
     touch(e, msOf(doc?.startTime))
     for (const m of msgs) geminiRecord(e, m)
+  },
+  /**
+   * The folder of an Antigravity session that named none (a headless run that only answers calls no tool on a file): the
+   * workspace the app has it under in `cache/last_conversations.json`, `{ <workspace>: <its last conversation> }`.
+   */
+  cwdOf(ctx, home, f) {
+    if (!f.app) return null
+    const file = path.join(home.dir, f.app, 'cache', 'last_conversations.json')
+    let known = WORKSPACES.get(ctx)?.get(file)
+    if (!known) {
+      known = new Map()
+      const last = readJson(file)
+      for (const [dir, sid] of Object.entries(last && typeof last === 'object' && !Array.isArray(last) ? last : {})) {
+        if (typeof sid === 'string' && path.isAbsolute(dir) && !known.has(sid)) known.set(sid, dir)
+      }
+      if (!WORKSPACES.has(ctx)) WORKSPACES.set(ctx, new Map())
+      WORKSPACES.get(ctx).set(file, known)
+    }
+    return known.get(f.sid) ?? null
   },
   tail(abs, size, f) {
     if (f.app) return antigravityTail(tailLines(abs, size))
@@ -1186,6 +1217,14 @@ export async function readOtherAgents(ctx, homes) {
         ctx.progress?.advance(left)
         ctx.checkpoint()
         if (!e) continue
+        // a session whose lines named no folder may have one on its agent's own books (an entry read before is asked too)
+        if (reader.cwdOf && e.kind === 'main' && !topCwd(e)) {
+          const cwd = reader.cwdOf(ctx, home, f)
+          if (cwd) {
+            addCwd(e, cwd)
+            ctx.changed = true
+          }
+        }
         byKey.set(f.key, e)
         synced.push({ f, e, home })
       } catch (err) {
@@ -1215,7 +1254,13 @@ export async function readOtherAgents(ctx, homes) {
         continue
       }
       try {
-        desks.push(deskOf(ctx, reader, home, f, e, title, proj, subsOf.get(e.sid) ?? []))
+        const tail = reader.tail(f.abs, f.st.size, f)
+        // a run that said its last word has left, as a Claude session whose process ended: seen out for LEFT_MS
+        if (tail.over) {
+          if (ctx.nowMs - f.st.mtimeMs < LEFT_MS) left.push({ title: clip(redact(title || proj.name), 60), project: clip(proj.name, 60), left_at: iso(f.st.mtimeMs), agent: home.agent, _ms: f.st.mtimeMs })
+          continue
+        }
+        desks.push(deskOf(ctx, home, f, e, title, proj, subsOf.get(e.sid) ?? [], tail))
         watch.push(f.abs)
       } catch (err) {
         ctx.log(`${home.agent} desk ${f.rel}: ${err?.message}`)
@@ -1313,8 +1358,7 @@ function syncOne(ctx, reader, home, f, fromMs) {
 }
 
 /** A desk for a live session of another agent: the same shape buildDesk gives Claude's, its character and account. */
-function deskOf(ctx, reader, home, f, e, title, proj, subs) {
-  const tail = reader.tail(f.abs, f.st.size, f)
+function deskOf(ctx, home, f, e, title, proj, subs, tail) {
   const interns = subs.map(({ f: sf, e: se }) => ({
     id: shortId(home.agent, se.sid),
     agent: home.agent,
@@ -1346,6 +1390,7 @@ function deskOf(ctx, reader, home, f, e, title, proj, subs) {
     entrypoint: home.agent,
     interns: interns.sort((a, b) => String(a.started_at).localeCompare(String(b.started_at))),
     meetings: [],
+    ...(proj.temp ? { worker: true } : {}),
     _sid: `${home.agent}:${e.sid}`,
   }
 }

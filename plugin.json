@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "theoffice",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A little pixel-art office of your coding agents across all your accounts. See who is working, which projects are busy, and what they did today, this week and this month, with animated pixel art, a text backup, and a local live dashboard.",
   "author": { "name": "Makio64", "url": "https://github.com/Makio64" },
   "homepage": "https://github.com/Makio64/theoffice-agents",

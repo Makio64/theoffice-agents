@@ -406,6 +406,53 @@ describe('floor numbers and the basement (B1)', () => {
   })
 })
 
+describe('more desks than the drawing holds (24)', () => {
+  // `n` desks of a project at work, titled `<k>00`, `<k>01`…
+  const crew = (f, project, k, n, more = {}) => Array.from({ length: n }, (_, i) => ({
+    ...clone(f.live.desks.find((d) => d.state === 'working')), id: `${k}${i}`, title: `${k}${String(i).padStart(2, '0')}`, project, project_path: `/git/${project}`,
+    interns: [], meetings: [], ...more,
+  }))
+  const done = (f) => ({ state: 'idle', status: 'idle', idle_reason: 'done', activity: { kind: 'idle', tool: null, label: null, since: f.generated_at } })
+  // the titles of the desks drawn, in the drawing's order (a desk's tooltip is `<project> · <title> · …`)
+  const titles = (svg) => deskGroups(svg).map((d) => / · ([a-z]\d\d)(?: · |$)/.exec(d.tip)?.[1]).filter(Boolean)
+  // how many desks of each crew are drawn, by the first letter of their titles
+  const drawn = (svg) => {
+    const n = {}
+    for (const t of titles(svg)) n[t[0]] = (n[t[0]] ?? 0) + 1
+    return n
+  }
+  const office = (...crews) => {
+    const f = stressFacts()
+    f.live.desks = crews.flatMap(([project, k, n, more]) => crew(f, project, k, n, typeof more === 'function' ? more(f) : more))
+    return f
+  }
+
+  test('no room takes the floor: a desk to each room in turn, and the rest are counted under the building', () => {
+    const svg = renderSvg(office(['factory', 'f', 40], ['app', 'a', 10], ['site', 's', 8]), { view: 'live', width: 960 })
+    assert.deepEqual(drawn(svg), { f: 8, a: 8, s: 8 })
+    assert.match(svg, /\+34 more desks upstairs/)
+  })
+
+  test("a script's workers sit after the sessions somebody opened, and before the desks whose turn is over", () => {
+    const worker = { worker: true }
+    const svg = renderSvg(office(['factory', 'f', 40, worker], ['app', 'a', 10], ['site', 's', 8], ['docs', 'd', 6, done]), { view: 'live', width: 960 })
+    assert.deepEqual(drawn(svg), { a: 10, s: 8, f: 6 }, 'every opened session at work, then the workers')
+    assert.match(svg, /\+40 more desks upstairs/)
+    // a desk that needs you is seated with those at work
+    const f = office(['factory', 'f', 40, worker], ['app', 'a', 10], ['site', 's', 8], ['docs', 'd', 6, done])
+    Object.assign(f.live.desks.find((d) => d.title === 'd03'), { idle_reason: 'error' })
+    assert.deepEqual(drawn(renderSvg(f, { view: 'live', width: 960 })), { a: 10, s: 8, d: 1, f: 5 })
+  })
+
+  test('a floor that fits is drawn as it was: every desk, in its own order', () => {
+    const f = office(['app', 'a', 10, (g) => done(g)], ['site', 's', 8, { worker: true }])
+    Object.assign(f.live.desks[9], clone(f.live.desks[10]), { id: 'a9', title: 'a09', project: 'app', project_path: '/git/app', worker: undefined })
+    const svg = renderSvg(f, { view: 'live', width: 960 })
+    assert.doesNotMatch(svg, /more desks? upstairs/)
+    assert.deepEqual(titles(svg), f.live.desks.map((d) => d.title), 'the one at work is not moved before the others')
+  })
+})
+
 // ---------------------------------------------------------------- the walls' dressing (2F and up)
 
 // What hangs on the walls, [width, height, what rises over it] of each piece (the calendar's nail, the painting's light;
