@@ -13,6 +13,27 @@ const VOXEL = path.join(SITE, '..', 'dist', 'voxel')
 const HOST = '127.0.0.1'
 const PORT = 4173
 const TRIES = 20
+// Normal development serves editable source URLs with no cache. --built mirrors
+// the generated Netlify page rewrites and headers for publish-output checks.
+const BUILT = process.argv.includes('--built')
+const PAGES = BUILT ? JSON.parse(await fs.readFile(path.join(SITE, 'assets/pages.json'), 'utf8')) : {}
+const routes = new Map()
+for (const [file, generated] of Object.entries(PAGES)) {
+  routes.set(`/${file}`, generated)
+  if (file.endsWith('index.html')) {
+    const route = `/${file.slice(0, -'index.html'.length)}`
+    routes.set(route, generated)
+    if (route !== '/') routes.set(route.slice(0, -1), generated)
+  }
+}
+const cacheRules = new Map()
+if (BUILT) {
+  let route
+  for (const line of (await fs.readFile(path.join(SITE, '_headers'), 'utf8')).split('\n')) {
+    if (line.startsWith('/')) route = line.trim()
+    else if (/^\s+Cache-Control:/i.test(line)) cacheRules.set(route, line.trim().slice('Cache-Control:'.length).trim())
+  }
+}
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.png': 'image/png', '.json': 'application/json; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.md': 'text/markdown; charset=utf-8' }
 
 const server = http.createServer(async (req, res) => {
@@ -25,10 +46,12 @@ const server = http.createServer(async (req, res) => {
       return
     }
     const [root, rest] = name.startsWith('/3d/') ? [VOXEL, name.slice(3)] : [SITE, name]
-    const file = path.join(root, rest.endsWith('/') ? `${rest}index.html` : rest)
+    let file = path.join(root, rest.endsWith('/') ? `${rest}index.html` : rest)
     if (!file.startsWith(`${root}${path.sep}`)) throw new Error('outside site/')
+    if (root === SITE && routes.has(name)) file = path.join(SITE, routes.get(name))
     const body = await fs.readFile(file)
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' }).end(body)
+    const cache = BUILT ? cacheRules.get(name) ?? 'public, max-age=0, must-revalidate' : 'no-store'
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] ?? 'application/octet-stream', 'Cache-Control': cache }).end(body)
   } catch {
     res.writeHead(404, { 'Cache-Control': 'no-store' }).end('Not found')
   }

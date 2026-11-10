@@ -9,6 +9,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { fingerprintSite } from './fingerprint.mjs'
 import { renderLoading, renderSvg } from '../plugin/lib/svg.mjs'
 import { pageDays } from '../plugin/lib/period.mjs'
 import { EDGE, FEATURE_VIEWS, TOWER, pictureParts } from './pictures.mjs'
@@ -226,3 +227,6 @@ console.log(`data.js v${version}`)
 const { artCss } = await import('./theme.js')
 fs.writeFileSync(path.join(SITE, 'art.css'), `${artCss()}\n`)
 console.log('art.css')
+
+const manifest = fingerprintSite(SITE)
+console.log(`assets/: ${Object.keys(manifest).length} content-addressed files; HTML and _headers ready`)

@@ -19,6 +19,7 @@ await new Promise((resolve, reject) => {
 await build({ configFile: path.join(site, 'voxel', 'vite.config.js') })
 // Ship a compact entry and worker instead of making the first view traverse the source-module graph.
 const landing = path.join(dist, 'landing')
+const assets = JSON.parse(await fs.readFile(path.join(site, 'assets/manifest.json'), 'utf8'))
 await build({
   configFile: false,
   root: site,
@@ -28,7 +29,8 @@ await build({
     emptyOutDir: true,
     target: 'es2022',
     assetsInlineLimit: 0,
-    rolldownOptions: { input: path.join(site, 'main.js'), output: { entryFileNames: 'main.js' } },
+    manifest: true,
+    rolldownOptions: { input: path.join(site, assets['main.js']) },
   },
 })
 
@@ -41,6 +43,23 @@ try {
     filter: source => source !== path.join(site, 'voxel'),
   })
   await fs.cp(landing, staged, { recursive: true })
+  const bundled = JSON.parse(await fs.readFile(path.join(landing, '.vite/manifest.json'), 'utf8'))
+  const entry = Object.values(bundled).find(chunk => chunk.isEntry).file
+  const pages = JSON.parse(await fs.readFile(path.join(site, 'assets/pages.json'), 'utf8'))
+  for (const [source, generated] of Object.entries(pages)) {
+    const html = (await fs.readFile(path.join(site, generated), 'utf8')).replace(`./${assets['main.js']}`, `./${entry}`)
+    // Plain static hosts read index.html directly; Netlify can use the same
+    // generated page via its exact _redirects rules.
+    await fs.writeFile(path.join(staged, source), html)
+    await fs.writeFile(path.join(staged, generated), html)
+  }
+  const bundleFiles = await fs.readdir(path.join(landing, 'assets'), { recursive: true })
+  const bundleHeaders = []
+  for (const file of bundleFiles) {
+    if (!(await fs.stat(path.join(landing, 'assets', file))).isFile()) continue
+    bundleHeaders.push(`/assets/${file}\n  Cache-Control: public, max-age=31536000, immutable\n`)
+  }
+  await fs.appendFile(path.join(staged, '_headers'), `\n# Bundled landing entry, chunks, worker and data.\n${bundleHeaders.join('\n')}`)
   await fs.cp(path.join(dist, 'voxel'), path.join(staged, '3d'), { recursive: true })
   // Preserve links shared while the prototype lived at /voxel.
   await fs.mkdir(path.join(staged, 'voxel'), { recursive: true })

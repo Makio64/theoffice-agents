@@ -1,5 +1,6 @@
 // Three floors of one living building, with the installation console under the street.
 import * as art from '../../art.js';
+import { assetPath } from '../../asset-path.js';
 import { createPictureRenderer } from '../../picture-renderer.js';
 import { mountFooter, updateStreet } from './footer.js';
 import { mountScenery } from './scenery.js';
@@ -65,7 +66,7 @@ function draw() {
   if (!samples) {
     for (const element of [...pictures, entrance, subway]) {
       const name = element.dataset.floorView || (element === entrance ? 'front' : 'subway');
-      element.src = new URL(`../../img/${name}-${sky}.svg`, import.meta.url).href;
+      element.src = new URL(assetPath(`img/${name}-${sky}.svg`), document.baseURI).href;
     }
     return;
   }

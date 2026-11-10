@@ -13,6 +13,11 @@ site/data.js
 site/sample.json
 site/art.css
 site/lib/
+# content-addressed publish output; source pages stay at their original paths
+site/assets/
+site/_headers
+site/_redirects
+reports/
 # the promo's renders, its ElevenLabs audio takes, and the plugin copy promo/pin.mjs pins
 promo/out/
 promo/audio/

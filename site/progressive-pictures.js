@@ -1,6 +1,8 @@
 // Load only the rooms the visitor can see. Night floors and the street under them
 // are already laid out at every native width; the sample facts and worker are
 // needed only by later art (the day's light).
+import { assetPath } from './asset-path.js';
+
 const NAMES = ['office', 'week', 'month', 'front', 'subway'];
 const FLOORS = new Set(['office', 'week', 'month']);
 // Every picture has a prebuilt night file, the street included (build.mjs, initial-pictures.mjs).
@@ -127,14 +129,14 @@ export function createProgressivePictures({ images, layouts, createRenderer, onC
     if (request.options.sky === 'night' && PREBUILT.has(name)) {
       try {
         const { width, animate } = request.options;
-        return await fetchPicture(new URL(`img/initial-${name}-${width}${animate ? '' : '-still'}.svg`, baseURL).href, request);
+        return await fetchPicture(new URL(assetPath(`img/initial-${name}-${width}${animate ? '' : '-still'}.svg`), baseURL).href, request);
       } catch (error) { if (request.signal.aborted) throw error; }
     }
     try { return await runtimePicture(name, request); }
     catch (error) { if (request.signal.aborted) throw error; }
     // The older, wide drawing remains usable if a native asset or worker fails.
     // Its intrinsic dimensions never replace the reserved responsive geometry.
-    return fetchPicture(new URL(`img/${name}-${request.options.sky}.svg`, baseURL).href, request);
+    return fetchPicture(new URL(assetPath(`img/${name}-${request.options.sky}.svg`), baseURL).href, request);
   }
 
   function loadOne(name, priority) {

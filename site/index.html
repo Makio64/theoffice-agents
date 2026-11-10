@@ -32,7 +32,9 @@
       const gutter = phone ? 8 : 16;
       const width = Math.max(376, Math.min(1088, Math.floor((viewport - gutter * 2) / 4) * 4));
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches ? '-still' : '';
-      const url = new URL(`img/initial-office-${width}${still}.svg`, document.baseURI).href;
+      const file = `img/initial-office-${width}${still}.svg`;
+      const initialFiles = /* build:initial-files */ null;
+      const url = new URL(initialFiles?.[width + still] ?? file, document.baseURI).href;
       const promise = fetch(url, { priority: 'high' }).then(response => {
         if (!response.ok) throw new Error('Initial office picture unavailable');
         return response.blob();

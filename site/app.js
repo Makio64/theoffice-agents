@@ -3,6 +3,7 @@
 // that picks a view, the crew in the lobby, Clawd walking down the street past the plugin's street front, its commits
 // line under it.
 import { CAST, LAMPS, VERSION } from './data.js'
+import { assetPath } from './asset-path.js'
 import * as A from './art.js'
 import { layoutCity, farSvg, starsSvg, skyBands, bandTile, neighboursSvg, lightPhase } from './sky.js'
 import { startParallax } from './parallax.js'
@@ -243,7 +244,7 @@ const pic = $('#pic'), caption = $('#caption'), panel = $('#view')
 let current = 'office'
 let quiet = false
 const sky = () => document.documentElement.dataset.sky
-const file = (k) => `img/${k}-${sky()}.svg`
+const file = (k) => assetPath(`img/${k}-${sky()}.svg`)
 
 // Use the app's renderer at the space each picture actually has. Its room packing adds floors instead of shrinking
 // a desktop drawing. The built SVGs remain the fallback while the renderer and made-up sample facts load.
@@ -413,9 +414,9 @@ function setSky(s, save = true) {
   if (drawings) drawPictures()
   else {
     pic.src = file(current)
-    for (const el of arts) el.src = `img/${el.dataset.art}-${s}.svg`
-    for (const el of featurePictures) el.src = `img/feature-${el.dataset.feature}-${s}.svg`
-    $('#officeLife img')?.setAttribute('src', `img/lobby-${s}.svg`)
+    for (const el of arts) el.src = assetPath(`img/${el.dataset.art}-${s}.svg`)
+    for (const el of featurePictures) el.src = assetPath(`img/feature-${el.dataset.feature}-${s}.svg`)
+    $('#officeLife img')?.setAttribute('src', assetPath(`img/lobby-${s}.svg`))
   }
   if (save) try { localStorage.setItem('theoffice-sky', s) } catch { /* private window: the sky just is not remembered */ }
 }

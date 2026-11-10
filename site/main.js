@@ -47,7 +47,7 @@ let observer;
 function getRenderer() {
   if (!renderer) {
     // These downloads belong to later views and light changes, never the first night-time screen.
-    const samples = fetch(new URL('./sample.json', document.baseURI)).then(response => {
+    const samples = fetch(new URL('./sample.json', import.meta.url)).then(response => {
       if (!response.ok) throw new Error('Sample activity unavailable');
       return response.json();
     }).then(livelySamples);
