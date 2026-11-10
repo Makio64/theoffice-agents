@@ -29,7 +29,7 @@ import { clip, fmtMinutes } from './format.mjs'
 import { IDLE_CLASSES, KIND_VERB, TOOL_VERB, fnv1a, idleDoing, shortName } from './model.mjs'
 import {
   AGENT_IDS, CAST, CLASS_COLOR, HEAD, INFO, K, MAX_SVG, ROLE, ROW, SCREENS, SCREEN_BG, SKY, SW, UNDER, aO, aT, agentId, agoText, backdrop, castFigure,
-  cardsSvg, clamp, dateLabel, defineSprites, defsMarkup, esc, fit, floorPlate, handsUp, hoverCard, idleSpans, infoRoom, tagFits, tagsSvg, lineSpans, mix, ms, onPage, paint, phase, pixText,
+  cardsSvg, clamp, dateLabel, defineSprites, defsMarkup, esc, fine, fit, floorPlate, handsUp, hoverCard, idleSpans, infoRoom, tagFits, tagsSvg, lineSpans, mix, ms, onPage, paint, phase, pixText,
   pixWidth, platesSvg, plural, pose, r1, rect, roomHeader, sceneHeader, sinceText, spans, sprite, stripOf, tally, textW, txt, use,
 } from './svg-kit.mjs'
 
@@ -380,15 +380,15 @@ defineSprites({
   'lv-balloons': (c) => `<g>${sprite(['.rr...yy.', 'rRrr.yYyy', 'rrrr.yyyy', 'rrrr.yyyy', '.rr...yy.', '..s...s..', '...s.s...', '...s.s...', '....s....', '....s....'],
     { r: '#e85d75', R: '#ff9fb1', y: '#f6d34a', Y: '#fff2b0', s: '#d8d2c4' })}${aT(c, '0 0;0 -1;0 -1;0 0', 2.4)}</g>`,
   // the kitchen's fridge (12 × 27): magnets, a note, its handles, a grille at the foot
-  'lv-fridge': () => sprite(['.WWWWWWWWWW.', 'WWWWWWWWWWWS', 'WmmWWWWWWhWS', 'WmmWyyWWWhWS', 'WWWWyyWWWhWS', 'WWWWWWWWWhWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS',
+  'lv-fridge': (c) => (fine(c) ? FINE_KITCHEN.fridge(c) : sprite(['.WWWWWWWWWW.', 'WWWWWWWWWWWS', 'WmmWWWWWWhWS', 'WmmWyyWWWhWS', 'WWWWyyWWWhWS', 'WWWWWWWWWhWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS',
     'dddddddddddd', 'WWWWWWWWWWWS', 'WppppWWWWhWS', 'WpkkpWWWWhWS', 'WppppWWWWhWS', 'WpkkpWWWWhWS', 'WppppWWWWhWS', 'WWWWWWWWWhWS', 'WWWWWWbbWhWS',
     'WWWWWWbbWWWS', 'WWWWWWWWWWWS', 'WWgWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'dddddddddddd', '.ff......ff.'],
-  { W: '#e6e1d6', S: '#c9c2b4', d: '#9c9689', h: '#9c9689', m: '#e85d75', y: '#f6d34a', p: '#f4efe4', k: '#9a9282', b: '#7fbde8', g: '#9ab86a', f: '#5d6168' }),
+  { W: '#e6e1d6', S: '#c9c2b4', d: '#9c9689', h: '#9c9689', m: '#e85d75', y: '#f6d34a', p: '#f4efe4', k: '#9a9282', b: '#7fbde8', g: '#9ab86a', f: '#5d6168' })),
   // a wall shelf over the coffee counter (24 × 11) with the microwave (someone heats their lunch now and then) and a
   // bowl of fruit
-  'lv-shelf': (c) => paint([[0, 8, 24, 1, '#9a7b4f'], [2, 9, 1, 2, '#7a5a3a'], [21, 9, 1, 2, '#7a5a3a'], [1, 1, 12, 7, '#5d6168'], [1, 1, 12, 1, '#7a7f87'],
+  'lv-shelf': (c) => (fine(c) ? FINE_KITCHEN.shelf(c) : paint([[0, 8, 24, 1, '#9a7b4f'], [2, 9, 1, 2, '#7a5a3a'], [21, 9, 1, 2, '#7a5a3a'], [1, 1, 12, 7, '#5d6168'], [1, 1, 12, 1, '#7a7f87'],
     [2, 2, 7, 5, '#1b1e24'], [10, 2, 2, 1, ROLE.busy], [10, 4, 2, 1, '#3a3f48'], [10, 6, 2, 1, '#3a3f48'], [16, 4, 2, 2, '#e85d75'], [18, 4, 2, 2, '#f6d34a'],
-    [20, 5, 2, 1, ROLE.busy], [15, 6, 7, 1, '#d4a94f'], [16, 7, 5, 1, '#b08850']]) + `<g opacity="0">${paint([[3, 3, 5, 3, '#f6d34a/.4']])}${aO(c, '0;0;0;1;1;0', 5)}</g>`,
+    [20, 5, 2, 1, ROLE.busy], [15, 6, 7, 1, '#d4a94f'], [16, 7, 5, 1, '#b08850']]) + `<g opacity="0">${paint([[3, 3, 5, 3, '#f6d34a/.4']])}${aO(c, '0;0;0;1;1;0', 5)}</g>`),
   // a speech bubble over an agent on break: chatting
   'lv-chat': () => paint([[1, 0, 7, 5, '#f4efe4'], [0, 1, 9, 3, '#f4efe4'], [2, 5, 2, 1, '#f4efe4'], [2, 6, 1, 1, '#f4efe4'], [2, 2, 1, 1, '#7a6f5c'],
     [4, 2, 1, 1, '#7a6f5c'], [6, 2, 1, 1, '#7a6f5c']]),
@@ -558,6 +558,64 @@ defineSprites({
   },
   'rm-cat': (c) => catSheet(c),
 })
+
+// ---- the kitchen's and the meeting room's furniture in the finer art (svg-kit fine): in the rooms' own light as the
+// desks are, its wood the desks' ramp, lit along its top and shaded down its far side, each piece on its shadow on the
+// floor, and dimmed with the room by night (the plain pieces stay day-bright in a room at night)
+
+// A fixed color as the room's light leaves it: itself by day, dimmed toward the night's blue by night.
+const dusk = (c, hex, t = 0.3) => (c.night ? mix(hex, '#12102a', t) : hex)
+const dusked = (c, legend, t) => Object.fromEntries(Object.entries(legend).map(([k, v]) => [k, dusk(c, v, t)]))
+// the kit's fridge with its top lit
+const FRIDGE = ['.HHHHHHHHHH.', 'WWWWWWWWWWWS', 'WmmWWWWWWhWS', 'WmmWyyWWWhWS', 'WWWWyyWWWhWS', 'WWWWWWWWWhWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS',
+  'dddddddddddd', 'WWWWWWWWWWWS', 'WppppWWWWhWS', 'WpkkpWWWWhWS', 'WppppWWWWhWS', 'WpkkpWWWWhWS', 'WppppWWWWhWS', 'WWWWWWWWWhWS', 'WWWWWWbbWhWS',
+  'WWWWWWbbWWWS', 'WWWWWWWWWWWS', 'WWgWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'WWWWWWWWWWWS', 'dddddddddddd', '.ff......ff.']
+defineSprites({
+  // the water cooler (10 × 24): the bottle shaded down its far side, the cabinet's top and near side lit and its far one
+  // shaded, its taps and its drip tray, a door under them
+  'rm-cooler': (c) => paint([[1, 24, 9, 1, roomPal(c).contact]]) + sprite(['...BBBB...', '..BbbbbB..', '..BWbbbB..', '..BWbbbB..', '..BbbbbB..', '..BbbbbB..', '...BBBB...', '....BB....',
+    '.hhhhhhhh.', '.hGGGGGGs.', '.hGrGGuGs.', '.hGrGGuGs.', '.hGGGGGGs.', '.hGddddGs.', '.hGGGGGGs.', '.hGGGGGGs.', '.hGssssGs.', '.hGGGGGGs.', '.hGGGGGGs.', '.hGGGGGGs.',
+    '.hGGGGGGs.', '.hGGGGGGs.', '.ssssssss.', '..d....d..'],
+  dusked(c, { B: '#3f7fb8', b: '#7fbde8', W: '#e4f4ff', h: '#f6f2e8', G: '#e2ddd1', s: '#bdb6a8', r: '#e07a61', u: '#6f91dc', d: '#7a7468' })) + [0, 1]
+    .map((i) => `<g opacity="0">${rect(4, 5, 1, 1, '#d8efff')}${aT(c, '0 0;1 -1;0 -2;1 -3', 1.6, -i * 0.8)}${aO(c, '1;1;1;0', 1.6, -i * 0.8)}</g>`).join(''),
+  // the coffee counter (24 × 18): a top and two doors of the desks' wood, the machine on it lit along its top, a cup
+  // under its spout and one beside it, steaming
+  'rm-counter': (c) => {
+    const P = roomPal(c)
+    const cup = dusk(c, '#f4efe4')
+    return paint([[0, 18, 24, 1, P.contact], [0, 8, 24, 1, P.deskHi], [0, 9, 24, 1, P.desk], [1, 10, 22, 8, P.face], [2, 11, 9, 6, P.drawer], [13, 11, 9, 6, P.drawer], [9, 13, 1, 2, P.handle],
+      [14, 13, 1, 2, P.handle], [3, 0, 8, 8, P.bezel], [3, 0, 8, 1, P.bezelHi], [5, 2, 5, 1, P.bezelHi], [9, 4, 1, 1, dusk(c, '#e07a61', 0.1)], [5, 5, 3, 3, cup], [16, 5, 3, 3, cup],
+      [19, 6, 1, 1, cup]]) + use(c, 'steam', 17, 3)
+  },
+  // the meeting room's whiteboard (46 × 22 with its tray): an aluminium frame lit along its top and its near side, its
+  // shadow on the wall, the pens on the tray; by night the board keeps most of its white for the words on it
+  'rm-board': (c) => {
+    const d = (hex, t) => dusk(c, hex, t)
+    return paint([[1, 22, 44, 1, '#000/.24'], [46, 1, 1, 21, '#000/.24'], [0, 0, 46, 21, d('#bdb6a8')], [0, 0, 46, 1, d('#e9e4d8')], [0, 1, 1, 20, d('#e9e4d8')], [1, 1, 44, 19, d('#f4f1e8', 0.12)],
+      [3, 21, 40, 1, d('#8a8478')], [8, 21, 2, 1, d('#e07a61')], [11, 21, 2, 1, d('#6f91dc')]])
+  },
+  // a chair at the meeting table (14 × 6, as a desk's): its seat, its stem, its casters, seen under the table
+  'rm-seat': (c) => {
+    const P = roomPal(c)
+    return paint([[0, 0, 14, 1, P.seatHi], [0, 1, 14, 1, P.seat], [6, 2, 2, 2, P.metal], [2, 4, 10, 1, P.metal], [1, 5, 2, 1, P.caster], [6, 5, 2, 1, P.caster], [11, 5, 2, 1, P.caster]])
+  },
+})
+// The kitchen's shelf and fridge in the finer art (their sprites, lv-shelf and lv-fridge, keep their names).
+const FINE_KITCHEN = {
+  // the wall shelf over the counter (24 × 11): the microwave lit along its top, the bowl of fruit, a board of the desks'
+  // wood on its brackets, its shadow on the wall
+  shelf: (c) => {
+    const P = roomPal(c)
+    const d = (hex) => dusk(c, hex)
+    return paint([[1, 10, 23, 1, '#000/.2'], [0, 8, 24, 1, P.deskHi], [0, 9, 24, 1, P.deskEdge], [2, 10, 1, 1, P.deskEdge], [21, 10, 1, 1, P.deskEdge], [1, 1, 12, 7, d('#5d6168')],
+      [1, 1, 12, 1, d('#8a909a')], [2, 2, 7, 5, d('#1b1e24', 0.15)],
+      [10, 2, 2, 1, ROLE.busy], [10, 4, 2, 1, d('#3a3f48')], [10, 6, 2, 1, d('#3a3f48')], [16, 4, 2, 2, d('#e85d75')], [18, 4, 2, 2, d('#f6d34a')], [15, 6, 7, 1, d('#d4a94f')],
+      [16, 7, 5, 1, d('#b08850')]]) + `<g opacity="0">${paint([[3, 3, 5, 3, '#f6d34a/.4']])}${aO(c, '0;0;0;1;1;0', 5)}</g>`
+  },
+  // the fridge (12 × 27), its top lit
+  fridge: (c) => paint([[1, 27, 11, 1, roomPal(c).contact]]) + sprite(FRIDGE, dusked(c, { H: '#f6f2e8', W: '#e2ddd1', S: '#c2bbac', d: '#9c9689', h: '#8f897c',
+    m: '#e85d75', y: '#f6d34a', p: '#f4efe4', k: '#9a9282', b: '#7fbde8', g: '#9ab86a', f: '#5d6168' })),
+}
 
 // ---------------------------------------------------------------- the walls' dressing
 
@@ -997,6 +1055,7 @@ function drawMeeting(ctx, it, top, BH) {
   let fore = ''
   const more = it.list.length - it.cells.length
   const q = ctx.quiet
+  const rich = fine(ctx)
   // its counts are its tables' tags (quiet, their cards); the tables it has no room for, counted
   const shell = roomShell(ctx, { name: 'MEETING ROOM', color: ROLE.meeting }, x, top, w, BH, more > 0 && !q ? [[`+${more} more`, ROLE.dim]] : [])
   let back = ''
@@ -1019,7 +1078,7 @@ function drawMeeting(ctx, it, top, BH) {
       // what it is: in its tooltip and its tag; quiet, in the card its table shows (below), whose hit box covers it
       const tip = `${clip(m.name ?? 'workflow', 60)} · ${clip(m.phase ?? '', 30)} · ${running} running · ${done}/${total} done` +
         (failed ? ` · ${failed} failed` : '')
-      let g = `<g transform="translate(${cx} ${y})">${q ? '' : `<title>${esc(tip)}</title>`}` + use(ctx, 'board', 2, 4)
+      let g = `<g transform="translate(${cx} ${y})">${q ? '' : `<title>${esc(tip)}</title>`}` + use(ctx, rich ? 'rm-board' : 'board', 2, 4)
       g += txt(5, 11, fit(m.phase || 'meeting', 40, 5), 5, '#8a3fa8')
       if (total <= 12) {
         const marks = []
@@ -1045,14 +1104,22 @@ function drawMeeting(ctx, it, top, BH) {
       const sx0 = tx + 2 + Math.floor((tw - 4 - seats * SEAT) / 2)
       const extra = running > seats
       ctx.band.lights.push([cx + tx + Math.floor(tw / 2), r === 0 ? top : floor - ROW - LIFT, floor - 13])
+      // the finer table's shadow on the wall under its apron, behind the chairs
+      if (rich) g += paint([[tx + 3, 28, tw - 6, 3, shell.P.under]])
       for (let i = 0; i < seats; i++) {
         if (extra && i === seats - 1) continue
-        // the desk's own characters around the table, watching the whiteboard, nodding along (three timelines a room)
-        g += castFigure(ctx, cell.d?.agent, 'meet', `${m.id ?? m.name}:${i}`, sx0 + i * SEAT, 11, { shared: i })
+        // the desk's own characters around the table, watching the whiteboard, nodding along (three timelines a room),
+        // each on a chair seen under the table (the finer art)
+        g += (rich ? use(ctx, 'rm-seat', sx0 + i * SEAT + 6, 30) : '') + castFigure(ctx, cell.d?.agent, 'meet', `${m.id ?? m.name}:${i}`, sx0 + i * SEAT, 11, { shared: i })
       }
       if (!running && !q) g += txt(tx + tw / 2, 18, 'wrapping up', 4.5, ROLE.dim, ' text-anchor="middle"')
-      g += paint([[tx, 23, tw, 1, '#c9a26b'], [tx, 24, tw, 1, '#8f6d43'], [tx + 1, 25, tw - 2, 3, '#6e5233'], [tx + 1, 28, 2, 8, '#6e5233'],
-        [tx + tw - 3, 28, 2, 8, '#6e5233']])
+      // the table: plain, or in the finer art of the desks' wood in the room's light, lit along its top, its apron shaded
+      // under the top, its legs on their shadow
+      const T = shell.P
+      g += rich
+        ? paint([[tx, 23, tw, 1, T.deskHi], [tx, 24, tw, 1, T.desk], [tx + 1, 25, tw - 2, 3, T.face], [tx + 1, 25, tw - 2, 1, T.deskEdge], [tx + 1, 28, 2, 8, T.face], [tx + tw - 3, 28, 2, 8, T.face],
+          [tx + 1, 28, 1, 8, T.faceHi], [tx + tw - 3, 28, 1, 8, T.faceHi], [tx + 1, 27, tw - 2, 1, T.faceLo], [tx, 36, 4, 1, T.contact], [tx + tw - 4, 36, 4, 1, T.contact]])
+        : paint([[tx, 23, tw, 1, '#c9a26b'], [tx, 24, tw, 1, '#8f6d43'], [tx + 1, 25, tw - 2, 3, '#6e5233'], [tx + 1, 28, 2, 8, '#6e5233'], [tx + tw - 3, 28, 2, 8, '#6e5233']])
       if (extra) g += pixText(`+${Math.min(99, running - seats + 1)}`, sx0 + (seats - 1) * SEAT + 7, 14, ROLE.meeting)
       fore += g + '</g>'
       const toGo = Math.max(0, total - done - failed - running)
@@ -1077,10 +1144,14 @@ function drawKitchen(ctx, it, top, BH) {
   rowParts(ctx, shell.P, x, floor, w, lit, top + HEAD, 'rm-tiles')
   if (lit) ctx.band.lights.push([x + Math.floor(w / 2), top, floor - 14])
   const back = shell.head
-  let fore = use(ctx, 'cooler', x + 4, floor - 24)
+  // the finer art's cooler and counter are the rooms' own (rm-), in their light; the shelf and the fridge switch by themselves
+  const rich = fine(ctx)
+  let fore = use(ctx, rich ? 'rm-cooler' : 'cooler', x + 4, floor - 24)
   // paper bunting under the header, across the room
   const swags = Math.floor((w - 6) / 30)
   for (let i = 0, bx = x + Math.floor((w - swags * 30) / 2); i < swags; i++, bx += 30) fore += use(ctx, 'lv-bunt', bx, top + HEAD + 1)
+  // in the finer art who stands there stands on a shadow, as the furniture does
+  if (rich) fore += paint(it.breaks.slice(0, it.shown).map((_, i) => [x + 23 + i * KP, floor, 18, 1, shell.P.contact]))
   it.breaks.slice(0, it.shown).forEach((d, i) => {
     const fx = x + 18 + i * KP
     // a standing character, chatting (neighbours face each other, a speech bubble over each in turn), a mug of the
@@ -1098,7 +1169,7 @@ function drawKitchen(ctx, it, top, BH) {
   const coffee = x + Math.min(w - 27, 18 + Math.max(it.shown, 2) * KP + (it.breaks.length > it.shown ? 14 : 0) + 12)
   // the coffee counter, the shelf over it with the microwave and the fruit, and the fridge beside it where the room has
   // the width (clear of the plant in the corner and of the office cat's spot)
-  fore += use(ctx, 'coffee', coffee, floor - 18) + use(ctx, 'lv-shelf', coffee, floor - 30)
+  fore += use(ctx, rich ? 'rm-counter' : 'coffee', coffee, floor - 18) + use(ctx, 'lv-shelf', coffee, floor - 30)
   if (coffee + 27 + 12 <= x + w - (w >= 150 ? 16 : 3) - (it.cat ? 30 : 0)) fore += use(ctx, 'lv-fridge', coffee + 27, floor - 27)
   if (w >= 150) fore += plantAt(ctx, x + w - 13, floor)
   if (it.empty) {
@@ -1211,6 +1282,48 @@ const BLOOM = [[5, 0.03], [2, 0.07]]
 // A reflection streak climbing a pane from (x, y), by day.
 const streak = (x, y) => [0, 1, 2, 3].map((i) => [x + i, y - 2 * i, 1, 2, '#ffffff/.35'])
 
+// ---- the finer street front (svg-kit fine): the same front in the same places, its stone, glass, iron and leaves in
+// ramps lit from the upper left, the glass set back in its frame, each thing on the sidewalk on its own shadow
+
+// The finer art's own paint: the stone's shade, the glass's shadow in its frame, the door's kick plates, the mat, the
+// stone course along the wall's foot. Every piece keeps to a few fills: a fill is a path, and the front is drawn in
+// offices that have no room to spare.
+const FINE = { stoneLo: '#6c6357', recess: '#0d1830/.24', kick: '#6e5233', kickHi: '#8f6d43', mat: '#7a2e2a', plinth: '#5f574d', plinthHi: '#7a7164' }
+// The glass's own shadow, set back in its frame: under the frame's top edge and down its left one, w × h from (x, y).
+const recess = (x, y, w, h) => [[x, y, w, 1, FINE.recess], [x, y + 1, 1, h - 1, FINE.recess]]
+// The sky's glare across a pane, down from (x, y): a broad band and a thin one beside it, `steps` rows of two.
+const glare = (x, y, steps, op) => Array.from({ length: steps }, (_, i) => [[x - i, y + 2 * i, 3, 2, `#fff/${op}`],
+  ...(i < steps - 1 ? [[x + 4 - i, y + 2 * i, 1, 2, `#fff/${op}`]] : [])]).flat()
+// How strong the glare is: the sky by day, a hint of the street's lamps on a lit front, a ghost of them on a dark one.
+const GLARE = { day: '.28', lit: '.16', dark: '.05' }
+// The sprites' suffix for a front's state, as the plain windows': fr-shop, fr-shopN, fr-shopD.
+const STATE = { day: '', lit: 'N', dark: 'D' }
+// What hangs behind a window's glass, the same by day and by night: a pendant lamp over each pane, a silhouette through
+// the glass by day and with the office dark, its shade over a lit bulb at night.
+const INSIDE = { day: '#7fa6c6', lit: '#5d4630', dark: '#141c33' }
+
+// A pane of a finer window (15 × 16; a window draws it twice): the glass, the lamp behind it (lit: its bulb, and the
+// room's warm floor low in the pane; dark: a star in the glass), the glass's shadow in its frame, the sky's glare by day.
+function finePane(state) {
+  const more = state === 'lit' ? [[6, 4, 3, 1, '#fff2c4'], [0, 12, 15, 4, '#c9a26b/.3']] : state === 'dark' ? [[3, 5, 1, 1, '#6f91dc']] : []
+  return paint([[0, 0, 15, 16, GLASS[state]], [7, 1, 1, 1, INSIDE[state]], [5, 2, 5, 2, INSIDE[state]], ...more, ...recess(0, 0, 15, 16),
+    ...(state === 'lit' ? [] : glare(9, 2, 5, GLARE[state]))])
+}
+// A leaf of the finer door (18 × 29; the door draws it twice): the glass set back under the sky's glare, a kick plate
+// lit along its top under it.
+const fineLeaf = (state) => paint([[0, 0, 18, 25, GLASS[state]], ...recess(0, 0, 18, 25), ...glare(11, 2, 7, GLARE[state]), [0, 25, 18, 4, FINE.kick],
+  [0, 25, 18, 1, FINE.kickHi]])
+
+// The finer shop window, in the plain one's box (36 wide, its glass where it was): the lintel and the sill lit along their
+// top, the frame, the transom's glass set back in it, a pane either side of the mullion, the sill's shadow on the brick;
+// lit, its light blooms faintly on the brick round it.
+function fineWindow(c, state) {
+  const W = WIN_W
+  const pane = `fr-pane${STATE[state]}`
+  return (state === 'lit' ? paint(bloomRects(W, 29, BLOOM)) : '') + paint([[0, 0, W, 2, FR.stone], [0, 26, W, 2, FR.stone], [0, 0, W, 1, FR.stoneHi], [0, 26, W, 1, FR.stoneHi],
+    [1, 2, W - 2, 24, FR.frame], [2, 3, W - 4, 5, GLASS[state]], [2, 3, W - 4, 1, FINE.recess], [1, 28, W - 2, 1, '#000/.3']]) + use(c, pane, 2, 9) + use(c, pane, 19, 9)
+}
+
 // A shop window (36 × 29): a stone lintel, a dark frame round a transom and two panes, a stone sill and its shadow.
 function shopWindow(state) {
   const g = GLASS[state]
@@ -1224,39 +1337,76 @@ function shopWindow(state) {
   return (state === 'lit' ? paint(bloomRects(WIN_W, 29, BLOOM)) : '') + paint(rects)
 }
 
+// The finer street lamp, in the plain one's box, its glass where it was: a finial on the lantern's cap, a collar under
+// the lantern and a stepped foot on the post, its shadow on the sidewalk.
+function fineLamp(on) {
+  const lamp = paint([[0, 44, 7, 1, '#000/.3']]) + sprite(['...c...', '.ccccc.', '.cgggc.', '.cgggc.', '.cgggc.', '..ccc..', '...p...', '..ppp..', ...Array(32).fill('...p...'),
+    '..ppp..', '..ppp..', '.ppppp.', '.ccccc.'], { c: '#2b2f36', g: on ? '#ffe08a' : '#d8dce4', p: '#4a4f58' })
+  if (!on) return lamp
+  return paint(glowRects(3.5, 44, [[14, 0.06], [7, 0.12]], { squash: 0.25, rows: [44, 47] })) + lamp + paint(glowRects(3.5, 3.5, HALO))
+}
+
 // A street lamp (7 × 44): a lantern on a post; lit at night, a halo round the lantern in flat bands, brightest at the
 // glass, over it, and a pool of light on the sidewalk round its foot (its 3 rows under the sprite).
-function streetLamp(on) {
+function streetLamp(on, c) {
+  if (fine(c)) return fineLamp(on)
   const lamp = sprite(['..ccc..', '.ccccc.', '.cgggc.', '.cgggc.', '.cgggc.', '..ccc..', ...Array(35).fill('...p...'), '..ppp..', '.ppppp.', '.ppppp.'],
     { c: '#2b2f36', g: on ? '#ffe08a' : '#d8dce4', p: '#4a4f58' })
   if (!on) return lamp
   return paint(glowRects(3.5, 44, [[14, 0.06], [7, 0.12]], { squash: 0.25, rows: [44, 47] })) + lamp + paint(glowRects(3.5, 3.5, HALO))
 }
 
+// What stands on the finer sidewalk, each in its plain twin's box (its foot on the box's last row) with a row of shadow
+// under it: the bench's wood lit along its top, the hydrant round under its bonnet, lit down its near side and shaded
+// down the far one, the tree, the box ball in its planter.
+const LEAF = { H: '#9cc75a', L: '#73a444', l: '#548636', d: '#3b672a', D: '#2a4e20' }
+const FINE_ART = {
+  bench: () => paint([[1, 9, 21, 1, '#000/.28']]) + sprite(['.hhhhhhhhhhhhhhhhhhhh.', 'kwwwwwwwwwwwwwwwwwwwwk', '.k..................k.', '.hhhhhhhhhhhhhhhhhhhh.', 'kk..................kk',
+    'hhhhhhhhhhhhhhhhhhhhhh', 'wwwwwwwwwwwwwwwwwwwwww', '.k..................k.', 'kk..................kk'], { h: '#c49a62', w: '#7a5a3a', k: '#3a3f48' }),
+  hydrant: () => paint([[1, 10, 7, 1, '#000/.3']]) + sprite(['...R...', '..RRr..', '.RRrrd.', 'RRrrrdd', '.Rrrrd.', 'dRrRrdd', '.Rrrrd.', '.Rrrrd.', '.Rrrrd.', 'RRrrrdd'],
+    { R: '#e8604e', r: '#c0392b', d: '#8f271d' }),
+  // the tree (19 × 28): its crown in bands of tone, lit from the upper left and deep under its far side, a few flecks of
+  // leaf laid over them (laid over, they split no band), a forked trunk, an iron grate round its foot
+  tree: () => paint([[5, 28, 12, 1, '#000/.26']]) + sprite(['.......LLLL........', '.....LLLLLLLl......', '...LLLLLLLLLlll....', '..LLLLLLLLLLlllll..', '.LLLLLLLLLLlllllll.',
+    '.LLLLLLLLllllllllld', 'LLLLLLLlllllllllddd', 'LLLLLlllllllllldddd', 'LLllllllllllldddddd', '.llllllllllldddddDD', '.llllllllldddddDDD.', '..lllllllddddDDDDD.',
+    '...lllldddddDDDDD..', '.....dddDtTDDD.....', '........TtT.T......', '........tTT........', ...Array(9).fill('........tT.........'), '.......ttTT........',
+    '....ggggggggggg....'], { ...LEAF, t: '#7a5333', T: '#4f3420', g: '#3a3f48' }) +
+    sprite(['........H', '......H', '....H.....H', '........d', '..H....d', '', '...H', '........d', '......dd', '....d'], LEAF, 0, 1) +
+    `<path stroke="#3a3f48" stroke-dasharray="1" d="M4 27.5h11"/>`,
+  // a clipped box ball in a terracotta pot (10 × 15), the red pot the door always had: its rim lit, its far side shaded
+  box: () => paint([[2, 15, 6, 1, '#000/.3']]) + sprite(['...LLLL...', '..LHHLll..', '.LHLLLlld.', '.LLLLllld.', '.LLLllldd.', '.Lllllddd.', '..llldddD.', '...lddD...', '....DD....',
+    '.QQQQQQQQ.', '.qPPPPPPq.', '..PPPPPq..', '..PPPPPq..', '...PPPq...', '...PPPq...'], { ...LEAF, Q: '#d98a5a', P: '#b5623e', q: '#7f4428' }),
+}
+
 defineSprites({
-  'fr-shop': () => shopWindow('day'),
-  'fr-shopN': () => shopWindow('lit'),
-  'fr-shopD': () => shopWindow('dark'),
-  'fr-lamp': () => streetLamp(false),
-  'fr-lampN': () => streetLamp(true),
+  'fr-shop': (c) => (fine(c) ? fineWindow(c, 'day') : shopWindow('day')),
+  'fr-shopN': (c) => (fine(c) ? fineWindow(c, 'lit') : shopWindow('lit')),
+  'fr-shopD': (c) => (fine(c) ? fineWindow(c, 'dark') : shopWindow('dark')),
+  // the finer front's panes and door leaves, one per state of the front
+  ...Object.fromEntries(Object.entries(STATE).flatMap(([state, x]) => [[`fr-pane${x}`, () => finePane(state)], [`fr-leaf${x}`, () => fineLeaf(state)]])),
+  'fr-lamp': (c) => streetLamp(false, c),
+  'fr-lampN': (c) => streetLamp(true, c),
   // a park bench (22 × 9): two back rails, a seat, iron legs
-  'fr-bench': () => sprite(['wwwwwwwwwwwwwwwwwwwwww', 'WWWWWWWWWWWWWWWWWWWWWW', '.k..................k.', 'wwwwwwwwwwwwwwwwwwwwww', '.k..................k.',
+  'fr-bench': (c) => (fine(c) ? FINE_ART.bench() : sprite(['wwwwwwwwwwwwwwwwwwwwww', 'WWWWWWWWWWWWWWWWWWWWWW', '.k..................k.', 'wwwwwwwwwwwwwwwwwwwwww', '.k..................k.',
     'ssssssssssssssssssssss', 'SSSSSSSSSSSSSSSSSSSSSS', '.k..................k.', 'kk..................kk'],
-  { w: '#9a7b4f', W: '#7a5a3a', s: '#b08a58', S: '#6e5233', k: '#3a3f48' }),
+  { w: '#9a7b4f', W: '#7a5a3a', s: '#b08a58', S: '#6e5233', k: '#3a3f48' })),
   // a fire hydrant (7 × 10)
-  'fr-hydrant': () => sprite(['..rrr..', '.rRRRr.', '.rrrrr.', 'rrrrrrr', '.rDrDr.', '.rrrrr.', '.rrrrr.', '.rrrrr.', '.rrrrr.', 'rrrrrrr'],
-    { r: '#c0392b', R: '#e05a4a', D: '#8a2a20' }),
+  'fr-hydrant': (c) => (fine(c) ? FINE_ART.hydrant() : sprite(['..rrr..', '.rRRRr.', '.rrrrr.', 'rrrrrrr', '.rDrDr.', '.rrrrr.', '.rrrrr.', '.rrrrr.', '.rrrrr.', 'rrrrrrr'],
+    { r: '#c0392b', R: '#e05a4a', D: '#8a2a20' })),
   // a sidewalk tree (19 × 28): a full crown lit from the upper left, a trunk, an iron grate round its foot
-  'fr-tree': () => sprite(['........LLl........', '.....LLLLllll......', '.....LLLllllllL....', '...LLLLdLlllllll...', '..LLLllllllllllLl..', '..LLlldllLlllllll..',
+  'fr-tree': (c) => (fine(c) ? FINE_ART.tree() : sprite(['........LLl........', '.....LLLLllll......', '.....LLLllllllL....', '...LLLLdLlllllll...', '..LLLllllllllllLl..', '..LLlldllLlllllll..',
     '..LLlllllllllldlL..', '..llldllllLlllllld.', '.lllLlllllllldllddd', '.llldllllllLlllddd.', 'lllllLlllllldlddddd', '.lldllllllllddddddd', '.lllllLlllldddddddd',
     '..dllllllldddddddd.', '...lll.LtT.dddddd..', ...Array(10).fill('........tT.........'), '.......ttTT........', '....ggggggggggg....', '....g.g.g.g.g.g....'],
-  { L: '#7fae4a', l: '#4f7f34', d: '#3b6528', t: '#6e4a2e', T: '#4f3420', g: '#3a3f48' }),
+  { L: '#7fae4a', l: '#4f7f34', d: '#3b6528', t: '#6e4a2e', T: '#4f3420', g: '#3a3f48' })),
+  // a clipped box ball in a planter either side of the door (10 × 15, the finer art's: the plain front has the kit's plant)
+  'fr-box': () => FINE_ART.box(),
 })
 
 // The entrance at the middle of the street front, its foot on the sidewalk at groundY: stone pilasters, a glass double
 // door under a transom, brass push bars, a red canopy over it with THE OFFICE on its valance, a lamp under each end
 // at night; 'closed' hangs on the door when the office is empty at night.
 function entrance(ctx, cx, groundY, state) {
+  if (fine(ctx)) return fineEntrance(ctx, cx, groundY, state)
   const dx = cx - DOOR_W / 2
   const top = groundY - DOOR_H
   const g = GLASS[state]
@@ -1273,6 +1423,33 @@ function entrance(ctx, cx, groundY, state) {
   if (state !== 'day') rects.push([dx - 8, top - 2, 2, 1, '#ffe08a'], [dx + DOOR_W + 6, top - 2, 2, 1, '#ffe08a'], [dx - 9, top - 1, 4, 3, '#ffd27a/.25'],
     [dx + DOOR_W + 5, top - 1, 4, 3, '#ffd27a/.25'])
   let s = paint(rects) + txt(cx, top - 4, 'THE OFFICE', 5, ROLE.accent, ' text-anchor="middle" font-weight="bold" letter-spacing=".4"')
+  if (state === 'dark') s += paint([[cx - 11, top + 14, 22, 7, FR.frame], [cx - 11, top + 21, 22, 1, '#000/.35']]) + txt(cx, top + 19, 'closed', 4.5, ROLE.night, ' text-anchor="middle"')
+  return s
+}
+
+// The finer entrance, in the plain one's place: the pilasters with a capital and a foot, lit down their near side and
+// shaded down the far one; a stone threshold; the transom's three lights and the two leaves, their glass set back under
+// the sky's glare; brass push bars; the canopy lit along its top, a row of scallops hanging from its fold, its shadow on
+// the stone and the brick under it. One paint for all of it but the leaves and the bars over them.
+function fineEntrance(ctx, cx, groundY, state) {
+  const dx = cx - DOOR_W / 2
+  const top = groundY - DOOR_H
+  const g = GLASS[state]
+  const cw = DOOR_W + 20
+  const ax = dx - 10
+  const leaf = `fr-leaf${STATE[state]}`
+  const sides = [dx - 6, dx + DOOR_W + 1]
+  let s = paint([
+    ...sides.flatMap((x) => [[x, top - 1, 5, DOOR_H + 1, FR.stone], [x - 1, top - 1, 7, 2, FR.stone], [x - 1, groundY - 3, 7, 3, FR.stone]]), [dx - 1, groundY - 1, DOOR_W + 2, 1, FR.stone],
+    ...sides.flatMap((x) => [[x, top + 1, 1, DOOR_H - 4, FR.stoneHi], [x - 1, top - 1, 7, 1, FR.stoneHi], [x - 1, groundY - 3, 7, 1, FR.stoneHi]]),
+    ...sides.map((x) => [x + 4, top + 1, 1, DOOR_H - 4, FINE.stoneLo]),
+    [ax, top - 2, cw, 3, '#000/.22'], [dx - 1, top, DOOR_W + 2, DOOR_H - 1, FR.frame], ...[1, 14, 27].map((x) => [dx + x, top + 2, 12, 6, g]), [dx + 1, top + 2, DOOR_W - 2, 1, FINE.recess],
+    [ax, top - 11, cw, 9, FR.awning], [ax, top - 11, cw, 1, FR.awningHi], [ax, top - 3, cw, 1, FR.awningD],
+  ]) + `<path stroke="${FR.awning}" stroke-dasharray="3 1" d="M${ax} ${top - 1.5}h${cw}"/><path stroke="${FR.awningD}" stroke-dasharray="1 3" d="M${ax + 1} ${top - 0.5}h${cw - 2}"/>` +
+    use(ctx, leaf, dx + 1, top + 10) + use(ctx, leaf, dx + 21, top + 10) + paint([[dx + 16, top + 22, 1, 8, FR.brass], [dx + 23, top + 22, 1, 8, FR.brass]])
+  if (state !== 'day') s += paint([[dx - 8, top - 2, 2, 1, '#ffe08a'], [dx + DOOR_W + 6, top - 2, 2, 1, '#ffe08a'], [dx - 9, top - 1, 4, 3, '#ffd27a/.25'],
+    [dx + DOOR_W + 5, top - 1, 4, 3, '#ffd27a/.25']])
+  s += txt(cx, top - 4, 'THE OFFICE', 5, ROLE.accent, ' text-anchor="middle" font-weight="bold" letter-spacing=".4"')
   if (state === 'dark') s += paint([[cx - 11, top + 14, 22, 7, FR.frame], [cx - 11, top + 21, 22, 1, '#000/.35']]) + txt(cx, top + 19, 'closed', 4.5, ROLE.night, ' text-anchor="middle"')
   return s
 }
@@ -1305,10 +1482,17 @@ export function frontage(ctx, top, h, IX0, IX1) {
   const lamps = [dx - 19, dx + DOOR_W + 12]
   const left = windowsIn(IX0 + 6, lamps[0] - 6, Math.min(windowsFit(IX0 + 6, lamps[0] - 6), windowsFit(lamps[1] + 13, IX1 - 6)))
   const right = left.map((x) => 2 * cx - x - WIN_W).reverse()
-  const win = `fr-shop${{ day: '', lit: 'N', dark: 'D' }[state]}`
-  const facade = [...left, ...right].map((x) => use(ctx, win, x, groundY - 39)).join('') + entrance(ctx, cx, groundY, state)
+  const win = `fr-shop${STATE[state]}`
+  const rich = fine(ctx)
+  // the finer front stands on a stone course along the wall's foot, lit along its top (after the windows and before the
+  // entrance that stands on it: the windows lead the facade and the lamps the street, as the promo reads them)
+  const foot = rich ? paint([[IX0, groundY - 2, IX1 - IX0, 2, FINE.plinth], [IX0, groundY - 2, IX1 - IX0, 1, FINE.plinthHi]]) : ''
+  const facade = [...left, ...right].map((x) => use(ctx, win, x, groundY - 39)).join('') + foot + entrance(ctx, cx, groundY, state)
   let street = lamps.map((x) => use(ctx, night ? 'fr-lampN' : 'fr-lamp', x, groundY - 44)).join('')
-  street += use(ctx, 'plant', dx - 13, groundY - 12) + use(ctx, 'plant', dx + DOOR_W + 3, groundY - 12)
+  // on the finer sidewalk: the curb's edge catching the light, the mat at the door
+  if (rich) street += paint([[0, groundY + 2, W, 1, '#fff/.07'], [dx + 5, groundY, DOOR_W - 10, 1, FINE.mat]])
+  street += rich ? use(ctx, 'fr-box', dx - 14, groundY - 15) + use(ctx, 'fr-box', dx + DOOR_W + 4, groundY - 15)
+    : use(ctx, 'plant', dx - 13, groundY - 12) + use(ctx, 'plant', dx + DOOR_W + 3, groundY - 12)
   if (lamps[0] - 12 >= IX0 + 2) street += use(ctx, 'fr-hydrant', lamps[0] - 12, groundY - 10)
   if (lamps[1] + 36 <= IX1 - 2) street += use(ctx, 'fr-bench', lamps[1] + 14, groundY - 9)
   if (left.length > 1) street += use(ctx, 'fr-tree', IX0 + 2, groundY - 28)

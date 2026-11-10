@@ -62,6 +62,17 @@ export const UNDER = {
   beam: '#fff3c0', glass: '#9cc3dc', glassHi: '#d4ecf8',
 }
 
+/**
+ * Whether a drawing wears the finer art (ctx.fine): the street front and the kitchen's and the meeting room's furniture
+ * shaded as the desks are, everything on its own shadow, and every figure of the cast (the agents on the sidewalk, the
+ * ones at work in the basement) put together from the shared lit parts the live floors' figures are made of, so they are
+ * lit alike and a pose costs a handful of <use>s. A crowded drawing comes out lighter for it (the shared parts save more
+ * than the front adds), a small one heavier: where it does not fit, renderSvg's ladder tries the plain art next
+ * (ctx.fine 0), which is the art the drawings always had, char for char, so no drawing comes out poorer. Anything
+ * drawn off the ladder (no ctx.fine at all) keeps the plain art too.
+ */
+export const fine = (c) => Boolean(c?.fine)
+
 // ---------------------------------------------------------------- sprite maps (one char = one pixel)
 
 // Every character of the cast (cast.mjs: Clawd's official pixel sprite and the others, all on his 17 × 10 skeleton) is
@@ -558,33 +569,57 @@ const mirror = (rs) => rs.map(([x, y, w, h]) => [25 - x - w, y, w, h])
  * what it works on, as in Claude Code's own art (at most the character's `reach` each way); `shut` turns each eye into a
  * 1-px dash; `arms` is [left, right] from ARM (typing arms bob, a raised hand waves); `legs` only when standing (true)
  * or walking ('walk': the feet left and right of the middle lift in turns, still when not animating); `sink`
- * lowers the whole body; `blinkAt` is the blink phase. Wrap a new pose in a sprite (defineSprites) rather than calling
+ * lowers the whole body; `blinkAt` is the blink phase; `lit` lays its shadow on the ground under its feet (a walker out
+ * on the street) in the finer art (fine()), which lights every figure as the live floors light theirs. Wrap a new pose in
+ * a sprite (defineSprites) rather than calling
  * it per figure: `{ 'wk-cheer': (c) => clawd(c, …) }`, or one per character with castSprites.
  */
-export function figure(c, agent, { look = [0, 0], shut = false, arms = ['out', 'out'], legs = false, sink = 0, blinkAt = null, typeDur = 0.5, typeAt = 0 } = {}) {
+export function figure(c, agent, { look = [0, 0], shut = false, arms = ['out', 'out'], legs = false, sink = 0, blinkAt = null, typeDur = 0.5, typeAt = 0, lit = false } = {}) {
   const ch = CAST[agentId(agent)]
   const P = PARTS[ch.id]
   const reach = ch.reach ?? 2
   const [lx, ly] = look.map((v) => Math.max(-reach, Math.min(reach, v)))
   const armFill = [].concat(ch.arm)
-  const armRects = arms.map((a, side) => at(side ? mirror(ARM[a]) : ARM[a], 0, sink, armFill[side] ?? armFill[0]))
-  const moving = arms.map((a) => c.animate && (a === 'type' || a === 'high'))
   const walking = legs === 'walk' && c.animate
-  let s = paint([...at(P.body, 0, sink), ...armRects.filter((_, i) => !moving[i]).flat(), ...(legs && !walking ? at(P.legs, 0, sink) : [])])
-  arms.forEach((a, i) => {
-    if (!moving[i]) return
-    const v = a === 'high' ? '0 0;0 -1;0 0;0 0' : i ? '0 1;0 0' : '0 0;0 1'
-    s += `<g>${paint(armRects[i])}${aT(c, v, a === 'high' ? 1.2 : typeDur, typeAt)}</g>`
-  })
-  if (walking) {
-    // the legs left of the middle and those right of it take turns lifting their foot a pixel
-    const left = (r) => r[0] + r[2] / 2 < 12.5
-    const step = (lift) => paint(at(P.legs, 0, sink).map((r) => (left(r) === lift && r[1] + r[3] === 15 + sink ? [r[0], r[1], r[2], r[3] - 1, r[4]] : r)))
-    s += `<g>${step(true)}${aO(c, '1;0', 0.5)}</g><g opacity="0">${step(false)}${aO(c, '0;1', 0.5)}</g>`
+  let s
+  if (fine(c)) {
+    // The finer art: the figure put together from the cast's shared parts, as the live floors' are, so every figure of a
+    // drawing is lit alike and a pose is a handful of <use>s (a body is drawn once, however many poses show it): its
+    // body lit (in the dark of its screen when it sleeps), its shadow on the wall behind it; the cast's arms, a typing
+    // pair and a waving hand on the shared rhythms; its legs. `lit`: its shadow on the ground under its feet too.
+    const plain = Boolean(c.caps?.art)
+    const loop = (a, side) => (!c.animate ? null : a === 'type' ? (typeAt ? 'B' : 'A') : a === 'high' && side ? 'W' : null)
+    const arm = (side) => use(c, armName(arms[side] === 'type' ? 'out' : arms[side], side, loop(arms[side], side), shut, plain), 0, sink, ` color="${armFill[side] ?? armFill[0]}"`)
+    s = (lit ? paint([[5, 15 + sink, 18, 1, '#000/.3']]) : '') + use(c, `${ch.tag}-${shut ? 'dim' : 'lit'}`, 0, sink) +
+      (legs ? use(c, `${ch.tag}-${walking ? 'walk' : 'legs'}`, 0, sink) : '') + arm(0) + arm(1)
+    // its eyes the cast's too, where its look is one of the live floors' (FIGURE_EYES): they blink by themselves
+    const eyes = Object.keys(FIGURE_EYES).find((k) => {
+      const e = FIGURE_EYES[k]
+      return (e.look?.[0] ?? 0) === look[0] && (e.look?.[1] ?? 0) === look[1] && (e.sink ?? 0) === sink && Boolean(e.shut) === shut
+    })
+    if (eyes) return s + eyesOf(c, ch, eyes, 0, 0, c.animate && blinkAt != null && !shut)
+  } else {
+    const armRects = arms.map((a, side) => at(side ? mirror(ARM[a]) : ARM[a], 0, sink, armFill[side] ?? armFill[0]))
+    const moving = arms.map((a) => c.animate && (a === 'type' || a === 'high'))
+    s = paint([...at(P.body, 0, sink), ...armRects.filter((_, i) => !moving[i]).flat(), ...(legs && !walking ? at(P.legs, 0, sink) : [])])
+    arms.forEach((a, i) => {
+      if (!moving[i]) return
+      const v = a === 'high' ? '0 0;0 -1;0 0;0 0' : i ? '0 1;0 0' : '0 0;0 1'
+      s += `<g>${paint(armRects[i])}${aT(c, v, a === 'high' ? 1.2 : typeDur, typeAt)}</g>`
+    })
+    if (walking) s += walkLegs(c, at(P.legs, 0, sink), 15 + sink)
   }
   const open = paint(at(P.eyes, lx, ly + sink))
   const dash = paint(P.eyes.map(([x, y, w, h, f]) => [x + lx, y + h - 1 + ly + sink, w, 1, f]))
   return s + (shut ? dash : blinkAt == null ? open : blink(c, open, dash, 4.2, blinkAt))
+}
+
+// A walker's legs (`legs` rects, the feet on `floor`): the ones left of the middle and those right of it take turns
+// lifting their foot a pixel.
+function walkLegs(c, legs, floor) {
+  const left = (r) => r[0] + r[2] / 2 < 12.5
+  const step = (lift) => paint(legs.map((r) => (left(r) === lift && r[1] + r[3] === floor ? [r[0], r[1], r[2], r[3] - 1, r[4]] : r)))
+  return `<g>${step(true)}${aO(c, '1;0', 0.5)}</g><g opacity="0">${step(false)}${aO(c, '0;1', 0.5)}</g>`
 }
 
 /** One Clawd in its 25 × 15 box: figure() for Claude. */
@@ -610,8 +645,8 @@ export const POSES = {
   Z: { shut: true, sink: 1, arms: ['droop', 'droop'] },
   K0: { look: [2, 0], legs: true, blinkAt: -0.9 },
   K1: { look: [-2, 0], legs: true, blinkAt: -3.4 },
-  Wr: { look: [2, 0], legs: 'walk', blinkAt: -1.4 },
-  Wl: { look: [-2, 0], legs: 'walk', blinkAt: -2.6 },
+  Wr: { look: [2, 0], legs: 'walk', blinkAt: -1.4, lit: true },
+  Wl: { look: [-2, 0], legs: 'walk', blinkAt: -2.6, lit: true },
 }
 
 /**
@@ -753,7 +788,8 @@ export const FIGURE_LIGHT = {
   night: { top: '#ffe9c8/.2', rim: '#c4f0ff/.32', shade: '#120a26/.26', drop: '#05040c/.34' },
   day: { top: '#fff3d6/.26', rim: null, shade: '#1c1220/.2', drop: '#0c0a14/.26' },
 }
-const lightOf = (c) => FIGURE_LIGHT[c.night ? 'night' : 'day']
+// (a replay runs through its days and nights in one drawing: its figures keep the day's light, which has no screen's rim)
+const lightOf = (c) => FIGURE_LIGHT[c.night && c.view !== 'timelapse' ? 'night' : 'day']
 
 // Where light lands on a character's body, as rows of its 25 × 15 box: 's' its 2 rightmost pixels (shade), 'r' its
 // leftmost (the rim, the side its monitor is on; 'R' where that is also its top edge, which takes the top light when
@@ -1164,6 +1200,8 @@ defineSprites({
       [`${ch.tag}-lit`, (c) => litBody(c, ch, false)],
       [`${ch.tag}-dim`, (c) => litBody(c, ch, true)],
       [`${ch.tag}-legs`, () => paint(P.legs)],
+      // its legs walking (the finer art's walkers and their plain twins step alike)
+      [`${ch.tag}-walk`, (c) => walkLegs(c, P.legs, 15)],
       [`${ch.tag}-sheet`, () => ''],
       ...Object.entries(FIGURE_BODY).map(([n, spec]) => [`${ch.tag}-f-${n}`, (c) => bodyFrame(c, ch, spec)]),
       // three shared timelines per script

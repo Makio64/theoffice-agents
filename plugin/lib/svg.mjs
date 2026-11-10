@@ -40,10 +40,13 @@ const classOf = deskClass
 // first (`dress`: wallpaper, the picture rail, what hangs on the walls) and then bare, so the dressing gives way before
 // any art does; it keeps the fuller art only when its basement keeps as much furniture with it.
 const CAPS = [{ level: 0, desks: 24, meetings: 3, floors: 12 }, { level: 1, desks: 14, meetings: 2, floors: 8 }, { level: 2, desks: 6, meetings: 1, floors: 4 }]
-// The roof's ornament and the sky's art as a drawing near its budget sheds them, [ctx.roof, ctx.sky]: the full roof under
-// the full sky (its haloed sun and moon, its clouds in every light), then under the lean sky, then the roof without its
-// lesser props, then the lean roof.
-const ROOFS = [[0, 1], [0, 0], [1, 0], [2, 0]]
+// The roof's ornament and the sky's art as a drawing near its budget sheds them, each in the finer art and then in the
+// plain one, [ctx.roof, ctx.sky, ctx.fine]: the full roof under the full sky (its haloed sun and moon, its clouds in every
+// light), then under the lean sky, then the roof without its lesser props, then the lean roof. The finer art (svg-kit
+// fine: the street front and the rooms' furniture shaded and on their shadows, every figure made of the cast's shared lit
+// parts) weighs more than the plain one in a small drawing and less in a crowded one, so each rung tries it first and
+// the art the drawings had before it right after: no drawing is poorer for it, and a crowded one keeps more of its sky.
+const ROOFS = [[0, 1], [0, 0], [1, 0], [2, 0]].flatMap(([roof, sky]) => [[roof, sky, 1], [roof, sky, 0]])
 // The step a liveClock drawing's durations hold for (renderSvg `liveClock`).
 const WINDOW_MS = 600_000
 // CSS px per art pixel (renderSvg and renderTimelapse `scale`): 2 unless asked, never past 4
@@ -176,18 +179,23 @@ export function renderSvg(facts, { width = 640, animate = true, view = 'live', i
   const id = `${String(idPrefix).replace(/[^A-Za-z0-9_-]/g, '') || 'to'}-`
   // tighter caps until it fits; the commits line goes before any detail, the live rooms' full art before either. At
   // each level of the rooms' art the sky's art (ctx.sky) and then the roof (ctx.roof: 0 full, 1 without its lesser
-  // props, 2 the lean roof) come down (ROOFS) as far as the drawing needs to fit at all, and to keep the basement
-  // furnished only by the sky's art and the roof's lesser props (the bulkhead, the chimney, the vents, the pigeons), never
-  // to the lean roof; then the level that keeps the basement furnished wins
+  // props, 2 the lean roof) come down (ROOFS), each tried in the finer art (ctx.fine) and then in the plain one, as far as
+  // the drawing needs to fit at all, and to keep the basement furnished only by the sky's art and the roof's lesser props
+  // (the bulkhead, the chimney, the vents, the pigeons), never to the lean roof; then the level that keeps the basement
+  // furnished wins
   const ladder = [...CAPS.map((caps) => [caps, animate !== false]), [CAPS.at(-1), false]]
   let out = ''
   for (const [caps, anim, line] of ladder.flatMap((t) => [[...t, true], [...t, false]])) {
     let best = null
     const arts = v !== 'live' ? [[0, true]] : anim ? [[0, true], [0, false], [1, true], [1, false], [2, false]] : [[0, true], [0, false]]
     for (const [art, dress] of arts) {
-      for (const [roof, sky] of ROOFS) {
+      let last = false
+      for (const [roof, sky, fine] of ROOFS) {
+        // a roof without its lesser props was drawn and fitted, its plain twin tried after it: no leaner roof for the
+        // basement's sake
+        if (last && fine) break
         const ctx = {
-          f, exact, W, px, animate: anim, id, now, night: Boolean(f.now?.is_night), color: palette(f), desks, view: v, caps: { ...caps, art, dress }, roof, sky,
+          f, exact, W, px, animate: anim, id, now, night: Boolean(f.now?.is_night), color: palette(f), desks, view: v, caps: { ...caps, art, dress }, roof, sky, fine,
           defs: new Map(), brick: false, minHeight: clamp(Math.round(Number(minHeight) || 0), 0, 8000), transparent: transparent === true,
           card: card === true, liveClock: live, clock: clockFor(f, live && anim, clockAt == null ? NaN : Number(clockAt)), floors: FLOORS,
           // who sits in the drawings' generic seats (what they did's rooms…): the cast mixed by agent-time
@@ -204,8 +212,10 @@ export function renderSvg(facts, { width = 640, animate = true, view = 'live', i
         // ctx.b1: the detail the live basement had to come down to (0: furnished)
         if (!best || (ctx.b1 ?? 0) < best.b1) best = { svg: out, b1: ctx.b1 ?? 0 }
         // the full roof fits but leaves the basement short: one more try with a lean sky, one without the roof's lesser
-        // props, never the lean roof
-        if (!best.b1 || roof) break
+        // props, never the lean roof (each in the finer art, then in the plain one: the plain twin of the last try is
+        // always drawn, so the basement is never left shorter than the plain art would furnish it)
+        if (!best.b1 || (roof && !fine)) break
+        last = roof > 0
       }
       if (best && !best.b1) break
     }
@@ -260,11 +270,12 @@ export function renderTimelapse(facts, { width = 960, animate = true, idPrefix =
   const color = palette({ ...f, projects: [...f.projects, ...extra] })
   let out = ''
   // each rung with the full roof under the full sky, then under the lean one, then the roof's lesser props left out,
-  // then the lean roof (ROOFS): the sky's art and the roof's ornament go before the replay's detail
-  for (const [level, roof, sky] of LAPSE_LADDER.flatMap((l) => ROOFS.map(([roof, sky]) => [l, roof, sky]))) {
+  // then the lean roof, each in the finer art and then in the plain one (ROOFS): the sky's art and the roof's ornament
+  // go before the replay's detail
+  for (const [level, roof, sky, fine] of LAPSE_LADDER.flatMap((l) => ROOFS.map(([roof, sky, fine]) => [l, roof, sky, fine]))) {
     const ctx = {
       f, exact: f, W, px, animate: animate !== false, id, now: Number.isFinite(parsed) ? parsed : 0, night: Boolean(f.now?.is_night), color, desks: [],
-      view: 'timelapse', caps: level, roof, sky, defs: new Map(), brick: false, minHeight: 0, transparent: transparent === true, card: card === true,
+      view: 'timelapse', caps: level, roof, sky, fine, defs: new Map(), brick: false, minHeight: 0, transparent: transparent === true, card: card === true,
       liveClock: false, clock: { hm: '', live: false }, floors: LAPSE_FLOORS, pick: castPicker(f),
     }
     const scene = sceneTimelapse(ctx, 0, level)
