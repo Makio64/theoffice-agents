@@ -1,6 +1,6 @@
 {
   "name": "theoffice",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A little pixel-art office of your coding agents across all your accounts (Claude as Clawd; Codex, Gemini, Cursor, Kimi and Grok as their own characters), showing how many are doing what, per project — live and over today/week/month.",
   "private": true,
   "type": "module",

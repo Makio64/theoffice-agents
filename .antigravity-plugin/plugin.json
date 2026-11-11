@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "theoffice",
   "displayName": "The Office",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A live pixel-art office of your local coding agents. Open it beside chat, explore activity history, and replay a timelapse.",
   "suggestedPrompts": [
     "Open The Office beside this chat",
