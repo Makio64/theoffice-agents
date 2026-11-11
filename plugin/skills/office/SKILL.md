@@ -45,6 +45,16 @@ Use `--view month --back 1` for last month, or `--view timelapse --range yesterd
 
 The dashboard is the desktop pane's pixel console in a page: the same six views, the period strip, Quiet and Zoom, the Timelapse's player and exports, the Month's export row, and the same keys. It redraws by itself as the agents work. **Stop server** ends the standalone server. A managed sidecar or MCP server owns its own process lifecycle. Do not promise an IDE extension API in hosts that provide only skills and an embedded browser.
 
+## On another screen: a tablet, a picture frame, a spare monitor
+
+When the user asks to put The Office on an iPad, a tablet, a picture frame, a TV or another screen, start the frame only because they asked: it makes the office reachable from other devices on their network. In Claude Code the pane has it too: the **Frame** key at the right end of its menu, or `/theoffice frame` (`on`, `off`, `new`).
+
+```sh
+node "/absolute/path/to/theoffice/scripts/dashboard.mjs" --frame --detach
+```
+
+Relay its output as it is, in one fenced block: the first line is the address, then the other addresses, a QR code to scan, and how to use it. Say in one sentence that anyone on the same network who has the link sees the project names and what the agents are doing, and that the link only looks. `--view <live|today|week|month|work>` and `--rotate <minutes>` choose what the address opens on. `--frame --stop` stops it; `--frame --new-link` replaces the address when the link got out; `--frame --local --open` shows it on this computer only, to try it first. The address stays the same across restarts, and the frame shows Closed while the computer sleeps.
+
 ## Views and arguments
 
 Every agent has its own character: Claude is Clawd (`▛█▜`), Codex is Dex (`▐>▌`), Gemini CLI and Antigravity are Gem (`▐*▌`), Cursor is Caret (`▐│▌`), Kimi is Mooni (`▐(▌`), and Grok is Rok (`▐/▌`). Desks show their account name when more than one account is in use, and historical views include agent-time per agent and account.

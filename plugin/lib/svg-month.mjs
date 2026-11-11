@@ -1173,12 +1173,13 @@ export function sceneMonth(ctx, y0) {
   const kind = f.range?.kind
   const unit = kind === 'week' ? 'week' : kind === 'today' || kind === 'live' ? 'day' : 'month'
   const worked = days.length ? `worked ${st.active + st.traced} of ${plural(days.length, 'day')}` : 'no days in range'
-  // ---- horizontal plan: calendar room | directory room side by side when wide, else stacked (directory below)
+  // ---- horizontal plan: calendar room | directory room side by side when wide, else stacked (directory below); a
+  // box taller than wide (ctx.tall: a screen held upright) keeps them stacked at any width, the building as tall as it
   const BX0 = 6
   const BX1 = W - 6
   const IX0 = BX0 + 4
   const IW = BX1 - 4 - IX0
-  const side = IW >= 430
+  const side = IW >= 430 && !ctx.tall
   const dirRoomW = side ? clamp(Math.round(IW * 0.47), 210, 520) : IW
   const calRoomW = side ? IW - 3 - dirRoomW : IW
   const dirX = side ? IX0 + calRoomW + 3 : IX0
@@ -1203,7 +1204,11 @@ export function sceneMonth(ctx, y0) {
   const BH1 = HEAD + Math.max(side ? Math.max(calInner, dirInner) : calInner, colInner)
   const top2 = side ? top : top + BH1 + SLAB
   const BH2 = side ? BH1 : HEAD + dirInner
-  const groundY = top2 + BH2 + SLAB
+  // the building stands on the Office's street front, lent by the composer as ctx.floors.front, as the week's tower
+  // does: its entrance under the canopy fits 56
+  const lobbyTop = top2 + BH2 + SLAB
+  const lobby = typeof ctx.floors?.front === 'function' ? 56 : 0
+  const groundY = lobbyTop + lobby
   const line = [
     [`the ${unit}:`, ROLE.dim, ''], [worked, ROLE.title],
     st.streak > 1 && [`longest streak ${st.streak} days`, ROLE.title],
@@ -1239,9 +1244,11 @@ export function sceneMonth(ctx, y0) {
     season,
   }
   s += calendarRoom(ctx, P) + directoryRoom(ctx, P)
+  const front = lobby ? ctx.floors.front(ctx, lobbyTop, lobby, IX0, IX0 + IW) : { facade: '', street: '' }
+  s += front.facade
   // ---- the sidewalk, then under it (footing: the composer lays the commits line between) the month in numbers
   const foot = footing(ctx, groundY, y0 + H, lineSpans(6, groundY + 12, 5, line, W - 10))
-  s += foot.walk
+  s += foot.walk + front.street
   const busiest = st.max ? `, busiest day ${dayName(st.best)} (${fmtHours(st.max)})` : ''
   const alt = `The Office, the ${unit} on the wall calendar: ${fmtAgentTime(t.agent_minutes ?? 0)} agent-time, ` +
     `${plural(num(t.sessions), 'session')}, ${plural(num(t.commits), 'commit')}, ${worked}${busiest}` +

@@ -292,6 +292,27 @@ describe('month scene', () => {
     assert.doesNotMatch(empty, /agents \(sessions\)/)
   })
 
+  test('a box held upright (tall) keeps the directory under the calendar at any width; a narrow drawing is what it was', () => {
+    const f = realMonth()
+    const at = (s, name) => new RegExp(`<text x="([\\d.]+)" y="([\\d.]+)"[^>]*>${name}<`).exec(s).slice(1, 3).map(Number)
+    const high = (s) => Number(/viewBox="0 0 \d+ (\d+)"/.exec(s)[1])
+    for (const width of [960, 1200, 1600]) {
+      const wide = month(f, { width, animate: false })
+      const stood = month(f, { width, animate: false, tall: true })
+      assert.equal(at(wide, 'BUILDING DIRECTORY')[1], at(wide, 'WALL CALENDAR')[1], `${width}: side by side as it is drawn wide`)
+      assert.ok(at(wide, 'BUILDING DIRECTORY')[0] > at(wide, 'WALL CALENDAR')[0] + 150)
+      assert.ok(at(stood, 'BUILDING DIRECTORY')[1] > at(stood, 'WALL CALENDAR')[1] + 150, `${width}: the directory under the calendar`)
+      assert.equal(at(stood, 'BUILDING DIRECTORY')[0], at(stood, 'WALL CALENDAR')[0])
+      assert.ok(high(stood) > high(wide) + 100, `${width}: ${high(stood)} rows stood, ${high(wide)} wide`)
+      assert.equal(xmlProblem(stood), '')
+      assert.equal(new Set(ids(stood)).size, ids(stood).length)
+      assert.ok(stood.length <= 78_000, `${width}: ${stood.length} chars`)
+      // the same rooms, the same words: only where they hang
+      for (const s of ['>THE CREW<', '>EMPLOYEE OF<', 'data-view="month"']) assert.equal(stood.includes(s), wide.includes(s), s)
+    }
+    for (const width of [320, 640, 880]) assert.equal(month(f, { width, animate: false, tall: true }), month(f, { width, animate: false }), `${width}: one over the other already`)
+  })
+
   test('a week range draws its 7 days; empty facts draw an empty page without a crown', () => {
     const week = month(clone(SAMPLE))
     assert.equal(squares(week).length, 7)
@@ -323,24 +344,25 @@ describe('month scene', () => {
     }
   })
 
-  test('size: the stress office stays under 62 000 chars at every width, a full stress month at the pane widths', () => {
+  test('size: the stress office stays under 72 000 chars at every width, a full stress month at the pane widths', () => {
     // the scene (the calendar's picture, its stickers and the portrait take about 14 000 of it; the rooftop sign, its
     // neon's glow and the day's skyline about 10 000 more than the one-row board they replaced; the crew's list beside
-    // the calendar about 1 000, a line and a mini figure per AI), and the commits line under its street (svg-street.mjs:
+    // the calendar about 1 000, a line and a mini figure per AI; the Office's street front under the rooms about 9 000,
+    // its windows, its entrance, its trees and the agents going around), and the commits line under its street (svg-street.mjs:
     // under 7 000 at pane widths, 9 000 at 2400); a full month's 31 squares add the rest, and a crew of all six
     // characters a few hundred more per AI
     for (const width of [240, 480, 640, 960, 2400]) {
       const n = month(stressFacts(), { width }).length
-      assert.ok(n <= 62_000, `stress @${width}: ${n}`)
+      assert.ok(n <= 72_000, `stress @${width}: ${n}`)
     }
     const six = stressMonth()
     six.totals.agents = { claude: 9e5, codex: 5e5, gemini: 2e5, cursor: 9e4, kimi: 5e3, grok: 30 }
     six.accounts = Object.keys(six.totals.agents).map((agent, i) => ({ agent, label: null, minutes: 1, sessions: 99_999 - i, live: 0 }))
     for (const width of [480, 640, 960]) {
       const n = month(stressMonth(), { width }).length
-      assert.ok(n <= 68_000, `stress month @${width}: ${n}`)
+      assert.ok(n <= 78_000, `stress month @${width}: ${n}`)
       const m = month(six, { width }).length
-      assert.ok(m <= 77_000, `six AIs @${width}: ${m}`)
+      assert.ok(m <= 82_000, `six AIs @${width}: ${m}`)
     }
   })
 

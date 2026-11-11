@@ -257,6 +257,12 @@ export type OfficeBacks = { day: number; week: number; month: number }
 
 /** What the Month's export keeps: a room of its drawing (the wall calendar, the building directory), all of it, or its stats. */
 export type OfficeMonthPart = 'calendar' | 'directory' | 'whole' | 'stats'
+/**
+ * Where the frame stands (The Office on a screen of its own, scripts/dashboard.mjs --frame), as its launcher's `--json`
+ * answer was checked: whether it runs, whether it answers on the network (`lan`), the addresses a screen opens it at
+ * (`urls`, none off the network) and this computer's own (`local`, '' while it is off).
+ */
+export type OfficeFrameLink = { running: boolean; lan: boolean; urls: string[]; local: string }
 
 /** How the Month's export keeps it: a still (PNG, SVG) or a loop (GIF, video) of a drawing, the stats as a page, CSV or JSON. */
 export type OfficeMonthFormat = 'png' | 'svg' | 'gif' | 'video' | 'html' | 'csv' | 'json'
@@ -333,6 +339,12 @@ declare module 'claude-code' {
       monthSaved: { file: string; page: string } | null
       /** True while the pane is open, placed and not behind another tab; the band's Open The Office Button shows while it is false. */
       onScreen: boolean
+      /** True while the Frame key's panel is on screen in place of the tab's drawing; a press of the key, Back or a tab sets it. */
+      framePanel: boolean
+      /** Where the frame stands, as its launcher last said (asked when the panel opens, and by each key of its row); null until asked. */
+      frameLink: OfficeFrameLink | null
+      /** What the launcher is asked right now (one run at a time): where the frame stands, or a key of its row; null when nothing runs. */
+      frameBusy: 'status' | 'start' | 'stop' | 'renew' | null
       /**
        * How far the run a tab waits for has read (its `<key>.progress.json`, beside the collector's shared answer): read
        * by the watcher while the tab waits on screen, null when there is nothing to say.

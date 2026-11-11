@@ -13,18 +13,37 @@ import { renderTimelapsePage, PLAYER_JS } from './timelapse-page.mjs'
 import { renderMonthPage, MONTH_JS } from './month-page.mjs'
 import { monthStats, statsCsv, statsJson, statsPage } from './month-stats.mjs'
 import { dashboardPage } from './dashboard-page.mjs'
+import { FRAME_BUILD, FRAME_VIEWS, framePage } from './frame-page.mjs'
 import { defaultCacheDir } from './cache.mjs'
 import { httpRepresentation, sendHttpRepresentation } from './http-response.mjs'
 
 const VIEWS = ['live', 'today', 'week', 'month', 'work', 'timelapse']
 const RANGES = ['yesterday', 'week', 'month']
-const QUERY = new Set(['token', 'view', 'range', 'back', 'quiet', 'zoom', 'width'])
+const QUERY = new Set(['token', 'view', 'range', 'back', 'quiet', 'zoom', 'width', 'screen', 'smooth'])
 const HOST = '127.0.0.1'
+/** Every interface of this computer: where a frame's server listens, so a screen on the same network reaches it. */
+const LAN_HOST = '0.0.0.0'
+/** A screen a frame fills (lib/frame-page.mjs), in its own device pixels. */
+const SCREEN = { min: 240, max: 8192 }
+/**
+ * A frame's fit (fitScreen): the art's width moves in steps of `step` art pixels; a whole number of the screen's pixels
+ * to an art pixel is kept where the building then still fills `crisp` of the screen's height; an art pixel is never
+ * more than `pixel` of the screen's.
+ */
+const FIT = { step: 4, crisp: 0.9, pixel: 8 }
+/**
+ * How old a frame's drawing of a tab other than Live may be handed out again, whatever moved meanwhile: those tabs are
+ * hours and days, read from across a room, and a month costs seconds to read. Live keeps the pages' own rule.
+ */
+const FRAME_AGE = { today: 30_000, week: 60_000, work: 60_000, month: 180_000 }
 const MAX_PENDING = 12
 /** The pane's Zoom: every tab's art drawn bigger (hooks/register.tsx ZOOM_SCALE; renderSvg's own scale is 2). */
 const ZOOM_SCALE = 2.5
-/** The drawing's width when the page names none, and the bounds of one it names (the pane's svgWidth stops at 2400). */
-const WIDTH = { default: 960, min: 320, max: 2400 }
+/**
+ * The drawing's width when the page names none, and the bounds of one it names (the pane's svgWidth stops at 2400);
+ * `upright`: a frame's waiting room for a screen held upright, where a narrow room stands bigger.
+ */
+const WIDTH = { default: 960, min: 320, max: 2400, upright: 520 }
 /** A drawing whose desks only changed what they are doing waits this long to be drawn again (the pane's ACTIVITY_MS). */
 const ACTIVITY_MS = 60_000
 /** A comment line on the event stream this often, so no proxy or browser takes it for dead. */
@@ -89,8 +108,11 @@ export function dashboardSelection(params) {
   const quiet = params.get('quiet') ?? '0'
   const zoom = params.get('zoom') ?? '0'
   const width = params.get('width')
-  if (!VIEWS.includes(view) || !RANGES.includes(range) || !/^(0|[1-9]\d{0,3})$/.test(raw) || !['0', '1'].includes(quiet) || !['0', '1'].includes(zoom)) throw new Error('Invalid selection')
+  const screen = params.get('screen')
+  const smooth = params.get('smooth') ?? '0'
+  if (!VIEWS.includes(view) || !RANGES.includes(range) || !/^(0|[1-9]\d{0,3})$/.test(raw) || !['0', '1'].includes(quiet) || !['0', '1'].includes(zoom) || !['0', '1'].includes(smooth)) throw new Error('Invalid selection')
   if (width !== null && (!/^[1-9]\d{2,3}$/.test(width) || Number(width) < WIDTH.min || Number(width) > WIDTH.max)) throw new Error('Invalid width')
+  if (screen !== null && !screenOf(screen)) throw new Error('Invalid screen')
   const back = Number(raw)
   if (back > (view === 'month' ? 1200 : view === 'today' ? 3660 : 520)) throw new Error('Page is too old')
   if ((view === 'live' || view === 'timelapse') && back) throw new Error('This view has no calendar pages')
@@ -98,11 +120,80 @@ export function dashboardSelection(params) {
   return {
     view, range: view === 'timelapse' ? range : 'week', back, ...(quiet === '1' && view === 'live' ? { quiet: true } : {}),
     ...(zoom === '1' ? { zoom: true } : {}), ...(width === null ? {} : { width: Number(width) }),
+    // a frame's alone: the drawing as it glides, not stepped on the pane's beat
+    ...(screen === null ? {} : { screen, ...(smooth === '1' ? { smooth: true } : {}) }),
   }
 }
 
+/** A screen as a page names it, `2360x1640` (device pixels, each side SCREEN.min to SCREEN.max): [wide, high], else null. */
+function screenOf(screen) {
+  const sides = /^([1-9]\d{2,3})x([1-9]\d{2,3})$/.exec(typeof screen === 'string' ? screen : '')?.slice(1).map(Number)
+  return sides?.every((side) => side >= SCREEN.min && side <= SCREEN.max) ? sides : null
+}
+
+/**
+ * The drawing that fills a screen, for a frame: the screen's own shape, the building as big on it as it can stand whole.
+ * A wider drawing is a lower building (more rooms to a floor), so the art is drawn as narrow as the building still fits
+ * the height the screen then leaves it (found by halving, on a grid of FIT.step art pixels), and what the building does
+ * not fill grows bedrock under its commits line (renderSvg's minHeight). An art pixel is then some number of the
+ * screen's own, 2.8 say; where the whole number just under it still has the building fill FIT.crisp of the height, that
+ * one is drawn instead, pixel for pixel. Never bigger than FIT.pixel of the screen's pixels: a small office is not
+ * blown up to fill a wall. A building too high at every width comes at the widest, for the page to scale down.
+ * A screen held upright, and a view that has an upright plan (`upright`: renderSvg's `tall`, the Month's calendar over
+ * its directory): where the building as it is drawn wide leaves the sky more of the screen than FIT.crisp allows (a
+ * Month's two rooms side by side fill two thirds of an iPad held tall), the upright plan is fitted too, and drawn when
+ * it stands whole and fills more.
+ * `drawAt({ width, minHeight?, tall? })` draws one size (CSS px, as renderSvg takes them; no minHeight: the building's
+ * own height). `hint`: the narrowest art the last drawing of this screen fitted, tried first, since most redraws change
+ * no height. Returns `{ svg, size, narrowest }`: `size` what the drawing was drawn with, `narrowest` the next hint.
+ */
+export function fitScreen(screen, drawAt, { hint = 0, upright = false } = {}) {
+  const [wide, high] = screenOf(screen) ?? []
+  if (!wide) throw new Error('Invalid screen')
+  const most = WIDTH.max / 2
+  const snap = (across) => Math.round(across / FIT.step) * FIT.step
+  const least = Math.min(most, Math.max(WIDTH.min / 2, snap(Math.ceil(wide / FIT.pixel / FIT.step) * FIT.step)))
+  // the rows of art the screen holds when the art is `across` wide
+  const rowsAt = (across) => Math.max(1, Math.floor((across * high) / wide))
+  const near = hint ? Math.min(most, Math.max(least, snap(hint))) : 0
+  // one plan fitted (`plan`: nothing, or { tall: true }): its size, and how much of the screen's height the building fills
+  const fit = (plan) => {
+    // the building's own height where the art is `across` wide, drawn once
+    const heights = new Map()
+    const heightAt = (across) => {
+      if (!heights.has(across)) heights.set(across, Number(/\bviewBox="0 0 \d+ (\d+)"/.exec(drawAt({ width: across * 2, ...plan }))?.[1]))
+      return heights.get(across)
+    }
+    const fits = (across) => heightAt(across) <= rowsAt(across)
+    let narrowest = most
+    if (near && fits(near) && (near === least || !fits(near - FIT.step))) narrowest = near
+    else {
+      for (let low = least / FIT.step, top = most / FIT.step; low <= top;) {
+        const middle = (low + top) >> 1
+        if (fits(middle * FIT.step)) { narrowest = middle * FIT.step;top = middle - 1 } else low = middle + 1
+      }
+    }
+    let across = narrowest
+    let rows = rowsAt(narrowest)
+    // pixel for pixel when that costs the building little of the screen
+    const pixel = Math.floor(wide / narrowest)
+    if (pixel >= 1 && fits(narrowest)) {
+      const whole = Math.floor(wide / pixel)
+      const held = Math.floor(high / pixel)
+      if (whole <= most && heightAt(whole) <= held && heightAt(whole) >= FIT.crisp * held) { across = whole;rows = held }
+    }
+    return { size: { width: across * 2, minHeight: rows * 2, ...plan }, narrowest, fill: heightAt(across) / rows }
+  }
+  let best = fit({})
+  if (upright && high > wide && best.fill < FIT.crisp) {
+    const stood = fit({ tall: true })
+    if (stood.fill <= 1 && stood.fill > best.fill) best = stood
+  }
+  return { svg: drawAt(best.size), size: best.size, narrowest: best.narrowest }
+}
+
 export function dashboardSelectionParams(selection) {
-  return new URLSearchParams(Object.entries(selection).map(([key, value]) => [key, key === 'quiet' || key === 'zoom' ? (value ? '1' : '0') : String(value)]))
+  return new URLSearchParams(Object.entries(selection).map(([key, value]) => [key, key === 'quiet' || key === 'zoom' || key === 'smooth' ? (value ? '1' : '0') : String(value)]))
 }
 
 /** What each tab shows, for a reader that cannot see it (the pane's own words, hooks/register.tsx TABS). */
@@ -168,21 +259,25 @@ export async function renderDashboard(selection, { collectFacts = collect, previ
     const svg = renderTimelapse(facts, { width, card: true, ...scale })
     return previous?.svg === svg ? previous : { svg, ...said }
   }
-  const draw = (f, clockAt) => renderSvg(f, {
-    view: view === 'live' ? 'all' : view, width, card: true, liveClock: true, ...(clockAt === undefined ? {} : { clockAt }),
-    ...(selection.quiet === true ? { quiet: true } : {}), ...scale,
+  // a frame's drawing fills its screen (`fit`, fitScreen's size): the whole picture, sky and ground, not the pane's card
+  const draw = (f, clockAt, fit = null) => renderSvg(f, {
+    view: view === 'live' ? 'all' : view, liveClock: true, ...(clockAt === undefined ? {} : { clockAt }),
+    ...(selection.quiet === true ? { quiet: true } : {}), ...(fit ? { ...fit, skyFill: true } : { width, card: true, ...scale }),
   })
-  if (typeof previous?.plain === 'string' && previous.facts) {
-    if (draw(facts, previous.clockAt) === previous.plain) return previous
+  if (typeof previous?.plain === 'string' && previous.facts && (previous.fit != null) === (selection.screen != null)) {
+    if (draw(facts, previous.clockAt, previous.fit) === previous.plain) return previous
     if (now - previous.at < ACTIVITY_MS) {
-      previous.calm ??= draw(calmFacts(previous.facts), previous.clockAt)
-      if (draw(calmFacts(facts), previous.clockAt) === previous.calm) return previous
+      previous.calm ??= draw(calmFacts(previous.facts), previous.clockAt, previous.fit)
+      if (draw(calmFacts(facts), previous.clockAt, previous.fit) === previous.calm) return previous
     }
   }
   const clockAt = anchorOf(facts, now)
-  const plain = draw(facts, clockAt)
-  // on the beat as the pane puts it (lib/svg-beat.mjs): its animations aligned, so a browser repaints less
-  return { svg: onBeat(plain), plain, clockAt, at: now, ...said }
+  // the Month has an upright plan (lib/svg-month.mjs: its calendar over its directory), for a screen held tall
+  const fitted = selection.screen ? fitScreen(selection.screen, (size) => draw(facts, clockAt, size), { hint: previous?.fitAt ?? 0, upright: view === 'month' }) : null
+  const plain = fitted ? fitted.svg : draw(facts, clockAt)
+  // on the beat as the pane puts it (lib/svg-beat.mjs): its animations aligned, so a browser repaints less. A frame
+  // that asks for it (smooth) gets the drawing as it glides: its screen is all it has to draw
+  return { svg: selection.smooth === true ? plain : onBeat(plain), plain, clockAt, at: now, ...(fitted ? { fit: fitted.size, fitAt: fitted.narrowest } : {}), ...said }
 }
 
 /** Today's date here, YYYY-MM-DD, as the collector names a day. */
@@ -191,7 +286,7 @@ function localDate(at = new Date()) {
 }
 
 /** What the server keeps of a drawing and never sends: the facts and what it compares the next facts against. */
-const PRIVATE = new Set(['facts', 'plain', 'calm', 'clockAt', 'at', 'player'])
+const PRIVATE = new Set(['facts', 'plain', 'calm', 'clockAt', 'at', 'player', 'fit', 'fitAt'])
 const publicOf = (version) => Object.fromEntries(Object.entries(version).filter(([key]) => !PRIVATE.has(key)))
 
 /** The waiting room the pane shows while a tab's facts are read the first time (svg-loading.mjs), as a card. */
@@ -247,6 +342,34 @@ function hostToken(value) {
   return value
 }
 
+/** A frame's link, as the launcher keeps it (scripts/dashboard.mjs): 32 URL-safe characters. */
+function frameTokenOf(value) {
+  if (typeof value !== 'string' || !/^[\w-]{32}$/.test(value)) throw new Error('A frame token must be 32 URL-safe characters')
+  return value
+}
+
+/**
+ * The name a screen on the network may call this server by, to a frame's server: an IPv4 address or a `.local` name
+ * (Bonjour), on our port. Never a domain: a foreign page that points its own name at this computer (DNS rebinding) is
+ * turned away before its token is even looked at.
+ */
+function lanOrigin(host, port) {
+  const name = /^((?:\d{1,3}\.){3}\d{1,3}|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.local):(\d{1,5})$/.exec(String(host ?? '').toLowerCase())
+  return name && Number(name[2]) === port ? `http://${name[1]}:${port}` : null
+}
+
+const isLoopback = (address) => address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
+
+/** What a frame's page may be told to show (`/frame?view=…&rotate=…&smooth=1`): a tab, the minutes each tab stays when it turns, and its drawings as they glide. */
+export function frameOptions(params) {
+  for (const key of params.keys()) if (!['token', 'view', 'rotate', 'smooth'].includes(key) || params.getAll(key).length !== 1) throw new Error('Invalid query')
+  const view = params.get('view') ?? 'live'
+  const rotate = params.get('rotate') ?? '0'
+  const smooth = params.get('smooth') ?? '0'
+  if (!FRAME_VIEWS.includes(view) || !/^(0|[1-9]\d{0,2})$/.test(rotate) || !['0', '1'].includes(smooth)) throw new Error('Invalid frame')
+  return { view, rotate: Number(rotate), smooth: smooth === '1' }
+}
+
 /**
  * Starts a loopback-only capability URL. `renderer` is injectable so tests never inspect the user's transcripts.
  * All renders are serialized, including different tabs, since they share one incremental collector cache.
@@ -257,13 +380,20 @@ function hostToken(value) {
  * While a page listens on /events, `watcher` (lib/dashboard-watch.mjs) looks at the agents' files and each change it
  * sees is pushed to the pages, which ask for their drawing again; the cached drawings of now are dropped at once.
  * `idleMs` (0: never) stops a server no page has listened to or asked anything of for that long.
+ * `frame` ({ token, lan? }) is the one way out of this computer: the server also answers `/frame`, a page that fills a
+ * screen with the office (lib/frame-page.mjs), and listens on the network (`lan: false` keeps it on this computer) for
+ * a tablet or a picture frame to open it. The frame's token is a link of its own, kept by the launcher so the address
+ * a screen was given stays good, and it only looks: the frame's page, the drawings of now, their waiting room and the
+ * event stream. Our own token stays this computer's: it is refused from anywhere else.
  */
-export async function startDashboard({ port = 0, renderer = renderDashboard, cacheMs = 5000, initialSelection = null, preferenceFile = path.join(defaultCacheDir(), 'dashboard-preferences.json'), hostTokens = [], hostParams = [], localhostAlias = false, stoppable = true, watcher = watchOffice, idleMs = 0 } = {}) {
+export async function startDashboard({ port = 0, renderer = renderDashboard, cacheMs = 5000, initialSelection = null, preferenceFile = path.join(defaultCacheDir(), 'dashboard-preferences.json'), hostTokens = [], hostParams = [], localhostAlias = false, stoppable = true, watcher = watchOffice, idleMs = 0, frame = null } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Port must be an integer from 0 to 65535')
   if (!Number.isInteger(idleMs) || idleMs < 0) throw new Error('idleMs must be a whole number of milliseconds')
   const initial = initialSelection == null ? null : dashboardSelection(dashboardSelectionParams(initialSelection))
   const token = randomBytes(24).toString('base64url')
   const tokens = [token, ...hostTokens.map(hostToken)]
+  const frameToken = frame ? frameTokenOf(frame.token) : null
+  const onLan = frame != null && frame.lan !== false
   const ignored = hostParams.filter((key) => /^[A-Za-z][\w-]{0,40}$/.test(key) && !QUERY.has(key))
   let origins = []
   const nonce = randomBytes(18).toString('base64url')
@@ -292,7 +422,9 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
     const isNow = selection.view !== 'timelapse' && !selection.back
     const gen = isNow ? generation : -1
     const saved = cache.get(key)
-    if (saved && saved.gen === gen && Date.now() - saved.at < cacheMs) return Promise.resolve(saved.data)
+    // a frame's tab other than Live: its drawing will do for FRAME_AGE, whatever moved since
+    const lenient = selection.screen && isNow ? FRAME_AGE[selection.view] ?? 0 : 0
+    if (saved && (lenient ? Date.now() - saved.at < lenient : saved.gen === gen && Date.now() - saved.at < cacheMs)) return Promise.resolve(saved.data)
     const job = `${gen}:${key}`
     if (pending.has(job)) return pending.get(job)
     if (pending.size >= MAX_PENDING) return Promise.reject(new Error('Busy'))
@@ -375,17 +507,36 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
     }
     try {
       // Bind and Host checks prevent DNS rebinding; a foreign page cannot fetch even a leaked URL.
-      const here = origins.find((o) => new URL(o).host === req.headers.host)
+      // This computer's own pages name the server by its loopback address and come from it; a frame's server is also
+      // called by its address on the network, and there only the frame's link opens anything.
+      const own = isLoopback(req.socket.remoteAddress) ? origins.find((o) => new URL(o).host === req.headers.host) : undefined
+      const here = own ?? (frameToken ? lanOrigin(req.headers.host, server.address().port) : null)
       if (!here || (req.headers.origin && req.headers.origin !== here)) return send(403, 'Forbidden')
       const url = new URL(req.url, here)
       lastSeen = Date.now()
       const lib = /^\/lib\/([\w-]+\.mjs)$/.exec(url.pathname)?.[1]
-      if (lib && url.origin === here && modules.has(lib) && !url.search) {
+      if (lib && own && url.origin === here && modules.has(lib) && !url.search) {
         if (!['GET', 'HEAD'].includes(req.method)) return send(405, 'Method not allowed')
         return await sendHttpRepresentation(req, res, { ...headers, 'Content-Type': 'text/javascript; charset=utf-8' }, modules.get(lib))
       }
       const given = url.searchParams.get('token')
-      if (url.origin !== here || !tokens.some((t) => authorized(given, t))) return send(403, 'Forbidden')
+      const isOwner = own !== undefined && tokens.some((t) => authorized(given, t))
+      if (url.origin !== here || !(isOwner || (frameToken !== null && authorized(given, frameToken)))) return send(403, 'Forbidden')
+      if (url.pathname === '/frame') {
+        if (!frameToken) return send(404, 'Not found')
+        if (!['GET', 'HEAD'].includes(req.method)) return send(405, 'Method not allowed')
+        let options
+        try { options = frameOptions(url.searchParams) } catch { return send(400, 'Invalid query') }
+        // the waiting rooms go with the page: a tab picked shows its own at once, however busy this server is reading
+        const night = latest?.now?.is_night === true
+        // each as the pane draws it and, for a screen held upright, narrow: the same room, bigger across such a screen
+        const loaders = Object.fromEntries(['week', 'today', 'month'].flatMap((kind) => [
+          [kind, waitingDrawing({ view: kind }, { night })], [`${kind}-tall`, waitingDrawing({ view: kind, width: WIDTH.upright }, { night })],
+        ]))
+        return send(200, framePage({ nonce, ...options, loaders }), 'text/html; charset=utf-8')
+      }
+      // a frame's link only looks: the drawings of now, their waiting room and the stream that says they changed
+      if (!isOwner && !['/snapshot', '/waiting', '/events'].includes(url.pathname)) return send(403, 'Forbidden')
       for (const key of ignored) url.searchParams.delete(key)
       if (url.pathname === '/player' || url.pathname === '/export') {
         if (!['GET', 'HEAD'].includes(req.method)) return send(405, 'Method not allowed')
@@ -408,6 +559,8 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
       }
       let selection
       try { selection = dashboardSelection(url.searchParams) } catch { return send(400, 'Invalid query') }
+      // nor does it turn the calendar's pages or play the replay: a page far back is the costliest thing to read
+      if (!isOwner && (selection.back || !FRAME_VIEWS.includes(selection.view))) return send(403, 'Forbidden')
       if (url.pathname === '/preferences') {
         if ([...url.searchParams.keys()].some((key) => key !== 'token')) return send(400, 'Invalid query')
         if (req.method === 'GET') return send(200, JSON.stringify(readPreferences(preferenceFile)), 'application/json; charset=utf-8')
@@ -438,7 +591,8 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
       if (closed) return send(503, 'The Office is closing')
       try {
         const { response } = await snapshot(selection)
-        await sendHttpRepresentation(req, res, { ...headers, 'Content-Type': 'application/json; charset=utf-8' }, response)
+        // a frame is told which page the server serves now, so one left open through an update loads the new one
+        await sendHttpRepresentation(req, res, { ...headers, 'Content-Type': 'application/json; charset=utf-8', ...(frameToken ? { 'X-Office-Page': FRAME_BUILD } : {}) }, response)
       } catch {
         send(503, JSON.stringify({ error: 'Could not refresh The Office. Try again in a moment.' }), 'application/json; charset=utf-8')
       }
@@ -468,9 +622,9 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
   }
   await new Promise((resolve, reject) => {
     server.once('error', reject)
-    server.listen(port, HOST, () => { server.off('error', reject); resolve() })
+    server.listen(port, onLan ? LAN_HOST : HOST, () => { server.off('error', reject); resolve() })
   })
-  // the loopback address written out (HOST): the page is served on this computer only, never on a remote host
+  // the loopback address written out (HOST): our own page is served on this computer only, never on a remote host
   origin = `http://127.0.0.1:${server.address().port}`
   origins = localhostAlias ? [origin, `http://localhost:${server.address().port}`] : [origin]
   if (idleMs) {
@@ -479,6 +633,9 @@ export async function startDashboard({ port = 0, renderer = renderDashboard, cac
   }
   return {
     url: `${origin}/?token=${token}${initial ? `&${dashboardSelectionParams(initial)}` : ''}`,
+    port: server.address().port,
+    // a frame's address on any name this computer answers to: the path and query a host is put in front of
+    framePath: frameToken ? `/frame?token=${frameToken}` : null,
     close,
     whenClosed,
     get isClosed() { return closed },

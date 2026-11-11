@@ -15,6 +15,7 @@
   "scripts": {
     "dev": "claude --plugin-dir plugin",
     "dashboard": "node plugin/scripts/dashboard.mjs --open",
+    "frame": "node plugin/scripts/dashboard.mjs --frame --detach",
     "package:plugin": "node scripts/package-plugin.mjs",
     "package:editor": "node scripts/package-editor.mjs",
     "site": "node site/build.mjs && vite build --config site/voxel/vite.config.js --logLevel warn && node site/serve.mjs",

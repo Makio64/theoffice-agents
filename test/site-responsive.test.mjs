@@ -55,6 +55,13 @@ test('all preview views retain native pixel dimensions in both skies', () => {
         const box = assertNativeSize(picture, width, `${night ? 'night' : 'day'} ${name}@${width}`)
         assert.equal(box.x, EDGE, 'only the outer margin is removed from either side')
         assert.equal(box.y, kit.SKY + 5, 'the rooms begin below the shared roof')
+        // a floor that stands on the Office's street front in the app (the live office, the week's tower, the month)
+        // comes without it, 56 rows over its sidewalk: the site's building has one lobby, its own
+        if (['office', 'week', 'month'].includes(name)) {
+          const walk = Number(new RegExp(`<path fill="${kit.K.walk}" d="M0 (\\d+)h`).exec(picture)[1])
+          assert.equal(box.y + box.h, walk - 56, `${name}@${width}: the rooms end over the street front`)
+          assert.match(picture, /-fr-(?:shop|lamp)/, `${name}@${width}: which the drawing itself stands on`)
+        }
       }
     }
   }

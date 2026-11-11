@@ -1,6 +1,7 @@
 // The pixel-art menu at the top of the pane, as a surface module: the desktop app draws it in a `Client` region as wide
 // as the pane (hooks/register.tsx), one row per region: the tabs, on the Timelapse its ranges and Export under them,
-// and on the Month the row its Export key opens under the strip (an LED asking what, then how). It draws
+// on the Month the row its Export key opens under the strip (an LED asking what, then how), and under the Frame key
+// its row (an LED saying whether the frame is on, the keys that turn it on or off). It draws
 // lib/svg-menu.mjs's row as an image (no frame: the pointer must reach this module), tells from the cell under a click
 // which key it fell on (zoneAt, the cell's span as a share of the row, which the row spans), and posts that key's id
 // with its row (`{ row, id }`); the hooks module checks it and answers with the row's next props at once. A key held
@@ -17,7 +18,7 @@ import { renderMenu, zoneAt } from '../lib/svg-menu.mjs'
  * What the hooks module hands a row: which row, its keys, its width in CSS px, whether a row hangs under it or it under
  * one, and the question its LED asks (the export row's).
  */
-type MenuProps = { row: 'tabs' | 'lapse' | 'export'; keys: MenuKey[]; width: number; joined: boolean; under?: boolean; prompt?: string }
+type MenuProps = { row: 'tabs' | 'lapse' | 'export' | 'frame-row'; keys: MenuKey[]; width: number; joined: boolean; under?: boolean; prompt?: string }
 /** The key held down, while it is. */
 type Held = { pressed: string | null }
 

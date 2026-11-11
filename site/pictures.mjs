@@ -9,8 +9,9 @@ export function pictureParts(kit) {
   const { K } = kit
   // The site's building is the only building: of each drawing, only its rooms. Its sky, sign and roof go, down to under its
   // cornice (roof + 5), and its sidewalk and all that runs under it, with what stands over the sidewalk (FOOT tall: the street
-  // front, Today's empty band): the site has its own lobby and street. A drawing whose sidewalk is not found keeps its foot.
-  const FOOT = { office: 56, week: 56, today: 16 }
+  // front the office, the week's tower and the month stand on, Today's empty band): the site has its own lobby and street.
+  // A drawing whose sidewalk is not found keeps its foot.
+  const FOOT = { office: 56, week: 56, month: 56, today: 16 }
   function rooms(svg, name) {
     const H = Number(svg.match(/viewBox="0 0 \d+ (\d+)"/)[1])
     const walk = svg.match(new RegExp(`<path fill="${K.walk}" d="M0 (\\d+)h`))

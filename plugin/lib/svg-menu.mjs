@@ -10,6 +10,9 @@
 // A switch (the Live tab's Quiet, the Zoom) stands apart at the right end too, a cream key lit while it is on, its face
 // the same on and off so the row never moves when it is pressed; keys apart line up at the right end in their order; a
 // key `isHidden` keeps its room and draws nothing (Quiet off the Live tab), so the tabs stand where they do on every tab.
+// A key `isIcon` is its icon alone at every width (the Frame key, the last switch): the tabs keep their names' room.
+// The Frame's row is a deck like the export's: its LED says whether the frame is on, its keys turn it on or off and
+// renew its link, and Back stands apart.
 // The Month's export row is one more such deck, under the strip: an amber LED at its left asks the question (EXPORT, then
 // CALENDAR AS), the keys answer it (what to export, then how), and Back stands apart at the right end as an action
 // would, a cream key. Its LED goes before any key's words as the pane narrows.
@@ -70,6 +73,10 @@ const ICON = {
   csv: ['#########', '#+++#+++#', '#########', '#...#...#', '#########', '#...#...#', '#########'],
   json: ['.##...##.', '.#.....#.', '.#.....#.', '#..+.+..#', '.#.....#.', '.#.....#.', '.##...##.'],
   back: ['...#.....', '..##.....', '.#######.', '########.', '.#######.', '..##.....', '...#.....'],
+  // the Frame: a screen on its stand, a lit window on it; its row: the power mark (on and off), a link made anew
+  frame: ['#########', '#.......#', '#.++.++.#', '#.++.++.#', '#.......#', '#########', '....#....', '...###...', '.#######.'],
+  power: ['....#....', '..#.#.#..', '.#..#..#.', '#...#...#', '#.......#', '#.......#', '.#.....#.', '..#####..'],
+  renew: ['..####.#.', '.#....##.', '#....###.', '#........', '#.......#', '........#', '.###....#', '.##....#.', '.#.####..'],
 }
 
 /** A menu glyph on its own, sharing the desktop key's exact pixels and default ink. */
@@ -111,6 +118,8 @@ const ledW = (s) => typeW(s, LED_SIZE) + 10
 /** What a key shows in a tier: its icon (or null) and its words. A switch on shows what it shows off: never the lit key. */
 function face(k, t) {
   const lit = k.isOn && !isSwitch(k)
+  // a key that is its icon alone shows it in every tier, and no word in any
+  if (k.isIcon === true && ICON[k.icon]) return { icon: ICON[k.icon], text: '' }
   const icon = ICON[k.icon] && (t.icons === 'all' || lit) ? ICON[k.icon] : null
   const short = k.short || k.label
   const said = {
@@ -138,7 +147,7 @@ function level(nat, room, cap) {
 }
 
 /**
- * The menu row: `keys` [{ id, label, short, icon, isOn, isRepeatable, isBusy, isSwitch, isHidden }], `width` CSS px
+ * The menu row: `keys` [{ id, label, short, icon, isOn, isRepeatable, isBusy, isSwitch, isHidden, isIcon }], `width` CSS px
  * wide, `pressed` the id held down, `joined` when the strip or another deck sits flush under it, `under` when it sits
  * flush under another.
  * `prompt`: the question an amber LED asks at the row's left (the Month's export row), left out where the keys would not

@@ -2138,6 +2138,19 @@ const HEAD_N = [4, 5]
 const OVER_ROOF = 0.62
 
 /**
+ * The color of the sky's topmost band in the facts' own light, as sky() paints it: what more sky over a drawing is
+ * painted in, so it reads as that band reaching higher (renderSvg `skyFill`).
+ */
+export function skyTop(ctx) {
+  const { head, fall } = SKIES[skyPhase(ctx)]
+  const stops = [mix(head[0][1], '#000000', 0.25), ...head.map(([, c]) => c), ...fall.map(([, c]) => c)]
+  const first = Math.round(SKY / HEAD_N[ctx.sky ? 1 : 0])
+  const p = clamp((first / 2 / SKY) * OVER_ROOF, 0, 1) * (stops.length - 1)
+  const i = Math.min(stops.length - 2, Math.floor(p))
+  return mix(stops[i], stops[i + 1], p - i)
+}
+
+/**
  * The sky from y0, h tall, in a light (skyPhase): its colors (SKIES' stops, top down, under a zenith a shade darker than
  * the first) spread evenly over the sky over the roof, OVER_ROOF of them, so each band there steps as much as the next
  * and the dawn's and the dusk's warmth shows over the roof, not only beside the building; HEAD_N bands over the roof,
@@ -2165,6 +2178,30 @@ function sky(ctx, y0, h, phase, most = 6) {
   // each band past both walls, so only its top and bottom edges are stroked in the drawing
   const s = edges.slice(1).map((e, k) => `<path color="${colorAt((edges[k] + e) / 2)}" d="M-2 ${y0 + edges[k]}h${W + 4}v${e - edges[k]}H-2z"/>`).join('')
   return `<g fill="currentColor" stroke="currentColor" stroke-width="2" stroke-dasharray="1">${s}</g>`
+}
+
+/**
+ * More sky over a drawing, `more` rows of it from y 0 (renderSvg `skyFill`: the drawing then stands `more` lower). The
+ * light's own colors carry on upward from the topmost band the header paints (skyTop), deepening toward the zenith in
+ * bands as dithered as its own, about one per 22 rows; and in it the night's stars or the day's clouds, laid as the
+ * header lays its own but by another lot, so they are other stars and other clouds. Backdrop: nothing when transparent.
+ */
+export function skyOver(ctx, more) {
+  if (ctx.transparent || !(more > 0)) return ''
+  const { W } = ctx
+  const phase = skyPhase(ctx)
+  const low = skyTop(ctx)
+  const high = mix(low, '#000000', ctx.night ? 0.5 : 0.32)
+  const n = clamp(Math.round(more / 22), 1, 6)
+  const edges = Array.from({ length: n + 1 }, (_, k) => Math.round((k * more) / n))
+  // top down, the last band the header's own color; each past both walls and the first past the top, as sky()'s are
+  const bands = edges.slice(1).map((e, k) => {
+    const from = k ? edges[k] : -2
+    return `<path color="${n === 1 ? low : mix(high, low, k / (n - 1))}" d="M-2 ${from}h${W + 4}v${e - from}H-2z"/>`
+  }).join('')
+  const lot = { ...ctx, f: { ...ctx.f, now: { ...ctx.f.now, local_date: `${ctx.f.now?.local_date ?? ''} over` } } }
+  const deco = more >= 12 ? skyDeco(lot, 2, more - 4, [], phase) : ''
+  return `<g fill="currentColor" stroke="currentColor" stroke-width="2" stroke-dasharray="1">${bands}</g>${deco}`
 }
 
 /**

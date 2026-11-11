@@ -8,6 +8,8 @@ export type MenuArt =
   | 'quiet' | 'zoom'
   // the Month's export row: what to export, how, and Back
   | 'calendar' | 'directory' | 'building' | 'stats' | 'png' | 'svg' | 'gif' | 'video' | 'page' | 'csv' | 'json' | 'back'
+  // the Frame key and its row: the screen, on and off, a new link
+  | 'frame' | 'power' | 'renew'
 
 /** A standalone glyph shares the desktop menu's bitmap and default key colours. */
 export type MenuIconOptions = {
@@ -25,10 +27,12 @@ export function menuIconSvg(name: MenuArt, options?: MenuIconOptions): string
  * drawn lit, going nowhere unless `isRepeatable` (a range of the Timelapse, pressed again for a fresh replay); `isBusy`:
  * still at work (Export while it exports), its letters blinking, going nowhere. `isSwitch`: a switch apart at the right
  * end (the Live tab's Quiet), lit while on (`isOn`), always pressable, its face the same on and off; `isHidden`: it
- * keeps its room in the row and draws nothing (the switch off the Live tab, so the tabs never move).
+ * keeps its room in the row and draws nothing (the switch off the Live tab, so the tabs never move). `isIcon`: its icon
+ * alone at every width, no word (the Frame key), so the tabs keep their names' room; its label is still said in the alt.
  */
 export type MenuKey = {
   id: string; label: string; short: string; icon: MenuArt; isOn?: boolean; isRepeatable?: boolean; isBusy?: boolean; isSwitch?: boolean; isHidden?: boolean
+  isIcon?: boolean
 }
 
 /** A key a click may go to, in the menu's own units. */
@@ -58,7 +62,7 @@ export type RenderMenuOptions = {
   prompt?: string
 }
 
-/** One row of the menu: the tabs, the Timelapse's ranges, or the Month's export row. */
+/** One row of the menu: the tabs, the Timelapse's ranges, the Month's export row, or the Frame's row. */
 export function renderMenu(options: RenderMenuOptions): MenuRow
 /** The key a click falls on, at a point `from` or over a span `from`–`to` (shares of the row's width), or null. */
 export function zoneAt(row: MenuRow, from: number, to?: number): MenuZone | null

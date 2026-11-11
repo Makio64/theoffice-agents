@@ -15,7 +15,7 @@ import type { JsonValue, On } from 'claude-code'
 
 import SAMPLE from './fixtures/facts-sample'
 import { lapseFacts } from './fixtures/timelapse-sample'
-import type { OfficeBacks, OfficeDesk, OfficeFacts, OfficeTab, OfficeTimeline, OfficeUnit } from '../plugin/types'
+import type { OfficeBacks, OfficeDesk, OfficeFacts, OfficeFrameLink, OfficeTab, OfficeTimeline, OfficeUnit } from '../plugin/types'
 import type { Line } from '../plugin/lib/ascii.mjs'
 import { ROLE_HEX, ROLE_TERM, renderOffice, renderStatus } from '../plugin/lib/ascii.mjs'
 import { renderTimelapseText, timelapseFrames } from '../plugin/lib/ascii-timelapse.mjs'
@@ -24,6 +24,7 @@ import type { MenuKey } from '../plugin/lib/svg-menu.mjs'
 import { renderMenu, zoneAt as menuZoneAt } from '../plugin/lib/svg-menu.mjs'
 import { renderPeriod, zoneAt } from '../plugin/lib/svg-period.mjs'
 import { renderTimelapse } from '../plugin/lib/svg.mjs'
+import { frameText, renderFrameCard } from '../plugin/lib/svg-frame.mjs'
 
 // ---------------------------------------------------------------- engine stand-in
 
@@ -95,6 +96,14 @@ const ICON: Record<string, string> = { 'tab-all': '◉', 'tab-today': '◷', 'ta
 /** The Timelapse's own row under the tabs: each range, then Export, as [key, hotkey, text]. */
 /** The terminal's Browser key, after the tabs: the same tab in pixel art in the browser. */
 const BROWSER_KEY = ['browser', 'o', '⧉ Browser']
+/** The Frame key, after the switches on every surface: The Office on a screen of its own. */
+const FRAME_KEY = ['frame', 'f', 'Frame']
+/** Where the frame stands, as scripts/dashboard.mjs `--frame … --json` answers: off, and on the network. */
+const FRAME_TOKEN = 'f'.repeat(32)
+const FRAME_URLS = [`http://192.168.1.20:3375/frame?token=${FRAME_TOKEN}`, `http://studio-mac.local:3375/frame?token=${FRAME_TOKEN}`]
+const FRAME_LOCAL = `http://127.0.0.1:3375/frame?token=${FRAME_TOKEN}`
+const FRAME_OFF = { spec: 'theoffice-frame/1', running: false, lan: false, port: 3375, urls: [] as string[], local: '' }
+const FRAME_ON = { spec: 'theoffice-frame/1', running: true, lan: true, port: 3375, urls: FRAME_URLS, local: FRAME_LOCAL }
 const LAPSE_ROW = [['lapse-yesterday', 'y', 'Yesterday'], ['lapse-week', 'w', 'Week'], ['lapse-month', 'm', 'Month'], ['lapse-export', 'e', '⤓ Export']] as const
 /** The strip's keys as Buttons (its row off the pixel art, its hidden hotkeys on the desktop), as [key, hotkey, text]. */
 const STEP_ROW = [['period-older', 'p', '◀'], ['period-newer', 'n', '▶'], ['period-now', 'c', 'Now']] as const
@@ -159,7 +168,13 @@ function engine(on: On, store: Record<string, unknown> = {}, now = 0) {
     monthExported: undefined as Answer | undefined,
     /** What scripts/dashboard.mjs answers (the Browser key, /theoffice browser): its page's address by default. */
     browser: undefined as Answer | undefined,
-    delay: { lapse: 0, export: 0, month: 0, browser: 0 },
+    /**
+     * The frame as scripts/dashboard.mjs `--frame` keeps it: on or off, which `--detach` and `--stop` turn and `--status`
+     * only reads; `frame` answers instead when set (a failing or lying launcher), `delay.frame` late.
+     */
+    isFrameOn: false,
+    frame: undefined as Answer | undefined,
+    delay: { lapse: 0, export: 0, month: 0, browser: 0, frame: 0 },
     toasts: [] as { text: string; timeoutMs?: number }[],
     plays: [] as Play[],
     cueMs: 300,
@@ -249,6 +264,14 @@ function engine(on: On, store: Record<string, unknown> = {}, now = 0) {
       return { value: { exitCode: world.light.exitCode ?? 0, stdout: world.light.stdout ?? '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     world.runs.push({ argv: e.argv, timeoutMs: e.init?.timeoutMs, stdin: e.init?.stdin })
+    if (String(e.argv[1]).endsWith('/scripts/dashboard.mjs') && e.argv.includes('--frame')) {
+      if (world.delay.frame) await clock.sleep(world.delay.frame)
+      if (e.argv.includes('--stop')) world.isFrameOn = false
+      else if (e.argv.includes('--detach')) world.isFrameOn = true
+      const a = world.frame ?? { exitCode: 0, stdout: `${JSON.stringify(world.isFrameOn ? FRAME_ON : FRAME_OFF)}\n` }
+      if (a.error) throw new Error(a.error)
+      return { value: { exitCode: a.exitCode ?? 0, stdout: a.stdout ?? '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     if (String(e.argv[1]).endsWith('/scripts/dashboard.mjs')) {
       if (world.delay.browser) await clock.sleep(world.delay.browser)
       const a = world.browser ?? { exitCode: 0, stdout: `${BROWSER_URL}\n` }
@@ -309,6 +332,10 @@ type Peeked = {
   backs: OfficeBacks | null
   past: string | null
   pastReading: boolean | null
+  /** The Frame's panel on screen, where the frame stands as its launcher last said, and what the launcher is asked now. */
+  framePanel: boolean
+  frameLink: OfficeFrameLink | null
+  frameBusy: string | null
 }
 
 /**
@@ -342,6 +369,9 @@ const PEEK: Plugin = {
       const backs = await $.state.get({ plugin: 'theoffice', key: 'backs' })
       const past = await $.state.get({ plugin: 'theoffice', key: 'past' })
       const pastReading = await $.state.get({ plugin: 'theoffice', key: 'pastReading' })
+      const framePanel = await $.state.get({ plugin: 'theoffice', key: 'framePanel' })
+      const frameLink = await $.state.get({ plugin: 'theoffice', key: 'frameLink' })
+      const frameBusy = await $.state.get({ plugin: 'theoffice', key: 'frameBusy' })
       const facts = snapshot.value ?? null
       const peeked: Peeked = {
         version: snapshot.version,
@@ -365,6 +395,9 @@ const PEEK: Plugin = {
         backs: backs.value ?? null,
         past: past.value?.range.label ?? null,
         pastReading: pastReading.value ?? null,
+        framePanel: framePanel.value ?? false, // never written: its default
+        frameLink: frameLink.value ?? null,
+        frameBusy: frameBusy.value ?? null,
       }
       return { text: JSON.stringify(peeked) }
     })
@@ -1337,13 +1370,13 @@ test('/theoffice takes open, close or a tab; any other word only gets the usage 
   // its one command (PEEK's two test commands are registered beside it)
   expect(w.commands.map(c => c.name).filter(name => name !== 'peek' && name !== 'close-by-hand')).toEqual(['theoffice'])
   const registered = w.commands.find(c => c.name === 'theoffice')
-  expect(registered?.argumentHint).toBe('[live|today|week|month|work|timelapse|close|browser]')
+  expect(registered?.argumentHint).toBe('[live|today|week|month|work|timelapse|close|browser|frame]')
   expect(registered?.description).toContain('pixel-art')
 
   expect((await $.command.run(command(''))).text).toBe('The Office is open.')
   // the old style words (and their flags) are words it does not know: on a pane that is on screen none of them closes it
-  for (const word of ['pixel', 'ascii', 'PIXEL', '--style pixel', '--style=ascii', '/pixel', 'banana', 'open banana', 'close pixel', 'week banana', 'constructor', 'what they did']) {
-    expect((await $.command.run(command(word))).text).toBe("Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there).")
+  for (const word of ['pixel', 'ascii', 'PIXEL', '--style pixel', '--style=ascii', '/pixel', 'banana', 'open banana', 'close pixel', 'week banana', 'constructor', 'what they did', 'frame banana', 'frame on off', 'week frame', 'on']) {
+    expect((await $.command.run(command(word))).text).toBe("Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser|frame [on|off|new]]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there); frame shows The Office on a screen of its own, a tablet or a picture frame on your network (on turns it on, off turns it off, new replaces its link).")
   }
   expect((await peek($)).tab).toBe(null)
   expect(w.opens).toBe(1)
@@ -1768,7 +1801,7 @@ test('a narrow dock gets lines that fit: none wider than the pane', WITH_PEEK, a
       expect(await artLines(ui)).toEqual([])
       const source = String((await ui.find({ type: 'Svg' }))?.props.source)
       expect(source).toMatch(new RegExp(`^<svg [^>]*width="${Math.max(320, Math.ceil(columns * 9))}"`))
-      expect(await ui.findAll({ type: 'Button' })).toHaveLength(8)
+      expect(await ui.findAll({ type: 'Button' })).toHaveLength(9)
       await ui.unmount()
     }
   }
@@ -1836,7 +1869,8 @@ test('the tab row: Office, Today, Week, Month, What they did, Timelapse, each wi
     // Browser key, which opens the same tab in pixel art in the browser)
     const icons = surface === 'vscode' || surface === 'mobile'
     const row = icons ? TABS.map(([k, h, l]) => [k, h, tabText(k, l)]) : TABS.map(t => [...t])
-    const quiet = surface === 'terminal' ? [BROWSER_KEY] : [['live-quiet', 'q', icons ? '⊘ Quiet' : 'Quiet'], ['zoom', 'z', icons ? '⊕ Zoom' : 'Zoom']]
+    const quiet = surface === 'terminal' ? [BROWSER_KEY, FRAME_KEY]
+      : [['live-quiet', 'q', icons ? '⊘ Quiet' : 'Quiet'], ['zoom', 'z', icons ? '⊕ Zoom' : 'Zoom'], ['frame', 'f', icons ? '▣ Frame' : 'Frame']]
     expect(buttons.map(b => [b.key, b.props.hotkey, b.text])).toEqual([...row, ...quiet])
     expect(buttons.map(b => b.props.variant)).toEqual(['primary', 'secondary', 'secondary', 'secondary', 'secondary', 'secondary', ...quiet.map(() => 'secondary')])
     expect(await ui.find({ key: 'mode' })).toBeUndefined()
@@ -2476,10 +2510,10 @@ test('off the desktop the strip is its Buttons around the page\'s name: a termin
 // ---------------------------------------------------------------- the pixel menu
 
 /** A row of the pixel menu's props, as hooks/menu.tsx takes them. */
-type MenuRowProps = { row: 'tabs' | 'lapse' | 'export'; keys: MenuKey[]; width: number; joined: boolean; under?: boolean; prompt?: string }
+type MenuRowProps = { row: 'tabs' | 'lapse' | 'export' | 'frame-row'; keys: MenuKey[]; width: number; joined: boolean; under?: boolean; prompt?: string }
 
 /** The props the pixel menu's row `key` (its Client) was drawn with. */
-async function menuOf(ui: Finder, key: 'tabs' | 'lapse' | 'export'): Promise<MenuRowProps | undefined> {
+async function menuOf(ui: Finder, key: 'tabs' | 'lapse' | 'export' | 'frame-row'): Promise<MenuRowProps | undefined> {
   return (await ui.find({ key }))?.props.props as MenuRowProps | undefined
 }
 
@@ -2501,14 +2535,15 @@ test('a click on the pixel menu picks its tab: the key drawn pressed while held,
   const ui = await $.ui.mount(pane('desktop', 100))
   await ui.resize({ columns: 100, rows: 2, in: 'tabs' })
   const row = (await menuOf(ui, 'tabs'))!
-  // the six tabs, the Office lit, then its Quiet switch and the Zoom, off; nothing under it on the Office tab
+  // the six tabs, the Office lit, then its Quiet switch, the Zoom and the Frame (its icon alone), off; nothing under it on the Office tab
   expect(row.keys.map(k => [k.id, k.label, k.short, k.icon, k.isOn === true])).toEqual([
     ['all', 'Live', 'Live', 'live', true], ['today', 'Today', 'Today', 'today', false], ['week', 'Week', 'Week', 'week', false],
     ['month', 'Month', 'Month', 'month', false], ['work', 'What they did', 'Work', 'work', false], ['timelapse', 'Timelapse', 'Lapse', 'timelapse', false],
-    ['quiet', 'Quiet', 'Quiet', 'quiet', false], ['zoom', 'Zoom', 'Zoom', 'zoom', false],
+    ['quiet', 'Quiet', 'Quiet', 'quiet', false], ['zoom', 'Zoom', 'Zoom', 'zoom', false], ['frame', 'Frame', 'Frame', 'frame', false],
   ])
-  for (const k of row.keys.slice(-2)) expect(k).toMatchObject({ isSwitch: true })
-  for (const k of row.keys.slice(-2)) expect(k.isHidden).toBeUndefined()
+  for (const k of row.keys.slice(-3)) expect(k).toMatchObject({ isSwitch: true })
+  for (const k of row.keys.slice(-3)) expect(k.isHidden).toBeUndefined()
+  expect(row.keys.filter(k => k.isIcon).map(k => k.id)).toEqual(['frame'])
   expect([row.row, row.width, row.joined]).toEqual(['tabs', 900, false])
   // it draws itself, an image (no frame, so the pointer reaches it), the row as lib/svg-menu.mjs draws it
   const art = await ui.find({ type: 'Svg', in: 'tabs' })
@@ -2656,7 +2691,7 @@ test('the Zoom key: pressed, every tab is drawn bigger at once (the same width i
   const [zw, zh, zu] = boxOf(await sourceOf(ui))
   expect([zw, zu]).toEqual([900, 360])
   expect(zh).toBeGreaterThan(height)
-  expect((await menuOf(ui, 'tabs'))!.keys.at(-1)).toMatchObject({ id: 'zoom', isSwitch: true, isOn: true })
+  expect((await menuOf(ui, 'tabs'))!.keys.at(-2)).toMatchObject({ id: 'zoom', isSwitch: true, isOn: true })
   expect((await ui.find({ key: 'zoom' }))?.props.variant).toBe('primary') // its hidden Button follows
   expect(w.store.get('zoom')).toBe(true)
   expect(played(w, /\/page\.mp3$/)).toHaveLength(turns) // no page turns
@@ -2666,7 +2701,7 @@ test('the Zoom key: pressed, every tab is drawn bigger at once (the same width i
   await ui.press({ key: 'tab-today' })
   await w.clock.settle()
   expect(boxOf(await sourceOf(ui))[2]).toBe(360)
-  expect((await menuOf(ui, 'tabs'))!.keys.at(-1)).toMatchObject({ id: 'zoom', isOn: true })
+  expect((await menuOf(ui, 'tabs'))!.keys.at(-2)).toMatchObject({ id: 'zoom', isOn: true })
 
   // its Button (hotkey z) turns it off: as before
   await ui.press({ key: 'zoom' })
@@ -2686,7 +2721,7 @@ test('the next session draws every tab as the Zoom was left', WITH_PEEK, async (
   await w.clock.settle()
   const ui = await $.ui.mount(pane('desktop', 100))
   expect(boxOf(await sourceOf(ui))[2]).toBe(360)
-  expect((await menuOf(ui, 'tabs'))!.keys.at(-1)).toMatchObject({ id: 'zoom', isOn: true })
+  expect((await menuOf(ui, 'tabs'))!.keys.at(-2)).toMatchObject({ id: 'zoom', isOn: true })
   await ui.unmount()
 })
 
@@ -2865,8 +2900,8 @@ test('a Today run that fails says why on its tab, keeps the tabs, and backs off 
   await ui.press({ key: 'tab-today' })
   await w.clock.settle()
   expect((await ui.find({ type: 'Text', text: /could not read today's hours yet/ }))?.text).toContain('exited with code 3')
-  // the tabs, the Zoom and the strip (the past may still be read) stay, their keys hidden Buttons
-  expect(await ui.findAll({ type: 'Button' })).toHaveLength(10)
+  // the tabs, the Zoom, the Frame and the strip (the past may still be read) stay, their keys hidden Buttons
+  expect(await ui.findAll({ type: 'Button' })).toHaveLength(11)
   expect(await ui.find({ key: 'period' })).toBeDefined()
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
   expect(w.logs.some(l => l.startsWith('theoffice: today refresh failed'))).toBe(true)
@@ -2927,7 +2962,7 @@ test('the terminal always draws text, never an Svg, with no switch; a desktop at
       expect(await ui.find({ type: 'Svg' })).toBeUndefined()
       expect(await ui.find({ key: 'mode' })).toBeUndefined()
       expect(await ui.find({ key: 'tabs' })).toBeUndefined()
-      expect((await ui.findAll({ type: 'Button' })).map(b => b.key)).toEqual([...TABS.map(t => t[0]), 'browser'])
+      expect((await ui.findAll({ type: 'Button' })).map(b => b.key)).toEqual([...TABS.map(t => t[0]), 'browser', 'frame'])
       const colors = new Set((await ui.findAll({ type: 'Text' })).map(t => t.props.color).filter(Boolean))
       expect(colors.has(ROLE_TERM.busy.color)).toBe(true) // the theme's colors
       expect([...colors].some(c => /^#/.test(String(c)))).toBe(false)
@@ -3051,9 +3086,9 @@ test('the Timelapse tab runs the week once and draws its replay: one looping, in
   ])
   // every key still a Button, hidden, for its hotkey (the picked range the primary one, Export last)
   const buttons = await ui.findAll({ type: 'Button' })
-  expect(buttons.map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), ['zoom', 'z', 'Zoom'], ...LAPSE_ROW.map(r => [...r])])
+  expect(buttons.map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), ['zoom', 'z', 'Zoom'], FRAME_KEY, ...LAPSE_ROW.map(r => [...r])])
   expect((await ui.find({ key: 'tab-timelapse' }))?.props.variant).toBe('primary')
-  expect(buttons.slice(7).map(b => [b.props.variant, b.props.dimColor])).toEqual([['secondary', true], ['primary', false], ['secondary', true], ['secondary', false]])
+  expect(buttons.slice(8).map(b => [b.props.variant, b.props.dimColor])).toEqual([['secondary', true], ['primary', false], ['secondary', true], ['secondary', false]])
   expect(await ui.find({ type: 'Text', text: /^Saved to/ })).toBeUndefined() // nothing exported yet
 
   // the SVG replays itself: no frame clock
@@ -3193,7 +3228,7 @@ test('a terminal draws the text replay, which the frame clock moves only while t
   await w.clock.settle()
   const ui = await $.ui.mount(pane('terminal', 100))
   // the tabs and its row, no Svg, the replay from its first frame
-  expect((await ui.findAll({ type: 'Button' })).map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), BROWSER_KEY, ...LAPSE_ROW.map(r => [...r])])
+  expect((await ui.findAll({ type: 'Button' })).map(b => [b.key, b.props.hotkey, b.text])).toEqual([...TABS.map(t => [...t]), BROWSER_KEY, FRAME_KEY, ...LAPSE_ROW.map(r => [...r])])
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
   expect((await peek($)).frame).toBe(0)
   const first = await artLines(ui)
@@ -3605,7 +3640,7 @@ test('a timelapse run that fails says why and which press tries again, keeps the
   expect((await ui.find({ type: 'Text', text: /could not replay/ }))?.text)
     .toBe('The Office could not replay this week yet: the collector exited with code 4. Press Week to try again.')
   expect(await ui.find({ type: 'Svg' })).toBeUndefined()
-  expect(await ui.findAll({ type: 'Button' })).toHaveLength(11) // the tabs, the Zoom and its row stay, hidden behind the pixel menu
+  expect(await ui.findAll({ type: 'Button' })).toHaveLength(12) // the tabs, the Zoom, the Frame and its row stay, hidden behind the pixel menu
   expect((await peek($)).lapseTrouble).toBe('the collector exited with code 4')
   expect(w.logs.some(l => l.startsWith('theoffice: the week timelapse failed'))).toBe(true)
   expect((await peek($)).trouble).toBe(null) // the week's facts are fine
@@ -3787,3 +3822,299 @@ test('a terminal attached to the pane has a Browser key for the tab on screen; /
   expect(await desk.find({ key: 'browser' })).toBeUndefined()
   await desk.unmount()
 })
+
+// ---------------------------------------------------------------- the Frame: the office on a screen of its own
+
+/** The launcher's runs for the frame, as [what it was asked after `--frame`, its wait]. */
+const frameRuns = (w: ReturnType<typeof engine>) => w.runs.filter(r => r.argv.includes('--frame')).map(r => [r.argv.slice(3), r.timeoutMs])
+const LINK_ON: OfficeFrameLink = { running: true, lan: true, urls: FRAME_URLS, local: FRAME_LOCAL }
+const LINK_OFF: OfficeFrameLink = { running: false, lan: false, urls: [], local: '' }
+
+test('the Frame key opens its panel in place of the drawing and only asks where the frame stands; Turn on puts it on the network, the card carries its code and addresses; Turn off and New link as asked; Back and a tab leave', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await $.command.run(command('week'))
+  await w.clock.settle()
+  const ui = await $.ui.mount(pane('desktop', 100))
+  await ui.resize({ columns: 100, rows: 2, in: 'tabs' })
+  const office = String((await ui.find({ type: 'Svg' }))?.props.source)
+  expect((await menuOf(ui, 'tabs'))!.keys.at(-1)).toEqual({ id: 'frame', label: 'Frame', short: 'Frame', icon: 'frame', isSwitch: true, isIcon: true })
+  expect(await menuOf(ui, 'frame-row')).toBeUndefined()
+  expect(frameRuns(w)).toEqual([]) // nothing of the frame runs until its key is pressed
+  const turns = played(w, /\/page\.mp3$/).length
+
+  // a click on the key: the panel, and the launcher asked where the frame stands, which starts nothing
+  const at = keyCell((await menuOf(ui, 'tabs'))!, 'frame', 100)
+  await ui.pointer({ type: 'down', x: at, y: 0, button: 'left', in: 'tabs' })
+  await ui.pointer({ type: 'up', x: at, y: 0, button: 'left', in: 'tabs' })
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(true)
+  expect(frameRuns(w)).toEqual([[['--status', '--json'], 20_000]])
+  expect(w.isFrameOn).toBe(false)
+  expect((await peek($)).frameLink).toEqual(LINK_OFF)
+  expect(played(w, /\/page\.mp3$/)).toHaveLength(turns) // silent: it turns no page
+  // the Frame is the lit key, no tab is (each goes back to it), Quiet's room is empty; its row hangs under the tabs
+  const tabs = (await menuOf(ui, 'tabs'))!
+  expect(tabs.keys.filter(k => k.isOn).map(k => k.id)).toEqual(['frame'])
+  expect(tabs.keys.find(k => k.id === 'quiet')?.isHidden).toBe(true)
+  expect(tabs.joined).toBe(true)
+  expect(await ui.find({ key: 'period' })).toBeUndefined() // no strip: the panel pages nothing
+  const row = (await menuOf(ui, 'frame-row'))!
+  expect([row.row, row.under, row.prompt, row.width]).toEqual(['frame-row', true, 'Frame off', 900])
+  expect(row.keys).toEqual([{ id: 'start', label: 'Turn on', short: 'On', icon: 'power' }, { id: 'back', label: 'Back', short: 'Back', icon: 'back' }])
+  const client = await ui.find({ key: 'frame-row' })
+  expect([client?.type, client?.props.module, client?.props.width]).toEqual(['Client', 'hooks/menu.tsx', '100%'])
+  // the card in place of the office: what the frame is, no code yet, no address under it
+  const off = await ui.find({ type: 'Svg' })
+  expect(off?.props.source).toBe(renderFrameCard({ width: 900, link: LINK_OFF }).source)
+  expect(off?.props.source).not.toBe(office)
+  expect(String(off?.props.alt)).toMatch(/^The Office on a screen of its own, off\. /)
+  expect(await ui.find({ key: 'frame-links' })).toBeUndefined()
+  // its keys are Buttons too, hidden, for their hotkeys: the tabs (none the primary one), the Zoom, the Frame (primary), the row
+  expect((await ui.findAll({ type: 'Button' })).map(b => [b.key, b.props.hotkey, b.text, b.props.variant])).toEqual([
+    ...TABS.map(t => [...t, 'secondary']), ['zoom', 'z', 'Zoom', 'secondary'], ['frame', 'f', 'Frame', 'primary'],
+    ['frame-start', 't', 'Turn on', 'secondary'], ['frame-back', 'b', '‹ Back', 'secondary'],
+  ])
+  expect((await ui.find({ key: 'menu-keys' }))?.props.display).toBe('none')
+
+  // Turn on: the launcher starts it (one run, the key busy meanwhile), a toast says so, the card draws its code
+  w.delay.frame = 2_000
+  await ui.resize({ columns: 100, rows: 2, in: 'frame-row' })
+  const startAt = keyCell(row, 'start', 100)
+  await ui.pointer({ type: 'down', x: startAt, y: 0, button: 'left', in: 'frame-row' })
+  await ui.pointer({ type: 'up', x: startAt, y: 0, button: 'left', in: 'frame-row' })
+  await w.clock.advance(1_000)
+  expect((await peek($)).frameBusy).toBe('start')
+  expect((await menuOf(ui, 'frame-row'))!.keys[0]).toEqual({ id: 'start', label: 'Turning on', short: 'On', icon: 'power', isBusy: true })
+  await ui.press({ key: 'frame-start' }) // one is under way: ignored
+  await ui.post({ row: 'frame-row', id: 'start' }, { in: 'frame-row' })
+  await w.clock.advance(1_000)
+  await w.clock.settle()
+  w.delay.frame = 0
+  expect(frameRuns(w).slice(1)).toEqual([[['--detach', '--json'], 20_000]])
+  expect(w.isFrameOn).toBe(true)
+  expect((await peek($)).frameLink).toEqual(LINK_ON)
+  expect((await peek($)).frameBusy).toBe(null)
+  expect(w.toasts.at(-1)).toEqual({ text: 'The Office is on your network, for a screen to show: scan the code, or open the address on it.', timeoutMs: 10_000 })
+  const lit = (await menuOf(ui, 'frame-row'))!
+  expect(lit.prompt).toBe('Frame on')
+  expect(lit.keys.map(k => [k.id, k.label])).toEqual([['stop', 'Turn off'], ['renew', 'New link'], ['back', 'Back']])
+  const card = await ui.find({ type: 'Svg' })
+  expect(card?.props.source).toBe(renderFrameCard({ width: 900, link: LINK_ON }).source)
+  expect(String(card?.props.source)).toContain(FRAME_URLS[0]!.replace(/&/g, '&amp;'))
+  expect(String(card?.props.alt)).toContain('on your network')
+  // and its addresses under the card in words, to copy
+  expect((await ui.findAll({ type: 'Text' })).map(t => t.text).filter(t => t.startsWith('http'))).toEqual(FRAME_URLS)
+
+  // New link, by its hotkey's Button: another run, and every screen needs the new address
+  await ui.press({ key: 'frame-renew' })
+  await w.clock.settle()
+  expect(frameRuns(w).at(-1)).toEqual([['--detach', '--new-link', '--json'], 20_000])
+  expect(w.toasts.at(-1)?.text).toBe("The Office's frame has a new link: every screen needs the new address.")
+
+  // Turn off stops it; its link is kept
+  await ui.post({ row: 'frame-row', id: 'stop' }, { in: 'frame-row' })
+  await w.clock.settle()
+  expect(frameRuns(w).at(-1)).toEqual([['--stop', '--json'], 20_000])
+  expect(w.isFrameOn).toBe(false)
+  expect((await peek($)).frameLink).toEqual(LINK_OFF)
+  expect(w.toasts.at(-1)?.text).toBe("The Office's frame is off. Its link is kept: the same address works when it is on again.")
+  expect((await menuOf(ui, 'frame-row'))!.prompt).toBe('Frame off')
+
+  // Back: the tab's drawing again, the tab lit, nothing of the frame asked
+  const asked = frameRuns(w).length
+  await ui.post({ row: 'frame-row', id: 'back' }, { in: 'frame-row' })
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(false)
+  expect(await menuOf(ui, 'frame-row')).toBeUndefined()
+  expect((await menuOf(ui, 'tabs'))!.keys.filter(k => k.isOn).map(k => k.id)).toEqual(['week'])
+  expect(String((await ui.find({ type: 'Svg' }))?.props.source)).toMatch(/^<svg /)
+  expect(await ui.find({ key: 'period' })).toBeDefined()
+  expect(frameRuns(w)).toHaveLength(asked)
+
+  // the key's hotkey opens it again (and asks again); a tab pressed leaves it for that tab, the tab on screen too
+  await ui.press({ key: 'frame' })
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(true)
+  expect(frameRuns(w).at(-1)).toEqual([['--status', '--json'], 20_000])
+  const weekAt = keyCell((await menuOf(ui, 'tabs'))!, 'week', 100)
+  await ui.pointer({ type: 'down', x: weekAt, y: 0, button: 'left', in: 'tabs' })
+  await ui.pointer({ type: 'up', x: weekAt, y: 0, button: 'left', in: 'tabs' })
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(false)
+  expect((await peek($)).tab).toBe('week')
+  expect((await menuOf(ui, 'tabs'))!.keys.filter(k => k.isOn).map(k => k.id)).toEqual(['week'])
+  await ui.unmount()
+})
+
+test("the Frame's posts are input, never facts: its row's keys only while its panel is on screen, only where the frame stands, and an answer of the launcher that names any other address is no answer", WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await $.command.run(command('open'))
+  await w.clock.settle()
+  const ui = await $.ui.mount(pane('desktop', 100))
+
+  // with the panel closed its row's posts turn nothing on
+  for (const id of ['start', 'stop', 'renew', 'back']) await ui.post({ row: 'frame-row', id }, { in: 'tabs' })
+  await w.clock.settle()
+  expect(frameRuns(w)).toEqual([])
+  expect((await peek($)).framePanel).toBe(false)
+
+  await ui.post({ row: 'tabs', id: 'frame' }, { in: 'tabs' })
+  await w.clock.settle()
+  expect(frameRuns(w)).toEqual([[['--status', '--json'], 20_000]])
+  // while it is off only Turn on is a key; anything else, a key of another row, or no key at all, is no press
+  for (const data of [{ row: 'frame-row', id: 'stop' }, { row: 'frame-row', id: 'renew' }, { row: 'frame-row', id: '--detach' }, { row: 'tabs', id: 'start' }, { id: 'start' }, 'start', null, { row: 'frame-row', id: 7 }] as JsonValue[]) {
+    await ui.post(data, { in: 'frame-row' })
+  }
+  await w.clock.settle()
+  expect(frameRuns(w)).toHaveLength(1)
+  expect(w.isFrameOn).toBe(false)
+
+  // a launcher that fails, or says something that is no answer: a toast says so in our words, nothing is kept or drawn
+  const lies = [
+    { exitCode: 3, stdout: '' },
+    { exitCode: 0, stdout: 'Listening on 0.0.0.0\n' },
+    { exitCode: 0, stdout: `${JSON.stringify({ ...FRAME_ON, urls: ['http://evil.example:3375/frame?token=' + FRAME_TOKEN] })}\n` },
+    { exitCode: 0, stdout: `${JSON.stringify({ ...FRAME_ON, urls: [`https://192.168.1.20:3375/frame?token=${FRAME_TOKEN}`] })}\n` },
+    { exitCode: 0, stdout: `${JSON.stringify({ ...FRAME_ON, urls: [`${FRAME_URLS[0]}&next=http://evil.example`] })}\n` },
+    { exitCode: 0, stdout: `${JSON.stringify({ ...FRAME_ON, local: 'http://evil.example/frame?token=' + FRAME_TOKEN })}\n` },
+    { exitCode: 0, stdout: `${JSON.stringify({ ...FRAME_ON, spec: 'something-else/1' })}\n` },
+    { error: 'spawn node ENOENT' },
+  ]
+  for (const lie of lies) {
+    w.frame = lie
+    await ui.post({ row: 'frame-row', id: 'start' }, { in: 'frame-row' })
+    await w.clock.settle()
+    expect(w.toasts.at(-1)?.text).toMatch(/^The Office's frame did not answer: its launcher (exited with code 3|said nothing to read|did not run \(.+\))\.$/)
+    expect((await peek($)).frameLink).toEqual(LINK_OFF)
+    expect((await peek($)).frameBusy).toBe(null)
+    expect((await ui.find({ type: 'Svg' }))?.props.source).toBe(renderFrameCard({ width: 900, link: LINK_OFF }).source)
+  }
+  expect(w.logs.some(l => /evil\.example/.test(l))).toBe(false) // what the launcher printed is never repeated
+  w.frame = undefined
+
+  // on, Turn on is no key any more, and Turn off is
+  await ui.post({ row: 'frame-row', id: 'start' }, { in: 'frame-row' })
+  await w.clock.settle()
+  expect(w.isFrameOn).toBe(true)
+  const runs = frameRuns(w).length
+  await ui.post({ row: 'frame-row', id: 'start' }, { in: 'frame-row' })
+  await w.clock.settle()
+  expect(frameRuns(w)).toHaveLength(runs)
+
+  // closing the pane closes the panel and never stops the frame: it runs on, whatever the pane does
+  await $.command.run(command('close'))
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(false)
+  expect(w.isFrameOn).toBe(true)
+  expect(frameRuns(w)).toHaveLength(runs)
+  await ui.unmount()
+})
+
+test('off the desktop the Frame is a Button after the switches and its row Buttons that say where it stands: VS Code and mobile draw its card, a terminal its words and the code in half blocks', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await attachedTerminal($)
+  await $.command.run(command('open'))
+  await w.clock.settle()
+
+  for (const surface of ['vscode', 'mobile'] as const) {
+    const ui = await $.ui.mount(pane(surface, 90))
+    const key = await ui.find({ key: 'frame' })
+    expect([key?.props.hotkey, key?.text, key?.props.variant]).toEqual(['f', '▣ Frame', 'secondary'])
+    await ui.press({ key: 'frame' })
+    await w.clock.settle()
+    expect(await ui.find({ key: 'tabs' })).toBeUndefined() // no pixel menu there
+    expect((await ui.find({ key: 'frame' }))?.props.variant).toBe('primary')
+    expect((await ui.findAll({ type: 'Button' })).filter(b => String(b.key).startsWith('tab-')).every(b => b.props.variant === 'secondary')).toBe(true)
+    expect((await ui.find({ key: 'frame-ask' }))?.text).toBe('Frame off:')
+    expect((await ui.findAll({ type: 'Button' })).filter(b => String(b.key).startsWith('frame-')).map(b => [b.key, b.props.hotkey, b.text])).toEqual([['frame-start', 't', 'Turn on'], ['frame-back', 'b', '‹ Back']])
+    await ui.press({ key: 'frame-start' })
+    await w.clock.settle()
+    expect((await ui.find({ key: 'frame-ask' }))?.text).toBe('Frame on:')
+    expect((await ui.findAll({ type: 'Button' })).filter(b => String(b.key).startsWith('frame-')).map(b => [b.key, b.props.hotkey, b.text])).toEqual([['frame-stop', 't', 'Turn off'], ['frame-renew', 'n', 'New link'], ['frame-back', 'b', '‹ Back']])
+    expect((await ui.find({ type: 'Svg' }))?.props.source).toBe(renderFrameCard({ width: Math.max(320, Math.ceil(90 * 9)), link: LINK_ON }).source)
+    await ui.press({ key: 'frame-stop' })
+    await w.clock.settle()
+    await ui.press({ key: 'frame-back' })
+    await w.clock.settle()
+    expect((await peek($)).framePanel).toBe(false)
+    expect((await ui.find({ key: 'frame' }))?.props.variant).toBe('secondary')
+    await ui.unmount()
+  }
+
+  // a terminal: the words, and once it is on the code a phone's camera reads off the terminal
+  const text = await $.ui.mount(pane('terminal', 100))
+  expect((await ui_keys(text)).slice(-2)).toEqual(['browser', 'frame'])
+  await text.press({ key: 'frame' })
+  await w.clock.settle()
+  expect(await text.find({ type: 'Svg' })).toBeUndefined()
+  expect(await artLines(text)).toEqual(frameText({ link: LINK_OFF, columns: 100 }).map(l => l || ' '))
+  expect((await ui_keys(text))).toEqual([...TABS.map(t => t[0]), 'frame', 'frame-start', 'frame-back'])
+  await text.press({ key: 'frame-start' })
+  await w.clock.settle()
+  const lines = await artLines(text)
+  expect(lines).toEqual(frameText({ link: LINK_ON, columns: 100 }).map(l => l || ' '))
+  expect(lines[0]).toBe('The Office on a screen of its own: on your network.')
+  expect(lines).toContain(FRAME_URLS[0])
+  expect(lines.filter(l => /^[█▀▄ ]{20,}$/.test(l)).length).toBeGreaterThan(15) // the code
+  await text.press({ key: 'tab-today' }) // a tab leaves the panel
+  await w.clock.settle()
+  expect((await peek($)).framePanel).toBe(false)
+  expect((await peek($)).tab).toBe('today')
+  await text.unmount()
+})
+
+/** The keys of the Buttons a surface drew, in order. */
+async function ui_keys(ui: { findAll: (q: { type: string }) => Promise<readonly { key?: unknown }[]> }): Promise<string[]> {
+  return (await ui.findAll({ type: 'Button' })).map(b => String(b.key))
+}
+
+test('/theoffice frame says where the frame stands and opens the pane on its panel; on, off and new do as they say; a console, which has no pane, gets the address and the code in words', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  await w.clock.settle()
+
+  // with no word after it nothing is started: the pane opens on the panel, which says what Turn on does
+  expect((await $.command.run(command('frame'))).text).toBe("The Office's frame is off. Turn on, in the pane, starts it.")
+  expect(frameRuns(w)).toEqual([[['--status', '--json'], 20_000]])
+  expect(w.opens).toBe(1)
+  expect((await peek($)).framePanel).toBe(true)
+  expect(w.isFrameOn).toBe(false)
+
+  expect((await $.command.run(command('frame on'))).text).toBe("The Office's frame is on your network. Its code and address are in the pane.")
+  expect(frameRuns(w).at(-1)).toEqual([['--detach', '--json'], 20_000])
+  expect(w.isFrameOn).toBe(true)
+  expect((await peek($)).frameLink).toEqual(LINK_ON)
+  expect((await $.command.run(command('frame new'))).text).toBe("The Office's frame is on your network. Its code and address are in the pane.")
+  expect(frameRuns(w).at(-1)).toEqual([['--detach', '--new-link', '--json'], 20_000])
+  for (const word of ['frame off', 'frame stop']) {
+    expect((await $.command.run(command(word))).text).toBe("The Office's frame is off. Turn on, in the pane, starts it.")
+    expect(frameRuns(w).at(-1)).toEqual([['--stop', '--json'], 20_000])
+  }
+  expect(w.isFrameOn).toBe(false)
+  // a launcher that does not answer: said in our words, nothing opened for it
+  w.frame = { exitCode: 2, stdout: 'Usage: …' }
+  expect((await $.command.run(command('frame on'))).text).toBe("The Office's frame did not answer: its launcher exited with code 2.")
+  w.frame = undefined
+})
+
+test('in a console /theoffice frame answers in words: where it stands, then with on its addresses and the code in half blocks; no pane, no browser', WITH_PEEK, async ($, on) => {
+  const w = engine(on)
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await w.clock.settle()
+  const hint = '/theoffice frame on turns it on, /theoffice frame off turns it off, /theoffice frame new replaces its link.'
+
+  expect((await $.command.run(command('frame'))).text).toBe([...frameText({ link: LINK_OFF, columns: 80 }), '', hint].join('\n'))
+  expect(frameRuns(w)).toEqual([[['--status', '--json'], 20_000]])
+  const said = (await $.command.run(command('frame on'))).text
+  expect(said).toBe([...frameText({ link: LINK_ON, columns: 80 }), '', hint].join('\n'))
+  expect(said).toContain(FRAME_URLS[0])
+  expect(said).toMatch(/\n█{30,}\n/)
+  expect(frameRuns(w).at(-1)).toEqual([['--detach', '--json'], 20_000])
+  expect((await $.command.run(command('frame off'))).text).toContain('The Office on a screen of its own: off.')
+  expect(w.opens).toBe(0)
+  expect(w.runs.filter(r => String(r.argv[1]).endsWith('/scripts/dashboard.mjs') && !r.argv.includes('--frame'))).toEqual([]) // no browser opened for it
+  expect((await peek($)).framePanel).toBe(false)
+})
+

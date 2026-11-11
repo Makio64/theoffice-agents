@@ -62,13 +62,14 @@ import type {
   TextProps, Timer, UiOpenResult, UiPane,
 } from 'claude-code'
 
-import type { OfficeBacks, OfficeFacts, OfficeMonthFormat, OfficeMonthPart, OfficeProgress, OfficeTab, OfficeTimeline, OfficeUnit } from '../types'
+import type { OfficeBacks, OfficeFacts, OfficeFrameLink, OfficeMonthFormat, OfficeMonthPart, OfficeProgress, OfficeTab, OfficeTimeline, OfficeUnit } from '../types'
 import type { Line, View } from '../lib/ascii.mjs'
 import type { MenuArt, MenuKey } from '../lib/svg-menu.mjs'
 import { ROLE_TERM, renderOffice, renderStatus } from '../lib/ascii.mjs'
 import { renderTimelapseText, timelapseFrames } from '../lib/ascii-timelapse.mjs'
 import { pageDays, pageName } from '../lib/period.mjs'
 import { onBeat, renderLoading, renderSvg, renderTimelapse } from '../lib/svg.mjs'
+import { frameState, frameText, renderFrameCard } from '../lib/svg-frame.mjs'
 
 // ---------------------------------------------------------------- constants
 
@@ -132,13 +133,23 @@ const SAVED_TOAST_MS = 10_000 // a toast that names a file stays long enough to 
 const PAGE_RE = /^(?:\/|[A-Za-z]:[\\/])[^\x00-\x1f\x7f]{1,1000}\.html$/
 // The file a Month export names on its first line: an absolute path to the page, the SVG, the CSV or the JSON it saved.
 const FILE_RE = /^(?:\/|[A-Za-z]:[\\/])[^\x00-\x1f\x7f]{1,1000}\.(?:html|svg|csv|json)$/
-const USAGE = "Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there)."
+const USAGE = "Usage: /theoffice [live|today|week|month|work|timelapse] [open|close|browser|frame [on|off|new]]. With no word it opens or closes The Office; a tab's name opens it on that tab; browser opens it in your browser, in pixel art (in a terminal it always opens there); frame shows The Office on a screen of its own, a tablet or a picture frame on your network (on turns it on, off turns it off, new replaces its link)."
 // The browser's office (scripts/dashboard.mjs): one local server for the machine (`--reuse`), opened on the pane's tab.
 // Its first line is the page's address, a capability URL on this computer only.
 const BROWSER_WORD = 'browser'
 const BROWSER_HOTKEY = 'o'
 const BROWSER_TIMEOUT_MS = 20_000
 const BROWSER_URL_RE = /^http:\/\/127\.0\.0\.1:\d{1,5}\/\?token=[\w-]{32}(?:&[\w=&-]*)?$/
+// The Frame key: The Office on a screen of its own, a tablet on a stand, a picture frame, a spare monitor
+// (scripts/dashboard.mjs --frame): a server that answers on the person's network at one link that only looks. Nothing
+// starts it but the person: the key opens a panel that says what it is and where it stands (`--status`), and Turn on,
+// in its row, starts it. The launcher answers in one line of JSON, checked before anything of it is drawn or said.
+const FRAME_KEY = 'frame' // its id in the pixel menu, its Button's key, and the word /theoffice takes
+const FRAME_HOTKEY = 'f'
+const FRAME_TIMEOUT_MS = 20_000
+// An address a screen opens the frame at: this computer's address on the network or its Bonjour name, never a domain
+const FRAME_URL_RE = /^http:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*\.local):\d{1,5}\/frame\?token=[\w-]{32}$/
+const FRAME_LOCAL_RE = /^http:\/\/127\.0\.0\.1:\d{1,5}\/frame\?token=[\w-]{32}$/
 // A live session's record (~/.claude/sessions/<pid>.json); the <pid>.<hash>.key files beside them are never touched.
 const SESSION_RE = /^\d+\.json$/
 const SESSION_ID_RE = /^[A-Za-z0-9-]{1,80}$/
@@ -152,6 +163,7 @@ const STRIP = 'period' // the strip's Client key, which its posts name
 const MENU_TABS = 'tabs'
 const MENU_LAPSE = 'lapse'
 const MENU_EXPORT = 'export' // and the Month's export row, under its strip
+const MENU_FRAME = 'frame-row' // and the Frame's row, under the tabs while its panel is on screen
 const MAX_PAGES = 6 // pages of the past kept for a press back to them, the last read
 // A progress file older than this belongs to a run that stopped: it says nothing any more
 const PROGRESS_STALE_MS = 10_000
@@ -286,6 +298,22 @@ const BACK_HOTKEY = 'b'
 /** The Month's export row: what it asks (what to export, or how to keep a part), null while it is closed. */
 type MonthAsk = 'what' | OfficeMonthPart | null
 
+/** What a key of the Frame's row has the launcher do: turn the frame on, turn it off, give it a new link. */
+type FrameAct = 'start' | 'stop' | 'renew'
+/** What the launcher is asked: a key of the row, or only where the frame stands. */
+type FrameAsk = FrameAct | 'status'
+/** One key of the Frame's row: its words (and what it says while it works), its pixel icon, its hotkey letter. */
+type FrameSpec = { act: FrameAct; label: string; short: string; doing: string; art: MenuArt; hotkey: string }
+const FRAME_ACTS: Record<FrameAct, FrameSpec> = {
+  start: { act: 'start', label: 'Turn on', short: 'On', doing: 'Turning on', art: 'power', hotkey: 't' },
+  stop: { act: 'stop', label: 'Turn off', short: 'Off', doing: 'Turning off', art: 'power', hotkey: 't' },
+  renew: { act: 'renew', label: 'New link', short: 'New', doing: 'New link', art: 'renew', hotkey: 'n' },
+}
+/** What the launcher takes for each (after `--frame`, before `--json`): it never starts anything for `status`. */
+const FRAME_ARGS: Record<FrameAsk, readonly string[]> = { status: ['--status'], start: ['--detach'], stop: ['--stop'], renew: ['--detach', '--new-link'] }
+/** The words /theoffice frame takes after it. */
+const FRAME_WORDS: ReadonlyMap<string, FrameAct> = new Map([['on', 'start'], ['off', 'stop'], ['stop', 'stop'], ['new', 'renew']])
+
 // ---------------------------------------------------------------- state
 
 // $.state survives a hot reload, module variables do not: what a drawing reads lives in $.state.
@@ -310,6 +338,9 @@ const monthAsk = atom({ plugin: 'theoffice', key: 'monthAsk' } as const, null)
 const monthExporting = atom({ plugin: 'theoffice', key: 'monthExporting' } as const, false)
 const monthSaved = atom({ plugin: 'theoffice', key: 'monthSaved' } as const, null)
 const onScreen = atom({ plugin: 'theoffice', key: 'onScreen' } as const, false)
+const framePanel = atom({ plugin: 'theoffice', key: 'framePanel' } as const, false) // the Frame key's panel in place of the tab's drawing
+const frameLink = atom({ plugin: 'theoffice', key: 'frameLink' } as const, null) // where the frame stands, as its launcher last said
+const frameBusy = atom({ plugin: 'theoffice', key: 'frameBusy' } as const, null) // what the launcher is asked right now
 const progress = atom({ plugin: 'theoffice', key: 'progress' } as const, null)
 
 let beat: Timer | undefined
@@ -360,7 +391,7 @@ let pastRun: string | null = null
 // The props each surface's strip was last drawn with, which a click's answer hands it again with its next page.
 const strips = new Map<string, StripProps>()
 // Likewise for the pixel menu: the props each surface's rows were last drawn with
-const menus = new Map<string, { tabs?: MenuProps; lapse?: MenuProps; export?: MenuProps }>()
+const menus = new Map<string, { tabs?: MenuProps; lapse?: MenuProps; export?: MenuProps; frame?: MenuProps }>()
 
 let pickedLapse: Lapse = 'week' // the range the timelapse runs follow; the drawing reads the `lapse` state value
 // Each range's newest timelapse facts, so a range picked again is drawn at once while its own run goes on. The state
@@ -369,6 +400,7 @@ const lapseLatest: Record<Lapse, OfficeFacts | null> = { yesterday: null, week: 
 const isLapseRunning: Record<Lapse, boolean> = { yesterday: false, week: false, month: false }
 let isExporting = false // one export at a time: a press while one runs is ignored
 let isOpeningBrowser = false // one browser open at a time: a press while one runs is ignored
+let isFrameAsked = false // one run of the frame's launcher at a time: a press while one runs is ignored
 let savedLapse: Lapse | null = null // the range of the page in `lapseSaved`, when its name does not say (pageLapse)
 let isMonthExporting = false // one Month export at a time: a press while one runs is ignored
 // What each surface's timelapse drew last: the same facts at the same width hand the frame the same string without
@@ -1229,6 +1261,7 @@ async function pickTab($: EngineInterface, next: OfficeTab): Promise<void> {
  * picked range afresh (its kept facts are drawn meanwhile).
  */
 async function selectTab($: EngineInterface, next: OfficeTab): Promise<void> {
+  await closeFrame($)
   await pickTab($, next)
   turnPage($)
   if (next !== 'month') await closeExport($)
@@ -1799,6 +1832,128 @@ async function pressOpen($: EngineInterface): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------- the frame: the office on a screen of its own
+
+/**
+ * Asks the frame's launcher one thing (scripts/dashboard.mjs `--frame … --json`): where the frame stands (`status`,
+ * which starts nothing), or what a key of its row asks (FRAME_ARGS). Hands back where it stands now, checked
+ * (readFrame), or why there is no answer in a few words of our own (never what the run printed).
+ */
+async function runFrame($: EngineInterface, ask: FrameAsk): Promise<OfficeFrameLink | { why: string }> {
+  try {
+    const ran = await $.process.run(['node', `${$.plugin.root}/scripts/dashboard.mjs`, '--frame', ...FRAME_ARGS[ask], '--json'], { timeoutMs: FRAME_TIMEOUT_MS })
+    if (ran.exitCode !== 0) return { why: `its launcher exited with code ${ran.exitCode}` }
+    return readFrame(ran.stdout) ?? { why: 'its launcher said nothing to read' }
+  } catch (error) {
+    return { why: `its launcher did not run (${errorText(error)})` }
+  }
+}
+
+/**
+ * One ask of the launcher at a time (the row's key says it is at work, `frameBusy`); what it says is kept (`frameLink`),
+ * which the panel draws. A press while one runs is no press.
+ */
+async function askFrame($: EngineInterface, ask: FrameAsk): Promise<OfficeFrameLink | { why: string }> {
+  if (isFrameAsked) return { why: 'it is already at work' }
+  isFrameAsked = true
+  await markFrame($, ask)
+  try {
+    const said = await runFrame($, ask)
+    if ('why' in said) {
+      $.ui.log(`theoffice: the frame (${ask}): ${said.why}`, { to: 'debug' })
+      return said
+    }
+    await update($, frameLink, () => said).catch(error => $.ui.log(`theoffice: could not keep where the frame stands (${errorText(error)})`, { to: 'debug' }))
+    return said
+  } finally {
+    isFrameAsked = false
+    await markFrame($, null)
+  }
+}
+
+/** The row's key follows the run; a refused write costs only its look. */
+async function markFrame($: EngineInterface, ask: FrameAsk | null): Promise<void> {
+  try {
+    if ((await read($, frameBusy)) !== ask) await update($, frameBusy, () => ask)
+  } catch (error) {
+    $.ui.log(`theoffice: could not mark the frame's run (${errorText(error)})`, { to: 'debug' })
+  }
+}
+
+/**
+ * The Frame key, pressed (its Button, the pixel menu's, or Back in its row): its panel comes on screen in place of the
+ * tab's drawing and the launcher is asked where the frame stands (nothing is started), or the panel goes and the tab's
+ * drawing is back. It makes no sound: it turns no page.
+ */
+async function toggleFrame($: EngineInterface): Promise<void> {
+  try {
+    const isOpen = await update($, framePanel, was => !was)
+    if (isOpen) void askFrame($, 'status')
+  } catch (error) {
+    $.ui.log(`theoffice: could not press Frame (${errorText(error)})`, { to: 'debug' })
+  }
+}
+
+/** The panel closed, as a tab pressed or the pane closing closes it; a refused write costs only its look. */
+async function closeFrame($: EngineInterface): Promise<void> {
+  try {
+    if (await read($, framePanel)) await update($, framePanel, () => false)
+  } catch (error) {
+    $.ui.log(`theoffice: could not close the Frame panel (${errorText(error)})`, { to: 'debug' })
+  }
+}
+
+/** Whether a key of the row may be pressed where the frame stands: Turn on while it is off, the others while it is on. */
+function mayFrame(act: FrameAct, link: OfficeFrameLink | null): boolean {
+  return (act === 'start') !== (link?.running === true)
+}
+
+/**
+ * A key of the Frame's row, pressed (its post or its Button), checked against where the frame stands: Turn on starts
+ * it, on the person's network, Turn off stops it, New link gives it another address (every screen then needs the new
+ * one). A toast says how it went, in a few words; the panel draws where it stands now.
+ */
+async function pressFrame($: EngineInterface, act: FrameAct): Promise<void> {
+  if (isFrameAsked) return
+  let link: OfficeFrameLink | null = null
+  try {
+    link = await read($, frameLink)
+  } catch { /* unknown: only Turn on may be pressed */ }
+  if (!mayFrame(act, link)) return
+  const said = await askFrame($, act)
+  if ('why' in said) $.ui.toast(`The Office's frame did not answer: ${said.why}.`)
+  else $.ui.toast(frameToast(act, said), { timeoutMs: SAVED_TOAST_MS })
+}
+
+/** What a toast says once a key of the row has been answered. */
+function frameToast(act: FrameAct, link: OfficeFrameLink): string {
+  if (!link.running) return "The Office's frame is off. Its link is kept: the same address works when it is on again."
+  if (!link.lan) return "The Office's frame is on, on this computer only."
+  if (!link.urls.length) return "The Office's frame is on, but this computer is on no network: no screen can reach it yet."
+  if (act === 'renew') return "The Office's frame has a new link: every screen needs the new address."
+  return 'The Office is on your network, for a screen to show: scan the code, or open the address on it.'
+}
+
+/**
+ * `/theoffice frame`, with `on`, `off` or `new` after it or nothing (where it stands, nothing started): the launcher is
+ * asked, and where the frame stands now is said. Where there is a pane it opens on the Frame's panel, which holds the
+ * code and the address; a console has none, and gets them in words, the code in half blocks.
+ */
+async function commandFrame($: EngineInterface, act: FrameAct | undefined): Promise<string> {
+  const said = await askFrame($, act ?? 'status')
+  if ('why' in said) return `The Office's frame did not answer: ${said.why}.`
+  const keys = '/theoffice frame on turns it on, /theoffice frame off turns it off, /theoffice frame new replaces its link.'
+  if (isConsole) return [...frameText({ link: said, columns: 80 }), '', keys].join('\n')
+  try {
+    if (!(await read($, framePanel))) await update($, framePanel, () => true)
+  } catch (error) {
+    $.ui.log(`theoffice: could not open the Frame panel (${errorText(error)})`, { to: 'debug' })
+  }
+  const opened = await openPane($, await paneRow($))
+  const where = opened.isPlaced ? (said.running ? 'Its code and address are in the pane.' : 'Turn on, in the pane, starts it.') : `The pane opens when there is room (${opened.reason}).`
+  return `The Office's frame is ${frameState(said)}. ${where}`
+}
+
 /**
  * Whether the pane is on screen (open, placed, not behind another tab), as the band reads it: its Button shows only
  * while it is not. Written only when that changes; a refused write leaves the Button as it was.
@@ -1851,6 +2006,8 @@ async function forgetPane($: EngineInterface): Promise<void> {
   await Promise.all([
     update($, todayFacts, gone), update($, monthFacts, gone), update($, pastFacts, gone), update($, lapseFacts, gone),
     update($, rangeTrouble, gone), update($, lapseTrouble, gone), update($, pastReading, reading => isPaneOpen && reading),
+    // the Frame's panel too: the pane opens on its tab again (the frame itself runs on, whatever the pane does)
+    update($, framePanel, shown => isPaneOpen && shown),
   ])
 }
 
@@ -1936,8 +2093,14 @@ async function pixelSource($: EngineInterface, surface: string, facts: OfficeFac
  * one named winning; `browser` opens The Office in the browser instead, on the tab named or the pane's; any other word
  * makes it `unknown`, which changes nothing, so a typo or a word from an older version never closes or opens the pane.
  */
-function readCommand(args: unknown): { action: 'toggle' | 'open' | 'close' | 'browser' | 'unknown'; tab?: OfficeTab } {
+function readCommand(args: unknown): { action: 'toggle' | 'open' | 'close' | 'browser' | 'frame' | 'unknown'; tab?: OfficeTab; act?: FrameAct } {
   const words = String(args ?? '').trim().toLowerCase().split(/\s+/).filter(Boolean).map(w => w.replace(/^\/+/, ''))
+  // `frame`, alone or with one of its own words after it (on, off, new): never mixed with a tab or another word
+  if (words[0] === FRAME_KEY) {
+    if (words.length === 1) return { action: 'frame' }
+    const act = words.length === 2 ? FRAME_WORDS.get(words[1] ?? '') : undefined
+    return act ? { action: 'frame', act } : { action: 'unknown' }
+  }
   if (words.some(word => word !== 'open' && word !== 'close' && word !== BROWSER_WORD && !TAB_WORDS.has(word))) return { action: 'unknown' }
   if (words.includes('close')) return { action: 'close' }
   let tab: OfficeTab | undefined
@@ -1948,6 +2111,31 @@ function readCommand(args: unknown): { action: 'toggle' | 'open' | 'close' | 'br
 }
 
 // ---------------------------------------------------------------- pure helpers
+
+/**
+ * The launcher's `--frame … --json` answer, checked: where the frame stands, or null when the line is not one. Its
+ * addresses are drawn and said, so each must read as one of this computer's on the network (FRAME_URL_RE) and its own
+ * as the loopback one; an answer with any other is no answer.
+ */
+function readFrame(stdout: string): OfficeFrameLink | null {
+  let said: unknown
+  try {
+    said = JSON.parse(stdout.split('\n', 1)[0] ?? '')
+  } catch {
+    return null
+  }
+  if (said === null || typeof said !== 'object' || Array.isArray(said)) return null
+  const f = said as { spec?: unknown; running?: unknown; lan?: unknown; urls?: unknown; local?: unknown }
+  if (f.spec !== 'theoffice-frame/1' || typeof f.running !== 'boolean' || typeof f.lan !== 'boolean' || !Array.isArray(f.urls) || typeof f.local !== 'string') return null
+  if (!f.running) return { running: false, lan: false, urls: [], local: '' }
+  const urls = f.urls.filter((url): url is string => typeof url === 'string' && FRAME_URL_RE.test(url))
+  if (urls.length !== f.urls.length || urls.length > 8 || !FRAME_LOCAL_RE.test(f.local)) return null
+  return { running: true, lan: f.lan, urls: f.lan ? urls : [], local: f.local }
+}
+
+function isFrameAct(x: unknown): x is FrameAct {
+  return x === 'start' || x === 'stop' || x === 'renew'
+}
 
 function isFacts(x: unknown): x is OfficeFacts {
   if (!x || typeof x !== 'object') return false
@@ -2184,7 +2372,7 @@ function waitingLapse(why: string | null, range: Lapse): string {
  * everywhere, so the tabs and the drawing sit evenly apart on every tab.
  */
 function tabRow(
-  Box: ElementConstructor<BoxProps>, Button: ElementConstructor<ButtonProps>, selected: OfficeTab, choose: (next: OfficeTab) => void, hasIcons = false,
+  Box: ElementConstructor<BoxProps>, Button: ElementConstructor<ButtonProps>, selected: OfficeTab | null, choose: (next: OfficeTab) => void, hasIcons = false,
   switches: readonly RenderElement[] = [],
 ): RenderElement {
   // off the terminal each tab carries its icon, straight on the pane like the drawing under it; the surface draws a
@@ -2234,8 +2422,20 @@ function zoomButton(Button: ElementConstructor<ButtonProps>, isZoomed: boolean, 
   )
 }
 
-/** The tabs as Buttons (keys `tab-<view>`, hotkeys 1 to 6), the selected one primary. */
-function tabButtons(Button: ElementConstructor<ButtonProps>, selected: OfficeTab, choose: (next: OfficeTab) => void, hasIcons: boolean): RenderElement[] {
+/**
+ * The Frame key as a Button (`frame`, hotkey f), on every surface: the primary button while its panel is on screen. A
+ * press only calls `toggle`.
+ */
+function frameButton(Button: ElementConstructor<ButtonProps>, isOpen: boolean, toggle: () => void, hasIcons: boolean): RenderElement {
+  return (
+    <Button key={FRAME_KEY} hotkey={FRAME_HOTKEY} variant={isOpen ? 'primary' : 'secondary'} dimColor={!isOpen} onPress={toggle}>
+      {hasIcons ? '▣ Frame' : 'Frame'}
+    </Button>
+  )
+}
+
+/** The tabs as Buttons (keys `tab-<view>`, hotkeys 1 to 6), the selected one primary (none while the Frame's panel is on screen). */
+function tabButtons(Button: ElementConstructor<ButtonProps>, selected: OfficeTab | null, choose: (next: OfficeTab) => void, hasIcons: boolean): RenderElement[] {
   return TABS.map(t => (
     <Button key={`tab-${t.view}`} hotkey={t.hotkey} variant={t.view === selected ? 'primary' : 'secondary'} dimColor={t.view !== selected} onPress={() => choose(t.view)}>
       {hasIcons ? `${t.icon} ${t.label}` : t.label}
@@ -2248,19 +2448,69 @@ function tabButtons(Button: ElementConstructor<ButtonProps>, selected: OfficeTab
  * hangs under it (`joined`) or it under another (`under`), flush, as one console.
  */
 type MenuProps = {
-  row: typeof MENU_TABS | typeof MENU_LAPSE | typeof MENU_EXPORT; keys: MenuKey[]; width: number; joined: boolean; under?: boolean; prompt?: string
+  row: typeof MENU_TABS | typeof MENU_LAPSE | typeof MENU_EXPORT | typeof MENU_FRAME; keys: MenuKey[]; width: number; joined: boolean; under?: boolean
+  prompt?: string
 }
 
 /**
- * The tabs as keys of the pixel menu, the picked one lit, then two switches apart at the right end, each lit while on:
- * the Live tab's Quiet (on any other tab its room kept and nothing drawn in it, isHidden, so the tabs never move) and
- * the Zoom, on every tab, at the edge.
+ * The tabs as keys of the pixel menu, the picked one lit, then three switches apart at the right end, each lit while on:
+ * the Live tab's Quiet (on any other tab its room kept and nothing drawn in it, isHidden, so the tabs never move), the
+ * Zoom, on every tab, and at the edge the Frame, its icon alone (isIcon) so the tabs keep their names' room. While the
+ * Frame's panel is on screen (`isFraming`) it is the lit key: no tab is, so each can be pressed to go back to it, and
+ * Quiet keeps its room empty as off the Live tab.
  */
-function tabKeys(selected: OfficeTab, isQuiet = false, isZoomed = false): MenuKey[] {
-  const tabs: MenuKey[] = TABS.map(t => ({ id: t.view, label: t.label, short: t.short, icon: t.art, ...(t.view === selected ? { isOn: true } : {}) }))
+function tabKeys(selected: OfficeTab, isQuiet = false, isZoomed = false, isFraming = false): MenuKey[] {
+  const tabs: MenuKey[] = TABS.map(t => ({ id: t.view, label: t.label, short: t.short, icon: t.art, ...(t.view === selected && !isFraming ? { isOn: true } : {}) }))
   const quietKey: MenuKey = { id: QUIET, label: 'Quiet', short: 'Quiet', icon: 'quiet', isSwitch: true, ...(isQuiet ? { isOn: true } : {}) }
   const zoomKey: MenuKey = { id: ZOOM, label: 'Zoom', short: 'Zoom', icon: 'zoom', isSwitch: true, ...(isZoomed ? { isOn: true } : {}) }
-  return [...tabs, selected === 'all' ? quietKey : { ...quietKey, isHidden: true }, zoomKey]
+  const frameKey: MenuKey = { id: FRAME_KEY, label: 'Frame', short: 'Frame', icon: 'frame', isSwitch: true, isIcon: true, ...(isFraming ? { isOn: true } : {}) }
+  return [...tabs, selected === 'all' && !isFraming ? quietKey : { ...quietKey, isHidden: true }, zoomKey, frameKey]
+}
+
+/** The keys of the Frame's row where it stands: Turn on while it is off (or not known yet), Turn off and New link while it is on. */
+function frameActs(link: OfficeFrameLink | null): readonly FrameSpec[] {
+  return link?.running ? [FRAME_ACTS.stop, FRAME_ACTS.renew] : [FRAME_ACTS.start]
+}
+
+/** What the row's LED says (and its words off the pixel art): whether the frame is on. */
+function frameLed(link: OfficeFrameLink | null): string {
+  return link === null ? 'Frame' : link.running ? 'Frame on' : 'Frame off'
+}
+
+/**
+ * The Frame's row as keys of the pixel menu: its keys where it stands, the one at work busy (its letters blink, it goes
+ * nowhere; while the launcher is only asked where the frame stands, the first one), and Back apart at the right end.
+ */
+function frameKeys(link: OfficeFrameLink | null, busy: FrameAsk | null): MenuKey[] {
+  const acts = frameActs(link)
+  const at = busy === 'status' ? acts[0]?.act : busy
+  const keys: MenuKey[] = acts.map(s => ({ id: s.act, label: s.act === at && busy !== 'status' ? s.doing : s.label, short: s.short, icon: s.art, ...(s.act === at ? { isBusy: true } : {}) }))
+  return [...keys, { id: BACK, label: 'Back', short: 'Back', icon: 'back' }]
+}
+
+/** The row's keys as Buttons (`frame-<act>`, t and n; Back `frame-back`, b), in its keys' order. A press only calls `act` or `back`. */
+function frameButtons(Button: ElementConstructor<ButtonProps>, link: OfficeFrameLink | null, busy: FrameAsk | null, act: (a: FrameAct) => void, back: () => void): RenderElement[] {
+  const keys = frameActs(link).map(s => (
+    <Button key={`frame-${s.act}`} hotkey={s.hotkey} variant="secondary" dimColor={busy !== null} onPress={() => act(s.act)}>
+      {busy === s.act ? `${s.doing}…` : s.label}
+    </Button>
+  ))
+  return [...keys, <Button key="frame-back" hotkey={BACK_HOTKEY} variant="secondary" onPress={back}>‹ Back</Button>]
+}
+
+/** The Frame's row as Buttons, where it is not pixel art: whether the frame is on, in words, then its keys. */
+function frameRow(
+  Box: ElementConstructor<BoxProps>, Button: ElementConstructor<ButtonProps>, Text: ElementConstructor<TextProps>, link: OfficeFrameLink | null,
+  busy: FrameAsk | null, act: (a: FrameAct) => void, back: () => void,
+): RenderElement {
+  return (
+    <Box key="frame-row" flexDirection="row" flexWrap="wrap" gap={1}>
+      <Box key="frame-ask">
+        <Text dimColor>{`${frameLed(link)}:`}</Text>
+      </Box>
+      {frameButtons(Button, link, busy, act, back)}
+    </Box>
+  )
 }
 
 /**
@@ -2569,7 +2819,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'theoffice',
       description: 'Open or close The Office: a live, pixel-art pane of your coding agents (in a terminal, in your browser)',
-      argumentHint: '[live|today|week|month|work|timelapse|close|browser]',
+      argumentHint: '[live|today|week|month|work|timelapse|close|browser|frame]',
     }).catch(error => $.ui.log(`theoffice: /theoffice is not registered (${errorText(error)}); the band's button still opens the pane`, { to: 'debug' }))
     await restoreTab($).catch(() => undefined)
     await restoreQuiet($).catch(() => undefined)
@@ -2621,6 +2871,8 @@ export const register: Register = on => {
   on('command.run', { command: 'theoffice' }, async ($, e) => {
     const asked = readCommand(e.args)
     if (asked.action === 'unknown') return { text: USAGE }
+    // `frame`: The Office on a screen of its own, where it stands or turned on, off, or given a new link as asked
+    if (asked.action === 'frame') return { text: await commandFrame($, asked.act) }
     if (asked.action === 'browser' || (isConsole && asked.action !== 'close')) {
       if (isConsole && asked.tab) await pickTab($, asked.tab) // the console's next /theoffice opens it there again
       const opened = await openInBrowser($, asked.tab)
@@ -2697,16 +2949,22 @@ export const register: Register = on => {
     const shown = menus.get(e.surface)?.tabs
     const wasQuiet = shown?.keys.some(k => k.id === QUIET && k.isOn === true) === true
     const wasZoomed = shown?.keys.some(k => k.id === ZOOM && k.isOn === true) === true
-    // the Live tab's Quiet: pressed on or off at once, as its Button would; only while the Live tab is picked
+    const wasFraming = shown?.keys.some(k => k.id === FRAME_KEY && k.isOn === true) === true
+    // the Frame: its panel on or off at once, as its Button would, on any tab
+    if (id === FRAME_KEY) {
+      void toggleFrame($)
+      return shown ? { ...heard, props: { ...shown, keys: tabKeys(picked, wasQuiet, wasZoomed, !wasFraming) } } : heard
+    }
+    // the Live tab's Quiet: pressed on or off at once, as its Button would; only while the Live tab is picked and drawn
     if (id === QUIET) {
-      if (picked !== 'all') return heard
+      if (picked !== 'all' || wasFraming) return heard
       void toggleQuiet($)
       return shown ? { ...heard, props: { ...shown, keys: tabKeys('all', !wasQuiet, wasZoomed) } } : heard
     }
     // the Zoom: pressed on or off at once on any tab, as its Button would
     if (id === ZOOM) {
       void toggleZoom($)
-      return shown ? { ...heard, props: { ...shown, keys: tabKeys(picked, wasQuiet, !wasZoomed) } } : heard
+      return shown ? { ...heard, props: { ...shown, keys: tabKeys(picked, wasQuiet, !wasZoomed, wasFraming) } } : heard
     }
     if (!isTab(id)) return heard
     void selectTab($, id)
@@ -2737,6 +2995,23 @@ export const register: Register = on => {
     return shown && after ? { ...heard, props: { ...shown, keys: exportKeys(after), prompt: askWords(after) } } : heard
   })
 
+  // The Frame's row posted a click: Turn on, Turn off, New link or Back, as their Buttons would; only while its panel is
+  // on screen, and a key only where the frame stands (mayFrame) and while nothing runs. The key pressed is handed back
+  // busy at once; what the launcher says redraws the row.
+  on('ui.message', { requestId: PANE, element: MENU_FRAME }, async ($, e, next) => {
+    const heard = await next(e)
+    const id = askedKey(e.data, MENU_FRAME)
+    if (id === null || !(await read($, framePanel))) return heard
+    if (id === BACK) {
+      void toggleFrame($)
+      return heard
+    }
+    if (!isFrameAct(id) || isFrameAsked || !mayFrame(id, await read($, frameLink))) return heard
+    void pressFrame($, id)
+    const shown = menus.get(e.surface)?.frame
+    return shown ? { ...heard, props: { ...shown, keys: shown.keys.map(k => (k.id === id ? { ...k, label: FRAME_ACTS[id].doing, isBusy: true } : k)) } } : heard
+  })
+
   // The pane: the terminal's text in every column it has; a drawing surface's menu, strip and drawing in WIDEST_COLUMNS
   // at most, centered in a wider pane (centered), so the building stops growing there as the site's does
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -2754,6 +3029,10 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
   const choose = (next: OfficeTab) => void selectTab($, next)
   const toggleQuietKey = () => void toggleQuiet($)
   const toggleZoomKey = () => void toggleZoom($)
+  const toggleFrameKey = () => void toggleFrame($)
+
+  // the Frame's panel, in place of the tab's drawing while its key is on (it subscribes: the key pressed redraws)
+  if (await read($, framePanel)) return frameTree($, e, columns, view, isQuiet, isZoomed)
 
   // the Timelapse: the tabs, its own row, then its replay, one gap apart. It reads only its own facts (no other run
   // redraws it) and draws the newest kept for the range shown, so a range picked again is drawn at once while its run
@@ -2768,7 +3047,7 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
     drawings.delete(e.surface)
     if (e.surface === 'terminal') {
       const { Box, Button, Text } = $.ui.resolve(e)
-      const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($))])
+      const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($)), frameButton(Button, false, toggleFrameKey, false)])
       const controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, null)
       if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
       try {
@@ -2797,14 +3076,17 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
       const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed), width, joined: true }
       const lapseProps: MenuProps = { row: MENU_LAPSE, keys: lapseKeys(shownLapse, isSaving), width, joined: false, under: true }
       menus.set(e.surface, { tabs: tabsProps, lapse: lapseProps })
-      const keys = [...tabButtons(Button, view, choose, false), zoomButton(Button, isZoomed, toggleZoomKey, false), ...lapseButtons(Button, shownLapse, chooseLapse, save, isSaving)]
+      const keys = [
+        ...tabButtons(Button, view, choose, false), zoomButton(Button, isZoomed, toggleZoomKey, false), frameButton(Button, false, toggleFrameKey, false),
+        ...lapseButtons(Button, shownLapse, chooseLapse, save, isSaving),
+      ]
       const tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
       const lapseMenu = h('Client', { key: MENU_LAPSE, module: './menu.tsx', width: '100%', props: lapseProps })
       tabs = pixelMenu(Box, tabsMenu, true, lapseMenu, keys)
       controls = page ? savedLine(Text, page) : undefined
     } else {
       menus.delete(e.surface)
-      tabs = tabRow(Box, Button, view, choose, true, [zoomButton(Button, isZoomed, toggleZoomKey, true)])
+      tabs = tabRow(Box, Button, view, choose, true, [zoomButton(Button, isZoomed, toggleZoomKey, true), frameButton(Button, false, toggleFrameKey, true)])
       controls = lapseRow(Box, Button, Text, shownLapse, chooseLapse, save, isSaving, page)
     }
     if (facts === null) return pending(Box, Text, tabs, waitingLapse(await read($, lapseTrouble), shownLapse), controls)
@@ -2887,7 +3169,7 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
   // a terminal has no Svg: it draws the text version, its tabs and rows as Buttons
   if (e.surface === 'terminal') {
     const { Box, Button, Text } = $.ui.resolve(e)
-    const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($))])
+    const tabs = tabRow(Box, Button, view, choose, false, [browserButton(Button, () => void pressBrowser($)), frameButton(Button, false, toggleFrameKey, false)])
     const row = strip ? periodRow(Box, Button, Text, strip, name, step, isMonth ? [exportToggle(Button, ask, isSavingMonth, toggle)] : []) : undefined
     const controls = stack(Box, 'month-controls', [row, ask === null ? null : exportRow(Box, Button, Text, ask, answer)])
     if (facts === null) {
@@ -2952,14 +3234,17 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
     menus.set(e.surface, { tabs: tabsProps, ...(askProps ? { export: askProps } : {}) })
     const keys = [
       ...tabButtons(Button, view, choose, false), ...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, false)] : []),
-      zoomButton(Button, isZoomed, toggleZoomKey, false),
+      zoomButton(Button, isZoomed, toggleZoomKey, false), frameButton(Button, false, toggleFrameKey, false),
       ...(pixelStrip ? [...stepButtons(Button, pixelStrip.back, step), ...toggleKey] : []), ...(pixelAsk === null ? [] : exportButtons(Button, pixelAsk, answer)),
     ]
     tabs = pixelMenu(Box, tabsMenu, !!pixelStrip, under, keys, askMenu)
     controls = stack(Box, 'month-controls', [askRow, saved])
   } else {
     menus.delete(e.surface)
-    tabs = tabRow(Box, Button, view, choose, true, [...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, true)] : []), zoomButton(Button, isZoomed, toggleZoomKey, true)])
+    tabs = tabRow(Box, Button, view, choose, true, [
+      ...(view === 'all' ? [quietButton(Button, isQuiet, toggleQuietKey, true)] : []), zoomButton(Button, isZoomed, toggleZoomKey, true),
+      frameButton(Button, false, toggleFrameKey, true),
+    ])
     // the strip's keys hidden beside it, as the menu holds them
     const paging = pixelStrip ? (
       <Box key="menu" flexDirection="column">
@@ -3000,6 +3285,80 @@ async function paneTree($: EngineInterface, e: RenderInput<'Pane'>, columns: num
     )
   } catch (error) {
     drawings.delete(e.surface)
+    return broken(Box, Text, tabs, error, controls, false)
+  }
+}
+
+/**
+ * The Frame's panel, in place of the tab's drawing: the tabs (none lit: a press of any goes back to it), the Frame's row
+ * under them (whether the frame is on, Turn on or Turn off and New link, Back), and what the frame is and where it
+ * stands: a card with the QR code of its address where the surface draws pixel art (and the addresses in words under
+ * it, to copy), lines of text with the code in half blocks on a terminal. It reads only the frame's own state, so no
+ * run of the collector redraws it, and what this surface drew of the tabs is forgotten, as on a tab switch.
+ */
+async function frameTree($: EngineInterface, e: RenderInput<'Pane'>, columns: number, view: OfficeTab, isQuiet: boolean, isZoomed: boolean): Promise<RenderElement> {
+  const link = await read($, frameLink) // subscribes: what the launcher says redraws
+  const busy = await read($, frameBusy) // and so does the key at work
+  const choose = (next: OfficeTab) => void selectTab($, next)
+  const back = () => void toggleFrame($)
+  const act = (a: FrameAct) => void pressFrame($, a)
+  drawings.delete(e.surface)
+  lapseDrawn.delete(e.surface)
+  strips.delete(e.surface)
+
+  if (e.surface === 'terminal') {
+    const { Box, Button, Text } = $.ui.resolve(e)
+    menus.delete(e.surface)
+    return (
+      <Box flexDirection="column" gap={1}>
+        {tabRow(Box, Button, null, choose, false, [frameButton(Button, true, back, false)])}
+        {frameRow(Box, Button, Text, link, busy, act, back)}
+        <Box key="frame-text" flexDirection="column">
+          {frameText({ link, columns }).map((line, i) => <Text key={`frame-line-${i}`} mono wrap="truncate-end">{line || ' '}</Text>)}
+        </Box>
+      </Box>
+    )
+  }
+
+  const elements = $.ui.resolve(e)
+  const { Box, Button, Svg, Text } = elements
+  const width = stripWidth(columns)
+  let tabs: RenderElement
+  let controls: RenderElement | undefined
+  if (e.surface === 'desktop' && 'Client' in elements) {
+    // each Client is written as h('Client', …) with its fixed module, so a reader of the source sees which code loads
+    const tabsProps: MenuProps = { row: MENU_TABS, keys: tabKeys(view, isQuiet, isZoomed, true), width, joined: true }
+    const rowProps: MenuProps = { row: MENU_FRAME, keys: frameKeys(link, busy), width, joined: false, under: true, prompt: frameLed(link) }
+    menus.set(e.surface, { tabs: tabsProps, frame: rowProps })
+    const keys = [
+      ...tabButtons(Button, null, choose, false), zoomButton(Button, isZoomed, () => void toggleZoom($), false), frameButton(Button, true, back, false),
+      ...frameButtons(Button, link, busy, act, back),
+    ]
+    const tabsMenu = h('Client', { key: MENU_TABS, module: './menu.tsx', width: '100%', props: tabsProps })
+    const rowMenu = h('Client', { key: MENU_FRAME, module: './menu.tsx', width: '100%', props: rowProps })
+    tabs = pixelMenu(Box, tabsMenu, true, rowMenu, keys)
+  } else {
+    menus.delete(e.surface)
+    tabs = tabRow(Box, Button, null, choose, true, [zoomButton(Button, isZoomed, () => void toggleZoom($), true), frameButton(Button, true, back, true)])
+    controls = frameRow(Box, Button, Text, link, busy, act, back)
+  }
+  try {
+    const card = renderFrameCard({ width: svgWidth(columns), link })
+    // the addresses in words under the card, where they can be copied: a screen's, or this computer's own off the network
+    const addresses = link?.running ? (link.lan ? link.urls : [link.local]) : []
+    return (
+      <Box flexDirection="column" gap={1}>
+        {tabs}
+        {controls}
+        <Svg source={card.source} alt={card.alt} isInteractive {...svgBox(card.source)} />
+        {addresses.length ? (
+          <Box key="frame-links" flexDirection="column">
+            {addresses.map((url, i) => <Text key={`frame-link-${i}`} dimColor wrap="truncate-middle">{url}</Text>)}
+          </Box>
+        ) : null}
+      </Box>
+    )
+  } catch (error) {
     return broken(Box, Text, tabs, error, controls, false)
   }
 }

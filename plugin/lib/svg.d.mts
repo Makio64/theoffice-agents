@@ -16,6 +16,10 @@ export type RenderSvgOptions = {
   idPrefix?: string
   /** CSS px the drawing should at least fill: a shorter one grows bedrock under its commits line (nothing when transparent). */
   minHeight?: number
+  /** true grows the sky over the drawing instead of bedrock under it, the drawing's foot at the box's foot (a frame's screen). */
+  skyFill?: boolean
+  /** true is a box taller than wide (a screen held upright): a view with an upright plan takes it at any width (the Month stacks its rooms). */
+  tall?: boolean
   /** true paints no backdrop (sky, title bar, ground fill, root background): the drawing sits on the page behind it. */
   transparent?: boolean
   /** true draws a card: clipped to rounded corners on its ground, a hairline edge of light inside them, no root background. */

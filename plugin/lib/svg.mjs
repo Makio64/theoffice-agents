@@ -13,7 +13,7 @@
 // (the live basement is svg-work.mjs workFloor, the week tower's ground floor the Office's street front; the
 // timelapse's street front and desk accessories are svg-live.mjs's) goes through the composer, as ctx.floors.
 import { deskClass } from './model.mjs'
-import { K, MAX_SVG, castPicker, clamp, clockFor, defsMarkup, esc, ms, palette, sane, steadyFacts, tally } from './svg-kit.mjs'
+import { K, MAX_SVG, castPicker, clamp, clockFor, defsMarkup, esc, ms, palette, sane, skyOver, steadyFacts, tally } from './svg-kit.mjs'
 import { deskProps, frontage, sceneLive, streetFront } from './svg-live.mjs'
 import { sceneLoading } from './svg-loading.mjs'
 import { directoryBoard, sceneMonth } from './svg-month.mjs'
@@ -129,6 +129,12 @@ export function officeCounts(facts) {
  * - `idPrefix`: prefix for `<defs>` ids, so two SVGs can live in one HTML document.
  * - `minHeight`: CSS px the drawing should at least fill: a shorter drawing grows bedrock under the commits line, so a
  *   box is covered top to bottom (backdrop: nothing when transparent).
+ * - `skyFill`: true is a drawing with a screen of its own to fill (a frame, lib/dashboard.mjs fitScreen). What
+ *   `minHeight` leaves over is sky over the drawing instead, the light's bands on toward the zenith with stars or
+ *   clouds of their own, and the whole drawing stands that much lower with its foot at the box's foot: the scene from
+ *   top to bottom, no dark ground under it.
+ * - `tall`: true is a box taller than wide (a screen held upright): a view with an upright plan takes it at any width
+ *   (the Month keeps its calendar over its directory instead of beside it), so the building is as tall as its box.
  * - `transparent`: true paints no backdrop (ctx.transparent): no sky, no title bar, no ground behind the lines under a
  *   building, no root background, so the buildings, their rooftops, the moon or the sun and the street sit on the page
  *   behind the drawing (the desktop pane) instead of in a box of their own. Stars stay, at half opacity; the text
@@ -161,7 +167,7 @@ export function officeCounts(facts) {
  * Never emits script, event attributes, external references or foreignObject; every facts string is escaped;
  * output stays ≤ 120 000 chars (desks capped at 24, meetings at 3, facade floors at 12; tighter caps if ever needed).
  */
-export function renderSvg(facts, { width = 640, animate = true, view = 'live', idPrefix = 'to', minHeight = 0, transparent = false, card = false, liveClock = false, clockAt, rooms = false, quiet = false, scale = 2 } = {}) {
+export function renderSvg(facts, { width = 640, animate = true, view = 'live', idPrefix = 'to', minHeight = 0, skyFill = false, tall = false, transparent = false, card = false, liveClock = false, clockAt, rooms = false, quiet = false, scale = 2 } = {}) {
   const live = liveClock === true
   // a live drawing shows its running totals in steps (svg-kit steadyFacts), so they hold while agents work; the exact
   // counts stay at hand (ctx.exact) for what they did's shares, which floored counts would skew
@@ -196,7 +202,7 @@ export function renderSvg(facts, { width = 640, animate = true, view = 'live', i
         if (last && fine) break
         const ctx = {
           f, exact, W, px, animate: anim, id, now, night: Boolean(f.now?.is_night), color: palette(f), desks, view: v, caps: { ...caps, art, dress }, roof, sky, fine,
-          defs: new Map(), brick: false, minHeight: clamp(Math.round(Number(minHeight) || 0), 0, 8000), transparent: transparent === true,
+          defs: new Map(), brick: false, minHeight: clamp(Math.round(Number(minHeight) || 0), 0, 8000), skyFill: skyFill === true, tall: tall === true, transparent: transparent === true,
           card: card === true, liveClock: live, clock: clockFor(f, live && anim, clockAt == null ? NaN : Number(clockAt)), floors: FLOORS,
           // who sits in the drawings' generic seats (what they did's rooms…): the cast mixed by agent-time
           pick: castPicker(exact),
@@ -328,9 +334,14 @@ function draw(ctx, v, withLine) {
     body += `<g transform="translate(0 ${H})">${line.svg}</g>`
     H += line.h
   }
-  // the pane is taller than the drawing: bedrock carries on below it
+  // the pane is taller than the drawing: bedrock carries on below it, or (skyFill) the sky reaches higher over it, the
+  // drawing that much lower: the light's own bands on toward the zenith, with stars or clouds of their own (skyOver)
   const fillTo = Math.ceil(ctx.minHeight * (W / px))
-  if (fillTo > H) {
+  if (fillTo > H && ctx.skyFill && !ctx.transparent) {
+    const more = fillTo - H
+    body = `${skyOver(ctx, more)}<g transform="translate(0 ${more})">${body}</g>`
+    H = fillTo
+  } else if (fillTo > H) {
     body += street(ctx, H, fillTo - H)
     H = fillTo
   }
