@@ -56,7 +56,7 @@ test('a relocated skill can render pixel art and text from an unrelated project 
   const fx = buildFakeClaude()
   try {
     const installed = path.join(fx.root, 'installed plugins', 'The Office')
-    for (const dir of ['skills', 'scripts', 'lib']) fs.cpSync(path.join(ROOT, 'plugin', dir), path.join(installed, dir), { recursive: true })
+    for (const dir of ['skills', 'scripts', 'lib', 'themes']) fs.cpSync(path.join(ROOT, 'plugin', dir), path.join(installed, dir), { recursive: true })
     fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(installed, 'package.json'))
     fs.copyFileSync(path.join(ROOT, 'plugin.json'), path.join(installed, 'plugin.json'))
     const skillFile = path.join(installed, 'skills/office/SKILL.md')

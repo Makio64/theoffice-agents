@@ -21,6 +21,7 @@ try {
   await fs.copyFile(path.join(root, 'LICENSE'), path.join(stage, 'LICENSE'))
   await fs.mkdir(path.join(stage, 'runtime/scripts'), { recursive: true })
   await fs.cp(path.join(root, 'plugin/lib'), path.join(stage, 'runtime/lib'), { recursive: true, filter: file => !file.endsWith('.d.mts') })
+  await fs.cp(path.join(root, 'plugin/themes'), path.join(stage, 'runtime/themes'), { recursive: true })
   for (const script of ['office.mjs', 'dashboard.mjs', 'statusline.mjs']) await fs.copyFile(path.join(root, 'plugin/scripts', script), path.join(stage, 'runtime/scripts', script))
   const dist = path.join(root, 'dist')
   await fs.mkdir(dist, { recursive: true })

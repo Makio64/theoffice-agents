@@ -93,6 +93,7 @@ export function packagePlugin(destination = DEFAULT_OUTPUT) {
       copyTree(path.join(ROOT, HOST_SKILLS, entry.name), target)
     }
     copyTree(path.join(ROOT, 'plugin/lib'), path.join(stage, 'lib'), true)
+    copyTree(path.join(ROOT, 'plugin/themes'), path.join(stage, 'themes'))
     for (const script of ['office.mjs', 'dashboard.mjs', 'statusline.mjs']) {
       copyFile(path.join(ROOT, 'plugin/scripts', script), path.join(stage, 'scripts', script))
       fs.chmodSync(path.join(stage, 'scripts', script), 0o755)

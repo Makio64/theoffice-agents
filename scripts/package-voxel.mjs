@@ -17,6 +17,7 @@ async function run(command, args, cwd) {
 async function copyRuntime(destination) {
   await fs.mkdir(path.join(destination, 'scripts'), { recursive: true })
   await fs.cp(path.join(root, 'plugin/lib'), path.join(destination, 'lib'), { recursive: true, filter: file => !file.endsWith('.d.mts') })
+  await fs.cp(path.join(root, 'plugin/themes'), path.join(destination, 'themes'), { recursive: true })
   await fs.copyFile(path.join(root, 'plugin/scripts/voxel.mjs'), path.join(destination, 'scripts/voxel.mjs'))
   await fs.chmod(path.join(destination, 'scripts/voxel.mjs'), 0o755)
   await fs.cp(path.join(root, 'dist/voxel'), path.join(destination, 'dist/voxel'), { recursive: true })

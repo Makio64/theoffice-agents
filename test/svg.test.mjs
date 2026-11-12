@@ -637,7 +637,7 @@ test('svg*.mjs and html.mjs are PURE (no node:* imports, html does not import as
     const src = fs.readFileSync(new URL(`../plugin/lib/${file}`, import.meta.url), 'utf8')
     assert.doesNotMatch(src, /from ['"]node:|require\(|import\(/, file)
     for (const m of src.matchAll(/^(?:import|export)\b[^'"]*?\bfrom '([^']+)'/gm)) {
-      assert.ok(['./format.mjs', './activity.mjs', './model.mjs', './cast.mjs', ...SVG_FILES.map((f) => `./${f}`)].includes(m[1]), `${file} imports ${m[1]}`)
+      assert.ok(['./format.mjs', './activity.mjs', './model.mjs', './cast.mjs', './scenery.mjs', ...SVG_FILES.map((f) => `./${f}`)].includes(m[1]), `${file} imports ${m[1]}`)
     }
   }
 })
