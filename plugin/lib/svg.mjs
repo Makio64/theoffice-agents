@@ -193,15 +193,16 @@ export function renderSvg(facts, { width = 640, animate = true, view = 'live', i
   let out = ''
   for (const [caps, anim, line] of ladder.flatMap((t) => [[...t, true], [...t, false]])) {
     let best = null
-    const arts = v !== 'live' ? [[0, true]] : anim ? [[0, true], [0, false], [1, true], [1, false], [2, false]] : [[0, true], [0, false]]
-    for (const [art, dress] of arts) {
+    // the office dachshund (`dog`) is the first thing a drawing near its budget sheds, before the dressing
+    const arts = v !== 'live' ? [[0, true]] : anim ? [[0, true, true], [0, true], [0, false], [1, true], [1, false], [2, false]] : [[0, true], [0, false]]
+    for (const [art, dress, dog = false] of arts) {
       let last = false
       for (const [roof, sky, fine] of ROOFS) {
         // a roof without its lesser props was drawn and fitted, its plain twin tried after it: no leaner roof for the
         // basement's sake
         if (last && fine) break
         const ctx = {
-          f, exact, W, px, animate: anim, id, now, night: Boolean(f.now?.is_night), color: palette(f), desks, view: v, caps: { ...caps, art, dress }, roof, sky, fine,
+          f, exact, W, px, animate: anim, id, now, wall: Number.isFinite(parsed) ? parsed : Date.now(), night: Boolean(f.now?.is_night), color: palette(f), desks, view: v, caps: { ...caps, art, dress, dog }, roof, sky, fine,
           defs: new Map(), brick: false, minHeight: clamp(Math.round(Number(minHeight) || 0), 0, 8000), skyFill: skyFill === true, tall: tall === true, transparent: transparent === true,
           card: card === true, liveClock: live, clock: clockFor(f, live && anim, clockAt == null ? NaN : Number(clockAt)), floors: FLOORS,
           // who sits in the drawings' generic seats (what they did's rooms…): the cast mixed by agent-time
