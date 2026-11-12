@@ -15,7 +15,7 @@ import {
   isNewFile, readTail, saveCache, saveWalks, sessionKey, syncFile, tierOf,
 } from './cache.mjs'
 import { AGENT_IDS } from './cast.mjs'
-import { READERS, agentHomes, readOtherAgents } from './agents.mjs'
+import { READERS, agentHomes, hostAlive, readOtherAgents } from './agents.mjs'
 import { VIEWS } from './model.mjs'
 
 const execFileRaw = promisify(execFile)
@@ -2160,7 +2160,7 @@ export function collectCopilot(ctx, root) {
     const lastTs = Math.max(Date.parse(meta.updated_at) || 0, createdAt || 0, newest)
     if (!lastTs || ctx.nowMs - lastTs > COPILOT_STALE_MS) continue
     const id = (meta.id || ent.name).slice(0, 8)
-    if (byId.has(id)) continue
+    if (byId.has(id) || !hostAlive(ctx, 'copilot', meta.cwd || meta.git_root)) continue
     const proj = ctx.resolver.resolve(meta.cwd || meta.git_root)
     const busy = ctx.nowMs - newest <= COPILOT_BUSY_MS
     byId.set(id, {
@@ -2241,6 +2241,9 @@ export async function collect(opts = {}) {
     fromMs: firstLight ? nowMs : Date.parse(range.from),
     toMs: Date.parse(range.to),
     skipPid: envFlag(env.THEOFFICE_SKIP_PID_CHECK),
+    // pid-less hosts: fake test data has no process either, so the pid switch implies this one unless a table is injected
+    skipCwd: envFlag(env.THEOFFICE_SKIP_CWD_CHECK) || (envFlag(env.THEOFFICE_SKIP_PID_CHECK) && !opts.procTable),
+    procTable: opts.procTable,
     // novi answers for a range up to now: never for one that ended before today (yesterday's, a month back)
     useNovi: !firstLight && (opts.novi ?? true) && !envFlag(env.THEOFFICE_NO_NOVI) && opts.timeline !== true && range.days.at(-1) === localDay(nowMs),
     cache: opts.resetCache ? emptyCache() : loadCache(cacheDir),

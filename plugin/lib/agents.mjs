@@ -4,6 +4,7 @@
 // the collector makes of Claude's transcripts (buckets.mjs) and seats the ones at work right now at desks.
 // Read-only, always: files are listed, stat'ed and read, never written; nothing here opens a credential file
 // (auth.json, oauth tokens, .key files) or a database.
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { kindOf, labelOf } from './activity.mjs'
@@ -1361,6 +1362,67 @@ const opencode = {
 /** The readers, by agent id (Claude's sessions are read by collect.mjs itself). */
 export const READERS = { codex, gemini, cursor, kimi, grok, opencode, omp }
 
+// ---------------------------------------------------------------- liveness by working directory
+
+/** Agents with no pid file: the executable names of their processes (one place to extend). */
+const HOST_EXES = { opencode: ['opencode'], omp: ['omp'], copilot: ['copilot'], codex: ['codex'] }
+const LAUNCHERS = new Set(['node', 'bun', 'deno'])
+const realDir = (d) => { const t = String(d).replace(/[\\/]+$/, '') || '/'; try { return fs.realpathSync(t) } catch { return t } }
+const exeName = (tok) => path.basename(tok ?? '').replace(/\.exe$/i, '')
+
+/** The agent a process command line belongs to: its executable, or the script a node-like launcher runs. */
+function hostOf(command) {
+  const [a, b] = command.trim().split(/\s+/)
+  const name = LAUNCHERS.has(exeName(a)) ? exeName(b) : exeName(a)
+  return Object.keys(HOST_EXES).find((id) => HOST_EXES[id].includes(name)) ?? null
+}
+
+/**
+ * Where the processes of each pid-less agent are working right now: Map agentId -> Set(realpath of cwd), or null when
+ * unknown (Windows, a failed lookup): the caller then hides nothing. Computed once per collect (cached on ctx).
+ * `ctx.procTable` (tests) replaces ps and lsof: `[{ pid, command, cwd }]`. Read-only; arguments are never shell-interpreted.
+ */
+export function liveHostCwds(ctx) {
+  if (ctx.hostCwds !== undefined) return ctx.hostCwds
+  let out = null
+  try { out = readHostCwds(ctx.procTable) } catch (err) { ctx.log?.(`host cwds: ${err?.message}`) }
+  return (ctx.hostCwds = out)
+}
+
+function readHostCwds(table) {
+  if (!table && process.platform === 'win32') return null
+  const run = (cmd, args) => { try { return execFileSync(cmd, args, { encoding: 'utf8', timeout: 5000, maxBuffer: 1 << 24, stdio: ['ignore', 'pipe', 'ignore'] }) } catch (err) { return err?.stdout ? String(err.stdout) : null } }
+  let procs = table
+  if (!procs) {
+    const ps = run('ps', ['-axo', 'pid=,command='])
+    if (ps === null) return null
+    procs = ps.split('\n').map((l) => /^\s*(\d+)\s+(.*)$/.exec(l)).filter(Boolean).map((m) => ({ pid: Number(m[1]), command: m[2] }))
+  }
+  const found = procs.map((p) => ({ ...p, agent: hostOf(p.command) })).filter((p) => p.agent)
+  const cwds = new Map(Object.keys(HOST_EXES).map((id) => [id, new Set()]))
+  const need = found.filter((p) => p.cwd === undefined)
+  if (need.length > 0) {
+    const byPid = new Map()
+    if (process.platform === 'linux') {
+      for (const p of need) { try { byPid.set(p.pid, fs.readlinkSync(`/proc/${p.pid}/cwd`)) } catch {} }
+    } else {
+      const o = run('lsof', ['-a', '-d', 'cwd', '-Fn', '-p', need.map((p) => p.pid).join(',')])
+      if (o === null) return null
+      let pid = 0
+      for (const l of o.split('\n')) { if (l[0] === 'p') pid = Number(l.slice(1)); else if (l[0] === 'n' && pid) byPid.set(pid, l.slice(1)) }
+    }
+    for (const p of need) p.cwd = byPid.get(p.pid)
+  }
+  for (const p of found) if (p.cwd) cwds.get(p.agent).add(realDir(p.cwd))
+  return cwds
+}
+
+/** False only when the lookup worked and no process of this agent works in `dir` (unknown agent, dir or lookup: true). */
+export function hostAlive(ctx, agent, dir) {
+  if (ctx.skipCwd || !dir || !HOST_EXES[agent]) return true
+  return liveHostCwds(ctx)?.get(agent)?.has(realDir(dir)) ?? true
+}
+
 // ---------------------------------------------------------------- reading them all
 
 /**
@@ -1449,6 +1511,7 @@ export async function readOtherAgents(ctx, homes) {
       titles ??= reader.titles ? reader.titles(home) : new Map()
       const title = titles.get(e.sid) ?? e.ct ?? e.at ?? null
       const proj = ctx.resolver.resolve(topCwd(e) ?? '')
+      if (ctx.nowMs - f.st.mtimeMs < DESK_MS && !hostAlive(ctx, home.agent, topCwd(e))) continue   // finished run, closed tab
       if (ctx.nowMs - f.st.mtimeMs >= DESK_MS) {
         left.push({ title: clip(redact(title || proj.name), 60), project: clip(proj.name, 60), left_at: iso(f.st.mtimeMs), agent: home.agent, _ms: f.st.mtimeMs })
         continue
