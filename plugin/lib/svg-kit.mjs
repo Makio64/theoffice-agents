@@ -7,8 +7,10 @@
 import { AGENT_IDS, CAST, agentId } from './cast.mjs'
 import { clip, displayWidth, fmtAgo, fmtAgoAtLeast, fmtAtLeast, fmtCount, fmtMinutes, truncate } from './format.mjs'
 import { CLAWD_HEX, CLAWD_SPRITE, ROLE_HEX, STRIP_ORDER, agentShares, fnv1a, handsUp, idleGroups, plural, projectSlots, seeded } from './model.mjs'
+import { THEME } from './scenery.mjs'
 
 export { rangeWord } from './model.mjs'
+export { THEME }
 
 /** '3 desks', '1 desk' and '1 hand up', '2 hands up': model.mjs's, so the drawing and the text say it alike. */
 export { handsUp, plural }
@@ -41,12 +43,12 @@ export const CLAWD_EYE = CLAWD_HEX.eye
 
 /** Scene paint (not semantic): sky, bricks, slabs, furniture. Reuse these so a new scene sits in the same building. */
 export const K = {
-  star: '#e9e6ff', starDim: '#6f91dc', moon: '#f3ead0', sun: '#f6d860', cloud: '#f7fbff', cloudSh: '#d6e4f2',
-  brick: '#5a4334', mortar: '#47342a', parapet: '#3a2d26', parapetTop: '#6b5646',
-  wall: '#3b342e', wallLow: '#332d28', wallDark: '#1a1f2f', wallDarkLow: '#161a28',
-  slab: '#221e1a', wood: '#9a7b4f', woodD: '#6f5636', part: '#4a3d33', partHi: '#5f4f42',
-  walk: '#58514a', walkD: '#433d37', ground: '#14120f', plate: '#16110d', groupText: '#c9bda3',
-  chair: '#2a2a33', chairHi: '#3d3d4a',
+  star: THEME.sky.star, starDim: THEME.sky.starDim, moon: THEME.sky.moon, sun: THEME.sky.sun, cloud: THEME.sky.cloud, cloudSh: THEME.sky.cloudSh,
+  brick: THEME.building.brick, mortar: THEME.building.mortar, parapet: THEME.roof.parapet, parapetTop: THEME.roof.parapetTop,
+  wall: THEME.building.wall, wallLow: THEME.building.wallLow, wallDark: THEME.building.wallDark, wallDarkLow: THEME.building.wallDarkLow,
+  slab: THEME.building.slab, wood: THEME.props.wood, woodD: THEME.props.woodD, part: THEME.props.part, partHi: THEME.props.partHi,
+  walk: THEME.street.walk, walkD: THEME.street.walkD, ground: THEME.street.ground, plate: '#16110d', groupText: '#c9bda3',
+  chair: THEME.props.chair, chairHi: THEME.props.chairHi,
 }
 
 /**
@@ -54,13 +56,7 @@ export const K = {
  * the commits line's own paint (the road, the station sign, the train's shade, wheels and bogies, the headlight, the
  * cab glass by day). The street (svg-street.mjs) and the live building's basement, cut through beside it, share it.
  */
-export const UNDER = {
-  soil: '#1b1713', pebble: '#2a241e', pebbleD: '#231e19', tunnel: '#0e0d0c', tunnelRim: '#2b2622',
-  rail: '#6a625a', sleeper: '#2f2924', rock: '#110f0d', light: '#f6d860',
-  road: '#1d1b19', lane: '#8a7f5a', gutter: '#2a2520', roadEdge: '#141210', wall: '#151311', ballast: '#1a1714',
-  sign: '#16203e', signHi: '#2b3a66', cream: '#f3ead0', shade: '#a8533a', wheel: '#2a2622', bogie: '#3a342e',
-  beam: '#fff3c0', glass: '#9cc3dc', glassHi: '#d4ecf8',
-}
+export const UNDER = THEME.street.under
 
 /**
  * Whether a drawing wears the finer art (ctx.fine): the street front and the kitchen's and the meeting room's furniture
@@ -752,10 +748,10 @@ export const SPRITES = {
   // (0, 0) too, and its one cloud
   'sun-s': () => paint([[-1, -3, 3, 7, K.sun], [-3, -1, 7, 3, K.sun], [-2, -2, 5, 5, K.sun], [0, -5, 1, 1, K.sun], [0, 5, 1, 1, K.sun],
     [-5, 0, 1, 1, K.sun], [5, 0, 1, 1, K.sun]]),
-  'moon-s': () => sprite(MOON, { m: K.moon, M: '#d9cfae' }, -4, -4),
+  'moon-s': () => sprite(MOON, { m: K.moon, M: THEME.sky.moonShade }, -4, -4),
   cloud: () => sprite(CLOUD, { c: K.cloud, s: K.cloudSh }),
-  'cloud-dawn': () => sprite(CLOUD, { c: '#fff0ec', s: '#e0b4c8' }),
-  'cloud-dusk': () => sprite(CLOUD, { c: '#ffd2b4', s: '#c97c95' }),
+  'cloud-dawn': () => sprite(CLOUD, { c: THEME.sky.cloudDawn[0], s: THEME.sky.cloudDawn[1] }),
+  'cloud-dusk': () => sprite(CLOUD, { c: THEME.sky.cloudDusk[0], s: THEME.sky.cloudDusk[1] }),
   'cl-puff': () => cloudSprite('puff'),
   'cl-streak': () => cloudSprite('streak'),
   'cl-puffS': () => cloudSprite('puffS'),
@@ -1211,10 +1207,11 @@ defineSprites({
 })
 
 function winSprite(night) {
-  const glass = night ? '#16203e' : '#9fd0f2'
-  const deco = night ? [[3, 2, 1, 1, K.star], [12, 5, 1, 1, K.starDim], [6, 5, 1, 1, K.starDim]] : [[3, 3, 4, 1, '#ffffff'],
-    [2, 4, 6, 1, '#ffffff'], [11, 2, 3, 1, '#e8f4ff']]
-  return paint([[0, 0, 18, 9, '#5c4f44'], [1, 1, 16, 7, glass], ...deco, [9, 1, 1, 7, '#5c4f44'], [0, 8, 18, 1, '#7a6a5a']])
+  const W = THEME.windows
+  const glass = night ? W.glassNight : W.glassDay
+  const deco = night ? [[3, 2, 1, 1, K.star], [12, 5, 1, 1, K.starDim], [6, 5, 1, 1, K.starDim]] : [[3, 3, 4, 1, W.glint],
+    [2, 4, 6, 1, W.glint], [11, 2, 3, 1, W.glintCool]]
+  return paint([[0, 0, 18, 9, W.frame], [1, 1, 16, 7, glass], ...deco, [9, 1, 1, 7, W.frame], [0, 8, 18, 1, W.sill]])
 }
 
 /**
@@ -1256,7 +1253,7 @@ export function brickRect(ctx, x, y, w, h) {
 // The wall's brick, one 16 × 12 tile: four courses of bricks 7 wide and 2 tall, the joints staggered, each brick lit
 // along its top row and a few a shade darker or lighter than the rest, so the wall reads as laid by hand.
 const BRICK_TILE = (() => {
-  const tone = { base: ['#62493a', K.brick], dark: ['#553e31', '#4d382c'], light: ['#6b503f', '#624939'] }
+  const tone = { base: [THEME.building.brickTone.base, K.brick], dark: THEME.building.brickTone.dark, light: THEME.building.brickTone.light }
   const courses = [[3, ['base', 'dark']], [7, ['light', 'base']], [3, ['dark', 'base']], [7, ['base', 'light']]]
   const rects = []
   courses.forEach(([joint, tones], c) => {
@@ -1653,10 +1650,7 @@ function celestialAt(ctx, arc, y0) {
 }
 
 // The glow on the horizon at dawn and dusk, warm at its heart, rosier outside: [half width, rows up, dash, color].
-const GLOWS = {
-  dawn: [[74, 18, '1 7', '#c48aa8'], [56, 14, '1 3', '#e9a29a'], [38, 10, '1 1', '#f6b48e'], [20, 6, '3 1', '#fcd3a0']],
-  dusk: [[74, 18, '1 7', '#c06a86'], [56, 14, '1 3', '#e08070'], [38, 10, '1 1', '#f39a5c'], [20, 6, '3 1', '#ffc66a']],
-}
+const GLOWS = THEME.sky.glows
 /**
  * The glow where the sun rises or sets, on the roofline at x: half an ellipse of dithered rows over it (the building
  * and its props over its foot), each step denser and warmer toward its heart; nothing but at dawn and dusk.
@@ -1676,7 +1670,7 @@ function horizonGlow(phase, x, roof) {
 }
 
 // The crown's stone: the coping's top, its face, the shade under a ledge, the dark of the dentils' bed.
-const CROWN = { hi: '#b29d7d', face: '#8a765c', shade: '#5c4c3b', bed: '#2b211b' }
+const CROWN = THEME.roof.crown
 
 /**
  * A building's brick shell from the roof down to `groundY`, and its crown: the parapet over the roof line (brick under
@@ -2006,9 +2000,9 @@ const sunSprite = () => `<g fill="none"><path stroke="currentColor" stroke-dasha
  * The sun's colors, [disc, rim]: high in the sky gold, low orange (under the dawn and the dusk, in a view at an hour of
  * its rising or its setting). Near enough that a fade from one to the other stays warm, never a beige.
  */
-export const SUN_TONES = { high: ['#ffe6a0', '#ffc04d'], low: ['#ffb35c', '#ff8a4a'] }
+export const SUN_TONES = THEME.sky.sunTones
 // The moon's light, band by band outward from its crescent: [how far from it, color, opacity].
-const MOON_LIGHT = [[1.5, '#e4ebff', '.34'], [2.9, '#b9c9f4', '.18'], [4.3, '#8fa3d8', '.09']]
+const MOON_LIGHT = THEME.sky.moonLight
 /**
  * The moon, a crescent 12 across, its middle at (0, 0): the lit side (the disc less a bite up and to the right), its
  * inner edge shaded, and its light round the crescent alone, in soft bands fainter outward (MOON_LIGHT), so the dark
@@ -2035,7 +2029,7 @@ const moonSprite = () => {
     }
   }
   return `<g fill="none">${bands.map((pts, k) => `<path stroke="${MOON_LIGHT[k][1]}" stroke-opacity="${MOON_LIGHT[k][2]}" d="${rowsOf(pts)}"/>`).join('')}` +
-    `<path stroke="${K.moon}" d="${rowsOf(lit)}"/><path stroke="#c8bea4" d="${rowsOf(edge)}"/></g>`
+    `<path stroke="${K.moon}" d="${rowsOf(lit)}"/><path stroke="${THEME.sky.moonEdge}" d="${rowsOf(edge)}"/></g>`
 }
 
 // The clouds' shapes: circles [x, y, r] over a base [x, y, w, h] for a puff, a run [from, to] a row for a streak.
@@ -2075,12 +2069,7 @@ function cloudSprite(shape) {
   return `<path fill="none" stroke="currentColor" d="${rowsOf(body)}"/><path fill="none" d="${rowsOf(rim)}"/><path stroke="none" d="${rectsOf(under)}"/>`
 }
 /** The clouds' colors in each light, as a <use>'s attributes: the body (color), the lit rim (stroke), the underside (fill). */
-export const CLOUD_TINTS = {
-  night: ['#1d2650', '#34417a', '#151b3c'],
-  dawn: ['#b49ccc', '#ffe0b8', '#f0a8a8'],
-  day: ['#e8f1fc', '#ffffff', '#b9d0ef'],
-  dusk: ['#7a6aa8', '#ffc27a', '#e88a7a'],
-}
+export const CLOUD_TINTS = THEME.cloudTints
 /** Each cloud shape's box, [w, h], and the order a sky draws them in. */
 export const CLOUD_BOX = Object.fromEntries(Object.keys(CLOUD_SHAPES).map((k) => {
   const xs = [...cloudMask(CLOUD_SHAPES[k])].map((p) => p.split(',').map(Number))
@@ -2100,26 +2089,10 @@ export const cloudTint = (light) => {
  * horizon (the city's at night, the sun's at dawn and dusk, a pale haze by day). sky() paints the ramp in bands.
  * `cloud`: the clouds' sprite (none at night: stars).
  */
-export const SKIES = {
-  night: {
-    head: [[0, '#04071a'], [30, '#0a1130'], [SKY, '#131b40']], fall: [[0.4, '#1b2250'], [0.72, '#2c275a'], [0.9, '#46305f'], [1, '#6a3d5e']],
-  },
-  twilight: {
-    head: [[0, '#0b1236'], [SKY, '#28306a']], fall: [[0.35, '#3a3878'], [0.65, '#5d4282'], [0.86, '#9a587e'], [1, '#e08a63']],
-  },
-  dawn: {
-    head: [[0, '#3a5ea8'], [SKY, '#8193cc']], fall: [[0.3, '#b4a2d2'], [0.6, '#e3b0c6'], [0.85, '#f6c4a8'], [1, '#fde0a2']],
-    cloud: 'cloud-dawn',
-  },
-  day: {
-    head: [[0, '#3e86d6'], [SKY, '#7db6e8']], fall: [[0.5, '#a2cff2'], [0.85, '#c8e4f6'], [1, '#eaf2ee']],
-    cloud: 'cloud',
-  },
-  dusk: {
-    head: [[0, '#232c6c'], [SKY, '#6b4d93']], fall: [[0.3, '#b05f8a'], [0.58, '#e3786d'], [0.82, '#f6a25c'], [1, '#ffd56e']],
-    cloud: 'cloud-dusk',
-  },
-}
+export const SKIES = Object.fromEntries(Object.entries(THEME.skies).map(([light, sky]) => [light, {
+  ...sky,
+  head: sky.head.map(([y, color]) => [y === 'SKY' ? SKY : y, color]),
+}]))
 /**
  * The light the sky is in (SKIES' keys), by the facts' night and hour, as the moon and the sun keep time
  * (celestialAt): twilight at 20:00 and 06:00, the moon low; dawn at 07:00 and 08:00, the sun rising; dusk from 17:00 to

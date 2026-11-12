@@ -42,6 +42,7 @@ test('prebuilt startup pictures and heights match the responsive renderer', asyn
   const folder = await mkdtemp(path.join(tmpdir(), 'office-initial-pictures-'));
   t.after(() => rm(folder, { recursive: true, force: true }));
   await cp(new URL('../plugin/lib/', import.meta.url), path.join(folder, 'lib'), { recursive: true });
+  await cp(new URL('../plugin/themes/', import.meta.url), path.join(folder, 'themes'), { recursive: true });
   for (const name of ['render-pictures.js', 'pictures.mjs']) {
     await writeFile(path.join(folder, name), await readFile(new URL(`../site/${name}`, import.meta.url)));
   }

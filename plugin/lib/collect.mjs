@@ -15,7 +15,7 @@ import {
   isNewFile, readTail, saveCache, saveWalks, sessionKey, syncFile, tierOf,
 } from './cache.mjs'
 import { AGENT_IDS } from './cast.mjs'
-import { READERS, agentHomes, readOtherAgents } from './agents.mjs'
+import { READERS, agentHomes, hostAlive, readOtherAgents } from './agents.mjs'
 import { VIEWS } from './model.mjs'
 
 const execFileRaw = promisify(execFile)
@@ -263,10 +263,18 @@ function onEnvelope(e, o, seen, ctl) {
   if (t !== 'user' && t !== 'assistant') return
   const ms = typeof o.timestamp === 'string' ? Date.parse(o.timestamp) : Number.NaN
   if (seen && replayed(e, o, ms, seen, ctl)) return
+  const prevMs = e.prev
   const b = touch(e, ms)
   if (!b) return
   const day = touchedDay()
   if (typeof o.cwd === 'string' && o.cwd && (e.cwds[o.cwd] != null || Object.keys(e.cwds).length < CWD_CAP)) e.cwds[o.cwd] = (e.cwds[o.cwd] ?? 0) + 1
+  // connected-office patch: the time of each gap, per cwd and day, so a session's time can be split across the repos it
+  // worked in (same gap as touch(): capped at GAP_MS). Upstream books the whole session to its most frequent cwd.
+  const gapMs = prevMs != null && ms > prevMs ? Math.min(ms - prevMs, GAP_MS) : 0
+  if (gapMs && typeof o.cwd === 'string' && o.cwd && (e.cm?.[o.cwd] != null || Object.keys(e.cm ?? {}).length < CWD_CAP)) {
+    const byDay = ((e.cm ??= {})[o.cwd] ??= {})
+    byDay[day] = (byDay[day] ?? 0) + gapMs
+  }
   if (typeof o.gitBranch === 'string' && o.gitBranch) e.branch = o.gitBranch
   if (t === 'user') {
     if (isHumanPrompt(o)) b.p++
@@ -422,6 +430,16 @@ function pathFromSlug(ctx, slug) {
 }
 
 /**
+ * A linked worktree's `gitdir:` → its main checkout, or null. `<repo>/.git/worktrees/<name>` for a repo,
+ * `<super>/.git/modules/<sub>/worktrees/<name>` for a submodule's (connected-office fork: those stood as projects of their own).
+ */
+export function mainOfGitdir(gd) {
+  const m = /^(.+?)[\\/]\.git[\\/](?:modules[\\/](.+?)[\\/])?worktrees[\\/][^\\/]+[\\/]?$/.exec(gd ?? '')
+  if (!m) return null
+  return m[2] ? path.join(m[1], ...m[2].split(/[\\/]modules[\\/]/)) : m[1]
+}
+
+/**
  * cwd → { path, name, worktree, git } rollup (same rules as novibenolife's util.mjs):
  *  1. `<repo>/.claude/worktrees/<name>` → repo + worktree (35 such cwds no longer exist, so regex first);
  *  2. scratchpads `/(private/)tmp/claude-<uid>/<enc>/<uuid>/…` → the project whose enc() is `<enc>`;
@@ -447,14 +465,17 @@ function makeResolver(ctx) {
     if (txt == null && !ctx.stalled) return { path: dir, worktree: null }
     const m = /gitdir:\s*(.+)/.exec(txt ?? '')
     const gd = m ? path.resolve(dir, m[1].trim()) : ''
-    const i = gd.indexOf(`${path.sep}.git${path.sep}worktrees${path.sep}`)
-    ctx.cache.links[dir] = txt == null ? { m: st.mtimeMs, at: ctx.nowMs } : { m: st.mtimeMs, at: ctx.nowMs, p: i > 0 ? gd.slice(0, i) : dir, w: i > 0 ? path.basename(dir) : null }
+    const main = mainOfGitdir(gd)
+    ctx.cache.links[dir] = txt == null ? { m: st.mtimeMs, at: ctx.nowMs } : { m: st.mtimeMs, at: ctx.nowMs, p: main ?? dir, w: main ? path.basename(dir) : null }
     ctx.dirty = true
-    return i > 0 ? { path: gd.slice(0, i), worktree: path.basename(dir) } : { path: dir, worktree: null }
+    return main ? { path: main, worktree: path.basename(dir) } : { path: dir, worktree: null }
   }
 
   function gitTop(dir) {
     if (!path.isAbsolute(dir)) return null   // a relative path would be resolved against the CLI's own cwd
+    // a worktree removed since it was seen stays with its repo, not with the folder that held it
+    const gone = ctx.cache.links[dir]
+    if (gone?.w && !statSafe(dir)) return { path: gone.p, worktree: gone.w }
     let d = dir
     // a root that is not there (a Windows drive or share gone: `E:\` is its own dirname) ends the walk
     while (d && d !== '/' && !statSafe(d)) {
@@ -828,7 +849,8 @@ function buildDesk(ctx, home, r) {
   const sAbs = path.join(home.projectsDir, tr?.pd ?? enc(cwd), sid)
   const interns = liveInterns(ctx, sAbs, tail)
   const meetings = liveMeetings(ctx, sAbs, tail)
-  const proj = ctx.resolver.resolve(cwd || tail.cwd || '')
+  // connected-office patch: a live desk sits in the repo the session works in now (last cwd), not where it started
+  const proj = ctx.resolver.resolve(tail.cwd || cwd || '')
   const status = ['busy', 'idle', 'waiting', 'shell'].includes(r.status) ? r.status : 'idle'
   const p = tail.pending
   // helpers still at work wake their boss when they are done, whether or not the turn is over
@@ -1689,6 +1711,49 @@ function dayRec(P, d) {
   return (P.days[d] ??= { ms: 0, deskMs: 0, sessions: 0, subagents: 0, workflows: 0, prompts: 0, commits: 0 })
 }
 
+/** connected-office patch: a bucket scaled to a fraction of its time; edited files only on the session's own project. */
+export function scaleBucket(b, f, keepEdits) {
+  if (f >= 1) return b
+  const s = (n) => Math.round(n * f)
+  const h = {}
+  for (const [k, ms] of Object.entries(b.h)) h[k] = ms * f
+  const k = {}
+  for (const [n, c] of Object.entries(b.k)) k[n] = s(c)
+  return { ...b, a: b.a * f, p: s(b.p), t: s(b.t), i: s(b.i), o: s(b.o), k, h, e: keepEdits ? b.e : [] }
+}
+
+/**
+ * connected-office patch: per day, the fraction of a session's time spent in each repo, from its per-cwd gaps (`e.cm`).
+ * `main[d]` is the main project's fraction; `others` maps a repo path to { r, f: { day: fraction } }. A session cached
+ * before the patch has no `cm`: everything stays on the main project, as upstream does.
+ */
+export function splitShares(cm, dkeys, resolver, main) {
+  const out = { main: {}, others: new Map() }
+  if (!cm) return out
+  for (const d of dkeys) {
+    const byRepo = new Map()
+    let all = 0
+    for (const [cwd, days] of Object.entries(cm)) {
+      const ms = days[d] ?? 0
+      if (!ms) continue
+      const r = resolver.resolve(cwd)
+      all += ms
+      const x = byRepo.get(r.path) ?? { r, ms: 0 }
+      x.ms += ms
+      byRepo.set(r.path, x)
+    }
+    if (!all) continue
+    out.main[d] = 0
+    for (const [p, x] of byRepo) {
+      if (p === main.path) { out.main[d] += x.ms / all; continue }
+      const o = out.others.get(p) ?? { r: x.r, f: {} }
+      o.f[d] = x.ms / all
+      out.others.set(p, o)
+    }
+  }
+  return out
+}
+
 function addBucket(P, d, b, isMain, agent = 'claude') {
   const pd = dayRec(P, d)
   P.agentMs += b.a
@@ -2065,6 +2130,65 @@ export function progressOf(file) {
   }
 }
 
+/** A Copilot CLI desk shows while its session was touched in the last 10 min (same cutoff as relay/merge.mjs STALE_MS). */
+const COPILOT_STALE_MS = 10 * 60e3
+/** Files of a Copilot session folder written this recently mean a turn is running ("thinking"). */
+const COPILOT_BUSY_MS = 15e3
+
+/**
+ * Live GitHub Copilot CLI desks from `<root>/.copilot/session-state/<id>/`. Reads workspace.yaml only (never the
+ * conversation) plus file names and mtimes. Heuristic: the newest mtime of any file in the folder within 15 s is a
+ * turn in progress ('thinking'), otherwise the desk is idle ("your turn"). Rendered as Copi (cast.mjs) with account
+ * 'GitHub Copilot'.
+ */
+export function collectCopilot(ctx, root) {
+  const base = path.join(root, '.copilot', 'session-state')
+  const byId = new Map()
+  for (const ent of readdirSafe(base)) {
+    if (!ent.isDirectory()) continue
+    const dir = path.join(base, ent.name)
+    let yaml
+    try { yaml = fs.readFileSync(path.join(dir, 'workspace.yaml'), 'utf8') } catch { continue }
+    const meta = {}
+    for (const line of yaml.split('\n')) {
+      const m = /^(\w+):\s*(.*)$/.exec(line)
+      if (m) meta[m[1]] = m[2].trim().replace(/^(["'])(.*)\1$/, '$2')
+    }
+    if (!meta.cwd && !meta.git_root) continue   // not a workspace.yaml of a session
+    const newest = Math.max(0, ...readdirSafe(dir).map((f) => statSafe(path.join(dir, f.name))?.mtimeMs ?? 0))
+    const createdAt = Date.parse(meta.created_at)
+    const lastTs = Math.max(Date.parse(meta.updated_at) || 0, createdAt || 0, newest)
+    if (!lastTs || ctx.nowMs - lastTs > COPILOT_STALE_MS) continue
+    const id = (meta.id || ent.name).slice(0, 8)
+    if (byId.has(id) || !hostAlive(ctx, 'copilot', meta.cwd || meta.git_root)) continue
+    const proj = ctx.resolver.resolve(meta.cwd || meta.git_root)
+    const busy = ctx.nowMs - newest <= COPILOT_BUSY_MS
+    byId.set(id, {
+      id,
+      pid: null,
+      agent: 'copilot',
+      account: 'GitHub Copilot',
+      title: clip(redact(meta.name || proj.name), 60),
+      project: clip(proj.name, 60),
+      project_path: safeText(proj.path),
+      worktree: proj.worktree ? clip(proj.worktree, 40) : null,
+      branch: meta.branch ? clip(redact(meta.branch), 60) : null,
+      status: busy ? 'busy' : 'idle',
+      state: busy ? 'working' : 'idle',
+      idle_reason: busy ? null : 'done',
+      activity: busy ? { kind: 'thinking', tool: null, label: null, since: iso(newest) } : { kind: 'idle', tool: null, label: null, since: iso(lastTs) },
+      model: null,
+      started_at: iso(createdAt || lastTs),
+      last_seen: iso(lastTs),
+      entrypoint: null,
+      interns: [],
+      meetings: [],
+      _sid: meta.id || ent.name,
+    })
+  }
+  return [...byId.values()].sort((a, b) => a.started_at.localeCompare(b.started_at))
+}
+
 /**
  * Collect the facts for one view. Never throws for missing/odd data: each phase degrades to empty and
  * leaves a note. Options default from the environment (THEOFFICE_* overrides, see SPEC).
@@ -2117,6 +2241,9 @@ export async function collect(opts = {}) {
     fromMs: firstLight ? nowMs : Date.parse(range.from),
     toMs: Date.parse(range.to),
     skipPid: envFlag(env.THEOFFICE_SKIP_PID_CHECK),
+    // pid-less hosts: fake test data has no process either, so the pid switch implies this one unless a table is injected
+    skipCwd: envFlag(env.THEOFFICE_SKIP_CWD_CHECK) || (envFlag(env.THEOFFICE_SKIP_PID_CHECK) && !opts.procTable),
+    procTable: opts.procTable,
     // novi answers for a range up to now: never for one that ended before today (yesterday's, a month back)
     useNovi: !firstLight && (opts.novi ?? true) && !envFlag(env.THEOFFICE_NO_NOVI) && opts.timeline !== true && range.days.at(-1) === localDay(nowMs),
     cache: opts.resetCache ? emptyCache() : loadCache(cacheDir),
@@ -2220,6 +2347,10 @@ export async function collect(opts = {}) {
       wentHome.push(...live.left)
       for (const sid of live.open) openSids.add(sid)
     } catch (err) { ctx.log(`live: ${err?.message}`); notes.push('live sessions unreadable') }
+  }
+  // Copilot CLI sessions: only where `root` is known (never the real ~ under a test's claudeDir) and agents are unfiltered
+  if (root && !(opts.agents ?? env.THEOFFICE_AGENTS)) {
+    try { desks.push(...collectCopilot(ctx, root)) } catch (err) { ctx.log(`copilot: ${err?.message}`) }
   }
   ctx.liveSids = new Set(desks.map((d) => d._sid))
   const msLive = performance.now() - tLive
@@ -2338,11 +2469,18 @@ export async function collect(opts = {}) {
     const dkeys = Object.keys(days).sort()
     if (!dkeys.length) continue
     const r = projectOfSid(sid, primary.f.pd, primary.f.home)
-    items.push({ r, ts: Math.max(...list.map((x) => x.e.lts ?? 0)), apply: (P) => {
+    const ts = Math.max(...list.map((x) => x.e.lts ?? 0))
+    // connected-office patch: the other repos this session worked in get their share of each day's bucket; the
+    // session itself (count, model, title, edited files) stays with its main project, so totals never count it twice.
+    const share = splitShares(primary.e.cm, dkeys, ctx.resolver, r)
+    for (const [, x] of share.others) items.push({ r: x.r, ts, apply: (P) => {
+      for (const d of dkeys) if (x.f[d] > 0) addBucket(P, d, scaleBucket(days[d], x.f[d], false), true)
+    } })
+    items.push({ r, ts, apply: (P) => {
       P.sessions.add(sid)
       let ms = 0
       // per_day.sessions = sessions active that day (a 3-day session counts on all three), like the today view
-      for (const d of dkeys) { dayRec(P, d).sessions++; addBucket(P, d, days[d], true); ms += days[d].a }
+      for (const d of dkeys) { const own = scaleBucket(days[d], share.main[d] ?? 1, true); dayRec(P, d).sessions++; addBucket(P, d, own, true); ms += own.a }
       const model = topKey(primary.e.models)
       if (model) P.models[model] = (P.models[model] ?? 0) + 1
       const title = primary.e.ct || primary.e.at

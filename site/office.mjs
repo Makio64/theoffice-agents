@@ -60,6 +60,12 @@ export function officeScene(kit, { width = 960, night = true, animate = true, de
   body += floor(0, hallY, W, 30)
   body += paint([[0, hallY, W, 2, K.woodD], [0, H - 3, W, 3, K.slab]])
 
+  // The rest of the cast (whoever the scene does not seat above) waits in the hall, so the page shows the whole cast.
+  const seated = new Set(['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok'])
+  kit.AGENT_IDS.filter((a) => !seated.has(a)).forEach((agent, i) => {
+    body += castFigure(ctx, agent, i % 2 ? 'chat1' : 'chat0', `site-hall-${agent}`, Math.max(0, W - 4 - 28 * (3 - i)), hallY + 12)
+  })
+
   // Native walking legs and eye movement, crossing in opposite directions on separate lanes.
   for (const [i, agent] of ['codex', 'claude'].entries()) {
     const right = i === 0

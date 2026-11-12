@@ -22,6 +22,7 @@ Every account you use moves into the same building, each agent as its own charac
 | Cursor | **Caret**, finishes your sentences: tab, tab, tab |
 | Kimi | **Mooni**, a night owl from the moon: reads the longest docs |
 | Grok | **Rok**, cracks a joke first, keeps its towel handy |
+| GitHub Copilot CLI | **Copi**, the second seat: goggles down, headset on, reads the map while you fly |
 
 Subagents are **interns** and workflows hold **meetings**.
 

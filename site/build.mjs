@@ -18,6 +18,7 @@ import { createInitialPictures } from './initial-pictures.mjs'
 import { deskProps } from '../plugin/lib/svg-live.mjs'
 import { AGENT_IDS, CAST } from '../plugin/lib/cast.mjs'
 import * as kit from '../plugin/lib/svg-kit.mjs'
+import { THEME } from '../plugin/lib/scenery.mjs'
 import { K, ROLE, NEON, CLOUD, MOON, CAT, CAT_LEG, PLANT, PLANT_LEG, COOLER, COOLER_LEG, VAC, ROBOT, ROBOT_LEG } from '../plugin/lib/svg-kit.mjs'
 
 const SITE = path.dirname(fileURLToPath(import.meta.url))
@@ -165,6 +166,8 @@ function ship(file) {
 }
 try { ship('svg-menu.mjs') } catch { shipped.clear() }
 ship('svg.mjs')
+// the browser gets the chosen theme inlined, not its JSON files (an import attribute the browser may not support)
+if (shipped.has('scenery.mjs')) shipped.set('scenery.mjs', `export const THEME = ${JSON.stringify(THEME)}\n`)
 const sample = JSON.stringify(samples)
 
 const img = path.join(SITE, 'img')

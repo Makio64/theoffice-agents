@@ -18,7 +18,7 @@
 import { clip, fmtInt, fmtMinutes } from './format.mjs'
 import { dayInfo, isPastRange, rangeWord, seeded } from './model.mjs'
 import {
-  CAST, CLASS_COLOR, HEAD, K, MOON, ROLE, ROW, SKY, SLAB, aO, aT, castPicker, ceilingLight, clamp, clawd,
+  CAST, CLASS_COLOR, HEAD, K, MOON, ROLE, ROW, SKY, SLAB, THEME, aO, aT, castPicker, ceilingLight, clamp, clawd,
   dateLabel, defineSprites, esc, fit, fitGroups, fitInfo, fitMid, footing, hitArea, lineSpans, mapRects, miniLegend, mix, num0 as num, paint, pixClock,
   pixRuns, plural, pose, r1, roomHeader, sceneHeader, spans, sprite, stripOf, textW, txt, use,
 } from './svg-kit.mjs'
@@ -59,26 +59,18 @@ const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATUR
 // The day's picture shows the sky now: its hour's, top to horizon in five bands, mixed toward the next hour's by the
 // minutes. The night with the city's glow on the horizon, the blue before dawn, dawn's pinks, sunrise, the morning,
 // noon's deep blue, the afternoon, the golden hour, sunset, dusk.
-const SKIES = {
-  night: ['#0b1029', '#111838', '#18214a', '#232c5a', '#36386c'], predawn: ['#141a3f', '#202858', '#33376a', '#55467a', '#836086'],
-  dawn: ['#2f3d7a', '#4f5c98', '#8a70a2', '#d98c8c', '#f6b27c'], rise: ['#4b72ba', '#7895cb', '#c6a6b8', '#f3b98c', '#ffd68c'],
-  morning: ['#4f97dc', '#67a9e4', '#85bdeb', '#a6d1f2', '#c9e5f8'], noon: ['#3c8ce0', '#56a2e8', '#77b8ef', '#9ccdf5', '#c3e3f9'],
-  afternoon: ['#4891da', '#62a5e1', '#85bae7', '#acd0ec', '#d4e2e4'], gold: ['#5577c0', '#7a8fc2', '#c0a3a2', '#efbd7e', '#ffd88e'],
-  set: ['#373a7a', '#674a8c', '#b2597c', '#eb7a54', '#ffb45c'], dusk: ['#151b46', '#272b5e', '#4a3b70', '#7e507c', '#b06a7c'],
-}
+const SKIES = THEME.today.skies
 const SKY_OF = ['night', 'night', 'night', 'night', 'night', 'predawn', 'dawn', 'rise', 'morning', 'morning', 'morning', 'noon', 'noon',
   'noon', 'noon', 'afternoon', 'afternoon', 'afternoon', 'gold', 'set', 'dusk', 'night', 'night', 'night']
 // the buildings of the hours worked, each its own facade, lit by the hour: bright by day with glass windows, warm at
 // sunrise and from the golden hour on, dark by night (both with their windows lit, two in six off)
-const FACADES = ['#b3654c', '#cfa66e', '#8796ad', '#6a9c96', '#d7c49a', '#a07ba3']
-const LIT = '#ffd27a'
-const GLASS = '#3d5a80'
+const { facades: FACADES, lit: LIT, glass: GLASS } = THEME.skyline
 const CRANE = ['#f2c230', '#b08a1c'] // the crane on the next lot, its cab
 const SCAFFOLD = '#c9a26b'
 const FENCE = '#c4ab78'
-const STARS = ['#f4f1dc', '#8ea4d8'] // the picture's own stars: the roof's sky keeps K.star
+const STARS = THEME.today.stars // the picture's own stars: the roof's sky keeps K.star
 // the clouds by the light: white by day, peach at sunrise and the golden hour, rose at dawn and sunset, dark by night
-const CLOUDS = { day: '#ffffff', gold: '#ffe0c0', rose: '#ffbfae', night: '#262d5a' }
+const CLOUDS = THEME.today.clouds
 // the trees where nobody worked in the season's foliage (light, mid, shade): the month calendar's small trees
 const SEASON_OF = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter']
 const FOLIAGE = {

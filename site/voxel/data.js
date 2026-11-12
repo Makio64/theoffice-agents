@@ -1,7 +1,8 @@
 import { deskWords, statusOfKind } from '../../plugin/lib/voxel-model.mjs'
 import { pageDays, pageLabel, pageName } from '../../plugin/lib/period.mjs'
+import { AGENT_IDS, CAST } from '../../plugin/lib/cast.mjs'
 
-export const PROVIDERS = {
+const SAMPLE_PROVIDERS = {
   claude: { label: 'Claude', name: 'Clawd', color: '#d77757', description: 'Thoughtful by nature. Always building.' },
   codex: { label: 'Codex', name: 'Dex', color: '#7f9df8', description: 'Tidy diffs. A very untidy desk.' },
   gemini: { label: 'Gemini', name: 'Gem', color: '#b49cf6', description: 'Big ideas. A little sparkle.' },
@@ -9,6 +10,8 @@ export const PROVIDERS = {
   kimi: { label: 'Kimi', name: 'Mooni', color: '#6fb2ff', description: 'Curious mind. Excellent coffee.' },
   grok: { label: 'Grok', name: 'Rok', color: '#e5e7ef', description: 'Fresh angles on familiar problems.' },
 }
+// every character of the cast: the sample's six as written above, the rest (Ocho, Ompa, Copi…) from CAST itself
+export const PROVIDERS = Object.fromEntries(AGENT_IDS.map(a => [a, SAMPLE_PROVIDERS[a] ?? { label: CAST[a].name, name: CAST[a].who, color: CAST[a].hex.dark, description: CAST[a].trait }]))
 export const STATUS = {
   working: { label: 'In the zone', color: '#9ab86a', verb: 'Working on' },
   waiting: { label: 'Needs a little help', color: '#e07a61', verb: 'Waiting on' },

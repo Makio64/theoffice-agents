@@ -41,6 +41,7 @@ Every kind of agent the office reads has its own character. They all stand on Cl
 | Cursor | **Caret** | a grey cube seen from a corner, a cyan text caret on its seam | `▐│▌` | finishes your sentences: tab, tab, tab |
 | Kimi | **Mooni** | sky blue, a crescent moon on its brow | `▐(▌` | a night owl from the moon: reads the longest docs |
 | Grok | **Rok** | after Grok Bot: a round white blob, two big black eyes | `▐/▌` | groks the code, cracks a joke first, keeps its towel handy |
+| GitHub Copilot CLI | **Copi** | an original co-pilot: mint, a wide dark goggle visor with two bright lenses, a white earcup each side under a headband, a mic boom with a rose tip, a rose scarf | `▐=▌` | the second seat: goggles down, headset on, reads the map while you fly |
 
 None of them is a logo: Dex and Rok follow the bots their makers drew for Codex and Grok, the others are in their agent's colors with one thing of their own. A subagent is an intern of its boss's kind (a mini Dex on a Codex desk's bench). Where more than Clawd works, the header counts each character (`3 Clawd · 2 Dex · 1 Gem`), a line under the floor says who is who, the rooms of *what they did* and the windows of the week tower seat the characters by their share of the agent-time, and the history views add a `crew:` line, agent-time per agent:
 

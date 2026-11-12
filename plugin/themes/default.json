@@ -1,0 +1,115 @@
+{
+  "skies": {
+    "night": {
+      "head": [[0, "#04071a"], [30, "#0a1130"], ["SKY", "#131b40"]],
+      "fall": [[0.4, "#1b2250"], [0.72, "#2c275a"], [0.9, "#46305f"], [1, "#6a3d5e"]]
+    },
+    "twilight": {
+      "head": [[0, "#0b1236"], ["SKY", "#28306a"]],
+      "fall": [[0.35, "#3a3878"], [0.65, "#5d4282"], [0.86, "#9a587e"], [1, "#e08a63"]]
+    },
+    "dawn": {
+      "head": [[0, "#3a5ea8"], ["SKY", "#8193cc"]],
+      "fall": [[0.3, "#b4a2d2"], [0.6, "#e3b0c6"], [0.85, "#f6c4a8"], [1, "#fde0a2"]],
+      "cloud": "cloud-dawn"
+    },
+    "day": {
+      "head": [[0, "#3e86d6"], ["SKY", "#7db6e8"]],
+      "fall": [[0.5, "#a2cff2"], [0.85, "#c8e4f6"], [1, "#eaf2ee"]],
+      "cloud": "cloud"
+    },
+    "dusk": {
+      "head": [[0, "#232c6c"], ["SKY", "#6b4d93"]],
+      "fall": [[0.3, "#b05f8a"], [0.58, "#e3786d"], [0.82, "#f6a25c"], [1, "#ffd56e"]],
+      "cloud": "cloud-dusk"
+    }
+  },
+  "cloudTints": {
+    "night": ["#1d2650", "#34417a", "#151b3c"],
+    "dawn": ["#b49ccc", "#ffe0b8", "#f0a8a8"],
+    "day": ["#e8f1fc", "#ffffff", "#b9d0ef"],
+    "dusk": ["#7a6aa8", "#ffc27a", "#e88a7a"]
+  },
+  "sky": {
+    "star": "#e9e6ff",
+    "starDim": "#6f91dc",
+    "moon": "#f3ead0",
+    "moonShade": "#d9cfae",
+    "moonEdge": "#c8bea4",
+    "moonLight": [[1.5, "#e4ebff", ".34"], [2.9, "#b9c9f4", ".18"], [4.3, "#8fa3d8", ".09"]],
+    "sun": "#f6d860",
+    "sunTones": { "high": ["#ffe6a0", "#ffc04d"], "low": ["#ffb35c", "#ff8a4a"] },
+    "cloud": "#f7fbff",
+    "cloudSh": "#d6e4f2",
+    "cloudDawn": ["#fff0ec", "#e0b4c8"],
+    "cloudDusk": ["#ffd2b4", "#c97c95"],
+    "glows": {
+      "dawn": [[74, 18, "1 7", "#c48aa8"], [56, 14, "1 3", "#e9a29a"], [38, 10, "1 1", "#f6b48e"], [20, 6, "3 1", "#fcd3a0"]],
+      "dusk": [[74, 18, "1 7", "#c06a86"], [56, 14, "1 3", "#e08070"], [38, 10, "1 1", "#f39a5c"], [20, 6, "3 1", "#ffc66a"]]
+    }
+  },
+  "building": {
+    "brick": "#5a4334",
+    "mortar": "#47342a",
+    "wall": "#3b342e",
+    "wallLow": "#332d28",
+    "wallDark": "#1a1f2f",
+    "wallDarkLow": "#161a28",
+    "slab": "#221e1a",
+    "brickTone": { "base": "#62493a", "dark": ["#553e31", "#4d382c"], "light": ["#6b503f", "#624939"] }
+  },
+  "roof": {
+    "parapet": "#3a2d26",
+    "parapetTop": "#6b5646",
+    "crown": { "hi": "#b29d7d", "face": "#8a765c", "shade": "#5c4c3b", "bed": "#2b211b" }
+  },
+  "windows": {
+    "glassNight": "#16203e",
+    "glassDay": "#9fd0f2",
+    "frame": "#5c4f44",
+    "sill": "#7a6a5a",
+    "glint": "#ffffff",
+    "glintCool": "#e8f4ff"
+  },
+  "street": {
+    "walk": "#58514a",
+    "walkD": "#433d37",
+    "ground": "#14120f",
+    "under": {
+      "soil": "#1b1713", "pebble": "#2a241e", "pebbleD": "#231e19", "tunnel": "#0e0d0c", "tunnelRim": "#2b2622",
+      "rail": "#6a625a", "sleeper": "#2f2924", "rock": "#110f0d", "light": "#f6d860",
+      "road": "#1d1b19", "lane": "#8a7f5a", "gutter": "#2a2520", "roadEdge": "#141210", "wall": "#151311", "ballast": "#1a1714",
+      "sign": "#16203e", "signHi": "#2b3a66", "cream": "#f3ead0", "shade": "#a8533a", "wheel": "#2a2622", "bogie": "#3a342e",
+      "beam": "#fff3c0", "glass": "#9cc3dc", "glassHi": "#d4ecf8"
+    }
+  },
+  "props": {
+    "wood": "#9a7b4f",
+    "woodD": "#6f5636",
+    "part": "#4a3d33",
+    "partHi": "#5f4f42",
+    "chair": "#2a2a33",
+    "chairHi": "#3d3d4a"
+  },
+  "skyline": {
+    "facades": ["#b3654c", "#cfa66e", "#8796ad", "#6a9c96", "#d7c49a", "#a07ba3"],
+    "lit": "#ffd27a",
+    "glass": "#3d5a80"
+  },
+  "today": {
+    "skies": {
+      "night": ["#0b1029", "#111838", "#18214a", "#232c5a", "#36386c"],
+      "predawn": ["#141a3f", "#202858", "#33376a", "#55467a", "#836086"],
+      "dawn": ["#2f3d7a", "#4f5c98", "#8a70a2", "#d98c8c", "#f6b27c"],
+      "rise": ["#4b72ba", "#7895cb", "#c6a6b8", "#f3b98c", "#ffd68c"],
+      "morning": ["#4f97dc", "#67a9e4", "#85bdeb", "#a6d1f2", "#c9e5f8"],
+      "noon": ["#3c8ce0", "#56a2e8", "#77b8ef", "#9ccdf5", "#c3e3f9"],
+      "afternoon": ["#4891da", "#62a5e1", "#85bae7", "#acd0ec", "#d4e2e4"],
+      "gold": ["#5577c0", "#7a8fc2", "#c0a3a2", "#efbd7e", "#ffd88e"],
+      "set": ["#373a7a", "#674a8c", "#b2597c", "#eb7a54", "#ffb45c"],
+      "dusk": ["#151b46", "#272b5e", "#4a3b70", "#7e507c", "#b06a7c"]
+    },
+    "clouds": { "day": "#ffffff", "gold": "#ffe0c0", "rose": "#ffbfae", "night": "#262d5a" },
+    "stars": ["#f4f1dc", "#8ea4d8"]
+  }
+}

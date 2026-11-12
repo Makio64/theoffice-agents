@@ -1,7 +1,8 @@
 // PURE: the cast of the office, one character per kind of coding agent. Clawd is Claude Code's own mascot (the official
 // sprite); Dex and Rok are drawn after their agents' own bots (the Codex app's "Codex" pet, a blue cloud with a screen
 // for a face; Grok Bot, a round white blob with two big eyes); Gem, Caret and Mooni are the office's own, each in its
-// agent's colors with one thing of its own: Gem's sparkle, Caret's cube and text caret, Mooni's crescent moon. None is a
+// agent's colors with one thing of its own: Gem's sparkle, Caret's cube and text caret, Mooni's crescent moon, Copi's
+// goggle visor and headset. None is a
 // logo. Every character stands on Clawd's skeleton (17 × 10 pixels: the body in columns 2..14 and rows 0..7, an arm stub
 // each side on rows 4–5, legs on rows 8–9, two eyes a pose moves up to 2 px each way), so every pose the drawings give
 // Clawd (typing, a hand up, dozing, standing in the kitchen…) fits each of them. The text office gives each a 3-column
@@ -10,7 +11,7 @@
 // desktop mod's hooks module loads it.
 
 /** Agent ids, in the order the office names them (a desk without one is Claude's). */
-export const AGENT_IDS = ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok']
+export const AGENT_IDS = ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok', 'opencode', 'omp', 'copilot']
 
 // ---------------------------------------------------------------- Clawd
 
@@ -220,6 +221,79 @@ export const CAST = {
     micro: ['.WWWWW.', 'WWEWEWW', 'WWWWWWW', '.wwwww.', '.d...d.'],
     miniEye: '#101114',
     face: termHead('/'),
+  },
+  opencode: {
+    id: 'opencode', name: 'opencode', who: 'Ocho', tag: 'oc',
+    trait: 'a little teal terminal on legs: runs whatever model you hand it, and tells you which',
+    hex: { dark: '#2bb3a3', light: '#0f6b62' }, ansi: '38;5;37', ansi16: '36', term: 'cyan',
+    // an original figure (not opencode's mark): a teal-framed screen, two cursor eyes, a prompt line for a mouth
+    sprite: [
+      '....OOOOOOOOO....',
+      '...OSSSSSSSSSO...',
+      '...OSSESSSESSO...',
+      '...OSSESSSESSO...',
+      'OO.OSSSSSSSSSO.OO',
+      '...OSSmmmmmSSO...',
+      '...OOOOOOOOOOO...',
+      '....ooooooooo....',
+      '.....d.....d.....',
+      '.....d.....d.....',
+    ],
+    legend: { O: '#2bb3a3', S: '#0d2b29', E: '#0d2b29', m: '#5eead4', o: '#1a7d73', d: '#0f5550' },
+    eyes: 'E', eye: '#5eead4', arm: '#2bb3a3', reach: 1, // eyes stay inside the screen / visor when a pose looks around
+    mini: ['.OOOOOOOOO.', '.OSESSSESO.', 'OOSESSSESOO', '.OSSmmmSSO.', '..ooooooo..', '...d...d...'],
+    micro: ['OOOOOOO', 'OSESESO', 'OSmmmSO', '.ooooo.', '.d...d.'],
+    miniEye: '#5eead4',
+    face: termHead('$'),
+  },
+  omp: {
+    id: 'omp', name: 'omp', who: 'Ompa', tag: 'om',
+    trait: 'an amber helmet on legs: plans out loud, then runs every step it planned',
+    hex: { dark: '#e0b341', light: '#7a5c1c' }, ansi: '38;5;178', ansi16: '33', term: 'text',
+    // an original figure: an amber helmet with a dark visor, two lit eyes and a grille for a mouth
+    sprite: [
+      '.....HHHHHHH.....',
+      '....HHHHHHHHH....',
+      '...HHFFFFFFFHH...',
+      '...HFFEFFFEFFH...',
+      'HH.HFFEFFFEFFH.HH',
+      '...HFFFFmFFFFH...',
+      '....HHHHHHHHH....',
+      '.....hhhhhhh.....',
+      '.....d.....d.....',
+      '.....d.....d.....',
+    ],
+    legend: { H: '#e0b341', F: '#2a2110', E: '#2a2110', m: '#ffd77a', h: '#b88a2a', d: '#7a5c1c' },
+    eyes: 'E', eye: '#ffd77a', arm: '#e0b341', reach: 1, // eyes stay inside the screen / visor when a pose looks around
+    mini: ['..HHHHHHH..', '.HFEFFFEFH.', 'HHFEFFFEFHH', '.HFFmmmFFH.', '..hhhhhhh..', '...d...d...'],
+    micro: ['.HHHHH.', 'HFEFEFH', 'HFmmmFH', '.hhhhh.', '.d...d.'],
+    miniEye: '#ffd77a',
+    face: termHead('%'),
+  },
+  copilot: {
+    id: 'copilot', name: 'Copilot', who: 'Copi', tag: 'cp',
+    trait: 'the second seat: goggles down, headset on, reads the map while you fly',
+    hex: { dark: '#e58fb4', light: '#a03a68' }, ansi: '38;5;211', ansi16: '35', term: 'magenta',
+    // an original figure (no logo, no octocat): a mint co-pilot with a wide dark goggle visor (two bright lenses, a
+    // bridge), a white earcup each side under a headband, a mic boom ending in a rose tip, and a rose scarf
+    sprite: [
+      '....DDDDDDDDD....',
+      '..DSSSSSSSSSSSD..',
+      '..CCVVVVVVVVVCC..',
+      '..CCVEVVgVVEVCC..',
+      'JJCCVEVVVVVEVCCJJ',
+      'JJDDDRSSSSSSSDDJJ',
+      '..RRRRRRRRRRRRR..',
+      '..SSSSSSSSSRRSS..',
+      '..d.d.......d.d..',
+      '..d.d.......d.d..',
+    ],
+    legend: { D: '#1f2a33', S: '#86dfae', C: '#eef2f6', V: '#141c26', E: '#141c26', g: '#6f7f90', R: '#e58fb4', J: '#3f9c73', d: '#2f6b50' },
+    eyes: 'E', eye: '#bff6ff', arm: '#3f9c73', reach: 1, // eyes stay inside the visor when a pose looks around
+    mini: ['.DDDDDDDDD.', '.SSSSSSSSS.', 'CCVEVVVEVCC', 'JCVVVgVVVCJ', '.RRRRRRRRR.', '.d.d...d.d.'],
+    micro: ['.SSSSS.', 'CVEgEVC', 'JSSSSSJ', '.RRRRR.', '.d...d.'],
+    miniEye: '#bff6ff',
+    face: termHead('='),
   },
 }
 

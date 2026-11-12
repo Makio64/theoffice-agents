@@ -412,6 +412,7 @@ const ROOM_NIGHT = {
   cool: '#8fd3ff', warm: '#ffefd2', ask: '#ffab8a', under: '#06040e/.5', contact: '#05040b/.45',
   pot: '#b5623e', potHi: '#d98a5a', potLo: '#7a3d29', leaf: '#2f6b47', leafHi: '#4f9b5c', leafLo: '#1c4535',
   cat: { a: '#e3b56a', A: '#ad7634', b: '#c4924f', e: '#2b1d12', t: '#d29d4e' },
+  dog: { k: '#1f1a17', K: '#3d332c', f: '#b8692f', e: '#f0e2c8', n: '#0b0908', t: '#1f1a17' },
 }
 const ROOM_DAY = {
   plankHi: '#b98a58', plank: '#8f6440', plankLo: '#63432c', joint: '#4d3322',
@@ -423,6 +424,7 @@ const ROOM_DAY = {
   lit: '#a9bfd4', litDim: '#93aac0', star: null, beam: '#fff0c0', beamOp: '.07',
   cool: '#cfeaff', warm: '#fff8e8', ask: '#ffc8b0', under: '#120c08/.4', contact: '#120c08/.35',
   cat: { a: '#efc276', A: '#b67d38', b: '#d6a25a', e: '#2b1d12', t: '#dca853' },
+  dog: { k: '#1f1a17', K: '#3d332c', f: '#b8692f', e: '#f0e2c8', n: '#0b0908', t: '#1f1a17' },
 }
 // The walls come in schemes, one set of ramps re-hued at the same lightness (so the header text stays legible and the
 // cast still stands out on any of them): the wall, its wainscot and rails, the baseboard and the chairs, by day (its
@@ -557,6 +559,7 @@ defineSprites({
     return `<pattern id="${c.id}rm-planksp" width="17" height="1" patternUnits="userSpaceOnUse">${paint([[0, 0, 17, 1, P.plank], [9, 0, 1, 1, P.joint]])}</pattern>`
   },
   'rm-cat': (c) => catSheet(c),
+  'rm-dog': (c) => dogSheet(c),
 })
 
 // ---- the kitchen's and the meeting room's furniture in the finer art (svg-kit fine): in the rooms' own light as the
@@ -861,23 +864,74 @@ function catSheet(c) {
   const sit = sprite(CAT_SIT, P.cat) + swap(sprite(CAT_TAIL[0], P.cat), sprite(CAT_TAIL[1], P.cat), 0.9) + paint([[2, 7, 7, 1, P.contact]])
   return `${walk((r) => r)}<g transform="translate(${CAT_D + 3})">${sit}</g><g transform="translate(${2 * CAT_D})">${walk(flip)}</g>`
 }
-function catWalk(ctx, x, w, floor, seed) {
+// connected-office: the office dachshund, black and tan (k coat, K ear, f tan, e eye, n nose, t tail), 18 wide: walking
+// right, lying down wagging, walking left, gone; the same walk as the cat's (animalWalk).
+const DOG_TOP = ['.............kk...', 't...........kkkkk.', '.t..........kfekkn', '..kkkkkkkkkkKKkff.', '..kkkkkkkkkfKkk...']
+const DOG_LEGS = [['...f.f......f.f...', '...f.f......f.f...'], ['....ff......ff....', '....ff......ff....']]
+const DOG_LIE = [['.............kk...', '.............kkkk.', '.............fekkn', 'ttkkkkkkkkkkkkkff.', '..ffkkkkkkkkfff...'],
+  ['.............kk...', '.............kkkk.', 't............fekkn', '.tkkkkkkkkkkkkkff.', '..ffkkkkkkkkfff...']]
+const DOG_D = 2000
+function dogSheet(c) {
+  const P = roomPal(c)
+  const flip = (rows) => rows.map((r) => [...r].reverse().join(''))
+  const swap = (a, b, dur) => (c.animate ? `<g>${a}${aO(c, '1;0', dur)}</g><g opacity="0">${b}${aO(c, '0;1', dur)}</g>` : a)
+  const walk = (f) => sprite(f(DOG_TOP), P.dog) + swap(sprite(f(DOG_LEGS[0]), P.dog, 0, 5), sprite(f(DOG_LEGS[1]), P.dog, 0, 5), 0.3) + paint([[2, 7, 14, 1, P.contact]])
+  const lie = `<g transform="translate(0 2)">${swap(sprite(DOG_LIE[0], P.dog), sprite(DOG_LIE[1], P.dog), 0.5)}</g>` + paint([[2, 7, 14, 1, P.contact]])
+  return `${walk((r) => r)}<g transform="translate(${DOG_D + 3})">${lie}</g><g transform="translate(${2 * DOG_D})">${walk(flip)}</g>`
+}
+
+const CAT_WALK = { key: 'cat', sheet: 'rm-cat', title: 'the office cat', D: CAT_D, back: 16, v: 26 }
+const DOG_WALK = { key: 'dog', sheet: 'rm-dog', title: 'the office dachshund', D: DOG_D, back: 20, v: 20 }
+/**
+ * connected-office: a loop of keyframes started at fraction `p` of its cycle, so a drawing reloaded mid-walk (the relay's
+ * page reloads it on every push) picks the walk up where the clock has it, instead of resting at its first value until
+ * onBeat's next hop (the cat used to jump). `lerp` interpolates two values (null: discrete, the earlier one holds).
+ */
+export function rotateLoop(values, keys, p, lerp = null) {
+  const at = (q) => {
+    let i = keys.length - 1
+    while (i > 0 && keys[i] > q) i--
+    if (!lerp || i === keys.length - 1) return values[i]
+    const span = keys[i + 1] - keys[i]
+    return span > 0 ? lerp(values[i], values[i + 1], (q - keys[i]) / span) : values[i]
+  }
+  const out = [[0, at(p)]]
+  for (let i = 0; i < keys.length; i++) if (keys[i] > p) out.push([keys[i] - p, values[i]])
+  for (let i = 0; i < keys.length; i++) if (keys[i] < p || (keys[i] === p && p > 0 && i > 0)) out.push([keys[i] + 1 - p, values[i]])
+  if (lerp) out.push([1, at(p)])
+  const seen = new Map()
+  for (const [k, v] of out) seen.set(Math.round(k * 1e3) / 1e3, v)
+  const pairs = [...seen].filter(([k]) => k <= 1).sort((m, n) => m[0] - n[0])
+  return { values: pairs.map(([, v]) => v), keys: pairs.map(([k]) => k) }
+}
+const lerpXY = (u, v, t) => {
+  const [ux, uy] = u.split(' ').map(Number)
+  const [vx, vy] = v.split(' ').map(Number)
+  return `${Math.round(ux + (vx - ux) * t)} ${Math.round(uy + (vy - uy) * t)}`
+}
+
+function animalWalk(ctx, x, w, floor, seed, a) {
   if (!ctx.animate || ctx.caps?.art) return ''
-  const xs = x - 16
+  const xs = x - a.back
   const xe = x + w + 2
-  const h = fnv1a(`cat:${seed}`)
+  const h = fnv1a(`${a.key}:${seed}`)
   const xm = Math.round(x + w * (0.3 + (h % 40) / 100))
-  const v = 26
+  const v = a.v
   const seg = [(xm - xs) / v, 5 + (h >>> 8) % 3, (xe - xm) / v, 12 + (h >>> 12) % 10, (xe - xs) / (v * 1.25), 8 + (h >>> 16) % 10]
-  const L = seg.reduce((a, b) => a + b, 0)
-  const at = seg.reduce((a, d) => [...a, a.at(-1) + d / L], [0]).map((t) => String(Math.round(t * 1e3) / 1e3).replace(/^0\./, '.'))
-  const begin = -((h >>> 20) % 100) / 100 * L
+  const L = seg.reduce((s, d) => s + d, 0)
+  const at = seg.reduce((s, d) => [...s, s.at(-1) + d / L], [0]).map((q) => String(Math.round(q * 1e3) / 1e3).replace(/^0\./, '.'))
   const y = floor - 7
-  const anim = (type, values, keys, extra = '') => `<animateTransform attributeName="transform" type="translate" values="${values}" keyTimes="${keys}" ` +
-    `dur="${r1(L)}s" begin="${r1(begin)}s"${extra} repeatCount="indefinite"/>`
-  const path = anim('translate', `${xs} ${y};${xm} ${y};${xm} ${y};${xe} ${y};${xe} ${y};${xs} ${y};${xs} ${y}`, `0;${at.slice(1, 6).join(';')};1`)
-  const frames = anim('translate', `0;${-CAT_D};0;${-3 * CAT_D};${-2 * CAT_D};${-3 * CAT_D}`, `0;${at.slice(1, 6).join(';')}`, ' calcMode="discrete"')
-  return `<g><title>the office cat</title>${path}${use(ctx, 'rm-cat', 0, 0, '', frames)}</g>`
+  // where the walk is now: the wall clock, offset per animal and room so the cat and the dog do not walk in step
+  const p = (((ctx.wall ?? 0) / 1e3 / L) + ((h >>> 20) % 100) / 100) % 1
+  const keys = [0, ...at.slice(1, 6).map(Number), 1]
+  const path = rotateLoop([`${xs} ${y}`, `${xm} ${y}`, `${xm} ${y}`, `${xe} ${y}`, `${xe} ${y}`, `${xs} ${y}`, `${xs} ${y}`], keys, p, lerpXY)
+  const sheet = rotateLoop(['0', `${-a.D}`, '0', `${-3 * a.D}`, `${-2 * a.D}`, `${-3 * a.D}`], keys.slice(0, 6), p)
+  const k3 = (ks) => ks.map((k) => String(k).replace(/^0\./, '.')).join(';')
+  const anim = (values, keyTimes, extra = '') => `<animateTransform attributeName="transform" type="translate" values="${values.join(';')}" keyTimes="${k3(keyTimes)}" ` +
+    `dur="${r1(L)}s" begin="0s"${extra} repeatCount="indefinite"/>`
+  const pathEl = anim(path.values, path.keys)
+  const frames = anim(sheet.values, sheet.keys, ' calcMode="discrete"')
+  return `<g><title>${a.title}</title>${pathEl}${use(ctx, a.sheet, 0, 0, '', frames)}</g>`
 }
 
 // ---------------------------------------------------------------- live floor plan: drawing
@@ -1043,7 +1097,7 @@ function drawRoom(ctx, it, top, BH) {
   if (!ctx.catWalks && !ctx.caps?.art && ctx.animate) {
     ctx.catWalks = true
     fore += `<clipPath id="${ctx.id}rm-catp"><rect x="${x + 2}" y="${top}" width="${w - 4}" height="${BH}"/></clipPath>` +
-      `<g clip-path="url(#${ctx.id}rm-catp)">${catWalk(ctx, x, w, floor, it.name)}</g>`
+      `<g clip-path="url(#${ctx.id}rm-catp)">${animalWalk(ctx, x, w, floor, it.name, CAT_WALK)}${ctx.caps?.dog ? animalWalk(ctx, x, w, floor, it.name, DOG_WALK) : ''}</g>`
   }
   return { back, fore, labels, acts }
 }

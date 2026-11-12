@@ -1,3 +1,4 @@
+process.env.THEOFFICE_SKIP_CWD_CHECK = '1'   // fake sessions have no process (liveness by cwd)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
