@@ -10,7 +10,7 @@
 // desktop mod's hooks module loads it.
 
 /** Agent ids, in the order the office names them (a desk without one is Claude's). */
-export const AGENT_IDS = ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok']
+export const AGENT_IDS = ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok', 'opencode', 'omp']
 
 // ---------------------------------------------------------------- Clawd
 
@@ -220,6 +220,54 @@ export const CAST = {
     micro: ['.WWWWW.', 'WWEWEWW', 'WWWWWWW', '.wwwww.', '.d...d.'],
     miniEye: '#101114',
     face: termHead('/'),
+  },
+  opencode: {
+    id: 'opencode', name: 'opencode', who: 'Ocho', tag: 'oc',
+    trait: 'a little teal terminal on legs: runs whatever model you hand it, and tells you which',
+    hex: { dark: '#2bb3a3', light: '#0f6b62' }, ansi: '38;5;37', ansi16: '36', term: 'cyan',
+    // an original figure (not opencode's mark): a teal-framed screen, two cursor eyes, a prompt line for a mouth
+    sprite: [
+      '....OOOOOOOOO....',
+      '...OSSSSSSSSSO...',
+      '...OSSESSSESSO...',
+      '...OSSESSSESSO...',
+      'OO.OSSSSSSSSSO.OO',
+      '...OSSmmmmmSSO...',
+      '...OOOOOOOOOOO...',
+      '....ooooooooo....',
+      '.....d.....d.....',
+      '.....d.....d.....',
+    ],
+    legend: { O: '#2bb3a3', S: '#0d2b29', E: '#0d2b29', m: '#5eead4', o: '#1a7d73', d: '#0f5550' },
+    eyes: 'E', eye: '#5eead4', arm: '#2bb3a3',
+    mini: ['.OOOOOOOOO.', '.OSESSSESO.', 'OOSESSSESOO', '.OSSmmmSSO.', '..ooooooo..', '...d...d...'],
+    micro: ['OOOOOOO', 'OSESESO', 'OSmmmSO', '.ooooo.', '.d...d.'],
+    miniEye: '#5eead4',
+    face: termHead('$'),
+  },
+  omp: {
+    id: 'omp', name: 'omp', who: 'Ompa', tag: 'om',
+    trait: 'an amber helmet on legs: plans out loud, then runs every step it planned',
+    hex: { dark: '#e0b341', light: '#7a5c1c' }, ansi: '38;5;178', ansi16: '33', term: 'text',
+    // an original figure: an amber helmet with a dark visor, two lit eyes and a grille for a mouth
+    sprite: [
+      '.....HHHHHHH.....',
+      '....HHHHHHHHH....',
+      '...HHFFFFFFFHH...',
+      '...HFFEFFFEFFH...',
+      'HH.HFFEFFFEFFH.HH',
+      '...HFFFmmmFFFH...',
+      '....HHHHHHHHH....',
+      '.....hhhhhhh.....',
+      '.....d.....d.....',
+      '.....d.....d.....',
+    ],
+    legend: { H: '#e0b341', F: '#2a2110', E: '#2a2110', m: '#ffd77a', h: '#b88a2a', d: '#7a5c1c' },
+    eyes: 'E', eye: '#ffd77a', arm: '#e0b341',
+    mini: ['..HHHHHHH..', '.HFEFFFEFH.', 'HHFEFFFEFHH', '.HFFmmmFFH.', '..hhhhhhh..', '...d...d...'],
+    micro: ['.HHHHH.', 'HFEFEFH', 'HFmmmFH', '.hhhhh.', '.d...d.'],
+    miniEye: '#ffd77a',
+    face: termHead('%'),
   },
 }
 

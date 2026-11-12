@@ -7,7 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { kindOf, labelOf } from './activity.mjs'
-import { addEdit, fnv1a, iso, readJson, readdirSafe, statSafe, topCwd, touch } from './buckets.mjs'
+import { GAP_MS, addEdit, fnv1a, iso, readJson, readdirSafe, statSafe, topCwd, touch, touchedDay } from './buckets.mjs'
 import { bytesLeft, isNewFile, readTail, syncFile } from './cache.mjs'
 import { AGENT_IDS } from './cast.mjs'
 import { clip, redact, safeText } from './format.mjs'
@@ -40,6 +40,7 @@ const HOME_SPECS = {
   gemini: { base: '.gemini', env: 'GEMINI_CLI_HOME', envIsParent: true, marks: ['tmp', 'antigravity', 'antigravity-cli', 'antigravity-ide'] },
   cursor: { base: '.cursor', marks: ['projects'] },
   grok: { base: '.grok', env: 'GROK_HOME', marks: ['sessions'] },
+  omp: { base: '.omp/agent', marks: ['sessions'] },
 }
 const LABEL_RE = /[^a-z0-9_-]+/g
 
@@ -74,6 +75,9 @@ export function agentHomes({ root, env = process.env, agents = AGENT_IDS, claude
     seen.add(real)
     out.push({ agent, dir, label, def })
   }
+  // opencode: one SQLite database, not a folder of session files (read by the `opencode` reader below)
+  const oc = root && path.join(root, '.local', 'share', 'opencode')
+  if (oc && statSafe(path.join(oc, 'opencode.db'))?.isFile()) add('opencode', oc, null, true)
   for (const agent of agents) {
     if (agent === 'kimi') {
       for (const r of kimiRoots(root, env)) add('kimi', r.dir, null, true)
@@ -1158,8 +1162,204 @@ const grok = {
   tail: (abs, size) => grokTail(tailLines(abs, size)),
 }
 
+/**
+ * One opencode session's messages into a collector entry, the way the other readers fill theirs (pure, no I/O).
+ * Requires: `e` from init ({ kind, sid, cwds: {}, models: {}, days: {} }); `msgs` sorted by `ms`, each
+ *   { ms: number, role: 'user' | 'assistant', cwd: string | null, model: string | null, tokIn: number, tokOut: number, tools: number }.
+ * Ensures, for each message in order:
+ *   - `const prev = e.prev`, then `const b = touch(e, msg.ms)`; skip the message when `b` is null; `day = touchedDay()`;
+ *   - user: `b.p += 1`; assistant: `b.i += tokIn`, `b.o += tokOut`, `b.t += tools`, and `e.models[model] += 1` when model;
+ *   - cwd: `e.cwds[cwd] += 1`; and when `gap = prev != null && msg.ms > prev ? Math.min(msg.ms - prev, GAP_MS) : 0` is > 0,
+ *     `e.cm[cwd][day] += gap` (create `e.cm`, `e.cm[cwd]` as needed);
+ *   - `e.fts` = first message ms (set once), `e.lts` = last message ms.
+ * Returns `e`.
+ */
+export function opencodeEntry(e, msgs) {
+  let prev = null
+  for (const msg of msgs) {
+    const b = touch(e, msg.ms)
+    if (!b) continue
+    const day = touchedDay()
+    if (msg.role === 'user') b.p++
+    else {
+      b.i += msg.tokIn
+      b.o += msg.tokOut
+      b.t += msg.tools
+      if (msg.model) e.models[msg.model] = (e.models[msg.model] ?? 0) + 1
+    }
+    if (msg.cwd) e.cwds[msg.cwd] = (e.cwds[msg.cwd] ?? 0) + 1
+    if (prev != null) {
+      const gap = msg.ms > prev ? Math.min(msg.ms - prev, GAP_MS) : 0
+      if (gap > 0 && msg.cwd) {
+        e.cm ??= {}
+        e.cm[msg.cwd] ??= {}
+        e.cm[msg.cwd][day] = (e.cm[msg.cwd][day] ?? 0) + gap
+      }
+    }
+    prev = msg.ms
+  }
+  return e
+}
+
+/**
+ * One parsed line of an omp session (`~/.omp/agent/sessions/<dir>/<time>_<id>.jsonl`) booked into a collector entry.
+ * Requires: `e` from init ({ kind, sid, cwds: {}, models: {}, days: {} }); `o` one parsed JSON line.
+ * Ensures:
+ *   - `o.type === 'session'`: when `o.cwd` is a string, `e.cwd0 = o.cwd` and `e.cwds[o.cwd] = (e.cwds[o.cwd] ?? 0) + 10`; nothing else;
+ *   - `o.type === 'message'` with `m = o.message`: `ms = msOf(m.timestamp ?? o.timestamp)`; return when not finite;
+ *     `const prev = e.prev`, then `const b = touch(e, ms)`; return when `b` is null; `day = touchedDay()`;
+ *     m.role 'user': `b.p += 1` only when `e.kind === 'main'`;
+ *     m.role 'assistant': `addModel(e, m.model)`; `b.i += m.usage?.input || 0`; `b.o += m.usage?.output || 0`;
+ *       for each `c` of `m.content` (when an array) with `c.type === 'toolCall'`: `bookTool(e, b, c.name, c.arguments)`;
+ *     any role: when `e.cwd0` and `gap = prev != null && ms > prev ? Math.min(ms - prev, GAP_MS) : 0` is > 0,
+ *       `e.cm[e.cwd0][day] += gap` (create `e.cm`, `e.cm[e.cwd0]` as needed);
+ *   - any other type: nothing.
+ */
+export function ompLine(e, o) {
+  if (o.type === 'session') {
+    if (typeof o.cwd === 'string') {
+      e.cwd0 = o.cwd
+      e.cwds[o.cwd] = (e.cwds[o.cwd] ?? 0) + 10
+    }
+    return e
+  }
+  if (o.type !== 'message') return e
+  const m = o.message
+  const ms = msOf(m.timestamp ?? o.timestamp)
+  if (!Number.isFinite(ms)) return e
+  const prev = e.prev
+  const b = touch(e, ms)
+  if (!b) return e
+  const day = touchedDay()
+  if (m.role === 'user') {
+    if (e.kind === 'main') b.p++
+  } else if (m.role === 'assistant') {
+    addModel(e, m.model)
+    b.i += m.usage?.input || 0
+    b.o += m.usage?.output || 0
+    if (Array.isArray(m.content)) {
+      for (const c of m.content) if (c?.type === 'toolCall') bookTool(e, b, c.name, c.arguments)
+    }
+  }
+  if (e.cwd0) {
+    const gap = prev != null && ms > prev ? Math.min(ms - prev, GAP_MS) : 0
+    if (gap > 0) {
+      e.cm ??= {}
+      e.cm[e.cwd0] ??= {}
+      e.cm[e.cwd0][day] = (e.cm[e.cwd0][day] ?? 0) + gap
+    }
+  }
+  return e
+}
+
+/**
+ * omp (`~/.omp/agent/sessions/<dir>/<time>_<id>.jsonl`): one JSONL file per main session, read line by line like the
+ * other agents' (ompLine). Its subagents' logs live in a folder per session and are not read: their time is not booked.
+ */
+const omp = {
+  id: 'omp',
+  walk(ctx, home) {
+    const out = []
+    for (const d of readdirSafe(path.join(home.dir, 'sessions'))) {
+      if (!d.isDirectory()) continue
+      const dRel = path.join('sessions', d.name)
+      ctx.listedKey(home, dRel)
+      for (const f of readdirSafe(path.join(home.dir, dRel))) {
+        if (!f.isFile() || !f.name.endsWith('.jsonl')) continue
+        const rel = path.join(dRel, f.name)
+        const st = statSafe(path.join(home.dir, rel))
+        const began = Date.parse(f.name.slice(0, 24).replace(/T(\d\d)-(\d\d)-(\d\d)-(\d{3})Z$/, 'T$1:$2:$3.$4Z'))
+        if (st) out.push({ rel, st, sid: f.name.replace(/\.jsonl$/, '').split('_').pop(), ...(Number.isFinite(began) ? { began } : {}) })
+      }
+    }
+    return out
+  },
+  init: (f) => ({ kind: 'main', sid: f.sid, cwds: {}, models: {}, days: {} }),
+  lines: (e) => (buf, s, end) => {
+    const o = parseLine(buf, s, end)
+    if (o) ompLine(e, o)
+  },
+  // a live desk: busy while the file keeps being written, idle once it stalls (liveState)
+  tail: (abs, size, f) => ({ open: true, lastTs: f?.st?.mtimeMs }),
+}
+
+/** Whether a table exists (opencode's schema moves between versions). */
+const has = (db, table) => !!db.prepare("select 1 from sqlite_master where type = 'table' and name = ?").get(table)
+
+/** The opencode database, opened read-only once per path (a 1 GB file: never read whole, always queried). */
+const ocDbs = new Map()
+function ocDb(dir) {
+  const file = path.join(dir, 'opencode.db')
+  if (!ocDbs.has(file)) {
+    const { DatabaseSync } = process.getBuiltinModule('node:sqlite')
+    ocDbs.set(file, new DatabaseSync(file, { readOnly: true }))
+  }
+  return ocDbs.get(file)
+}
+
+/**
+ * opencode: each session is a row, not a file. `walk` lists them as pseudo-files whose size is the message count and
+ * whose mtime is the session's last update, so the cache rereads a session only when it changed; `entry` builds it
+ * from its messages (opencodeEntry). The schema is opencode's own, not an API: a change of it costs a note, not a crash.
+ */
+const opencode = {
+  id: 'opencode',
+  walk(ctx, home) {
+    const db = ocDb(home.dir)
+    const list = (table, msgTable, extra = '') => {
+      const counts = new Map(db.prepare(`select session_id, count(*) n from ${msgTable} group by session_id`).all().map((r) => [r.session_id, r.n]))
+      return db.prepare(`select id, parent_id, directory, title, time_created, time_updated${extra} from ${table}`).all().map((s) => ({
+        rel: `opencode.db#${s.id}`, sid: s.id, cwd: s.directory ?? null, title: s.title ?? null, entry: true,
+        sub: !!s.parent_id, par: s.parent_id ?? undefined, v2: table === 'session_v2', busy: s.time_busy ?? null, idle: s.time_idle ?? null,
+        st: { ino: 0, size: counts.get(s.id) ?? 0, mtimeMs: s.time_updated, birthtimeMs: s.time_created },
+      }))
+    }
+    // opencode moved to session_v2 / session_message (the old tables stopped growing on 2026-10-16): a session in both is v2's
+    const v2 = has(db, 'session_v2') ? list('session_v2', 'session_message', ', time_busy, time_idle') : []
+    const seen = new Set(v2.map((f) => f.sid))
+    return [...v2, ...list('session', 'message').filter((f) => !seen.has(f.sid))]
+  },
+  init(f) {
+    const e = { kind: f.sub ? 'sub' : 'main', sid: f.sid, cwds: {}, models: {}, days: {} }
+    if (f.par) e.par = f.par
+    if (f.title && !f.sub) e.ct = clip(redact(f.title), 80)
+    return e
+  },
+  entry(e, f, ctx, home) {
+    const db = ocDb(home.dir)
+    if (f.v2) {
+      const msgs = []
+      for (const r of db.prepare("select type, time_created, data from session_message where session_id = ? and type in ('user', 'assistant') order by seq").all(f.sid)) {
+        let d
+        try { d = JSON.parse(r.data) } catch { continue }
+        msgs.push({
+          ms: d.time?.created ?? r.time_created, role: r.type, cwd: f.cwd, model: d.model?.id ?? null,
+          tokIn: d.tokens?.input ?? 0, tokOut: (d.tokens?.output ?? 0) + (d.tokens?.reasoning ?? 0),
+          tools: Array.isArray(d.content) ? d.content.filter((c) => c?.type === 'tool').length : 0,
+        })
+      }
+      return opencodeEntry(e, msgs)
+    }
+    const tools = new Map(db.prepare("select message_id, count(*) n from part where session_id = ? and json_extract(data, '$.type') = 'tool' group by message_id").all(f.sid).map((r) => [r.message_id, r.n]))
+    const msgs = []
+    for (const r of db.prepare('select id, time_created, data from message where session_id = ? order by time_created').all(f.sid)) {
+      let d
+      try { d = JSON.parse(r.data) } catch { continue }
+      if (d.role !== 'user' && d.role !== 'assistant') continue
+      msgs.push({
+        ms: d.time?.created ?? r.time_created, role: d.role, cwd: d.path?.cwd ?? f.cwd, model: d.modelID ?? d.model?.modelID ?? null,
+        tokIn: d.tokens?.input ?? 0, tokOut: (d.tokens?.output ?? 0) + (d.tokens?.reasoning ?? 0), tools: tools.get(r.id) ?? 0,
+      })
+    }
+    opencodeEntry(e, msgs)
+  },
+  // a live desk: busy while the session keeps being written, idle once it stalls (liveState)
+  // v2 says when a session went busy and idle: working while busy is the later; the old tables only have the last write
+  tail: (abs, size, f) => ({ open: f?.v2 ? (f.busy ?? 0) > (f.idle ?? 0) : true, lastTs: f?.st?.mtimeMs }),
+}
+
 /** The readers, by agent id (Claude's sessions are read by collect.mjs itself). */
-export const READERS = { codex, gemini, cursor, kimi, grok }
+export const READERS = { codex, gemini, cursor, kimi, grok, opencode, omp }
 
 // ---------------------------------------------------------------- reading them all
 
@@ -1342,6 +1542,14 @@ async function syncZst(ctx, reader, home, f) {
 /** One session file into the cache: appended JSONL from where the last run stopped, a whole JSON when it changed. */
 function syncOne(ctx, reader, home, f, fromMs) {
   const init = () => reader.init(f, ctx, home)
+  // a session that is not a file (opencode's rows): the reader builds it whole, cached by its size and mtime
+  if (f.entry) {
+    const known = knownWhole(ctx, f)
+    if (known) return known
+    const e = { ...init(), ino: f.st.ino, off: f.st.size }
+    reader.entry(e, f, ctx, home)
+    return keepWhole(ctx, home, f, e)
+  }
   if (f.whole) {
     const known = knownWhole(ctx, f)
     if (known) return known

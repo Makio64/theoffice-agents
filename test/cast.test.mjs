@@ -25,8 +25,8 @@ function castOffice() {
 
 describe('the cast', () => {
   test('six characters, Clawd first, each with its own name, tag and colors', () => {
-    assert.deepEqual(AGENT_IDS, ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok'])
-    assert.deepEqual(AGENT_IDS.map((a) => CAST[a].who), ['Clawd', 'Dex', 'Gem', 'Caret', 'Mooni', 'Rok'])
+    assert.deepEqual(AGENT_IDS, ['claude', 'codex', 'gemini', 'cursor', 'kimi', 'grok', 'opencode', 'omp'])
+    assert.deepEqual(AGENT_IDS.map((a) => CAST[a].who), ['Clawd', 'Dex', 'Gem', 'Caret', 'Mooni', 'Rok', 'Ocho', 'Ompa'])
     assert.equal(new Set(AGENT_IDS.map((a) => CAST[a].tag)).size, AGENT_IDS.length)
     assert.equal(new Set(AGENT_IDS.map((a) => CAST[a].hex.dark)).size, AGENT_IDS.length, 'no two characters share a color')
     assert.equal(agentId('codex'), 'codex')
@@ -104,7 +104,7 @@ describe('the cast', () => {
         assert.match(ascii, /^[\x20-\x7e]+$/)
       }
     }
-    assert.deepEqual(CAST_ROLES, ['clawd', 'codex', 'gemini', 'cursor', 'kimi', 'grok'])
+    assert.deepEqual(CAST_ROLES, ['clawd', 'codex', 'gemini', 'cursor', 'kimi', 'grok', 'opencode', 'omp'])
     for (const r of CAST_ROLES) {
       assert.ok(ROLE_HEX[r] && ROLE_ANSI[r] && ROLE_ANSI_16[r] && ROLE_TERM[r], r)
       assert.match(ROLE_ANSI_16[r], /^(?:1;)?(?:3[0-7]|9[0-7])$/, `${r} is a basic color in 16-color mode`)
