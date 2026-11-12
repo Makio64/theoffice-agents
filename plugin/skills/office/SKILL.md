@@ -57,7 +57,7 @@ Relay its output as it is, in one fenced block: the first line is the address, t
 
 ## Views and arguments
 
-Every agent has its own character: Claude is Clawd (`▛█▜`), Codex is Dex (`▐>▌`), Gemini CLI and Antigravity are Gem (`▐*▌`), Cursor is Caret (`▐│▌`), Kimi is Mooni (`▐(▌`), and Grok is Rok (`▐/▌`). Desks show their account name when more than one account is in use, and historical views include agent-time per agent and account.
+Every agent has its own character: Claude is Clawd (`▛█▜`), Codex is Dex (`▐>▌`), Gemini CLI and Antigravity are Gem (`▐*▌`), Cursor is Caret (`▐│▌`), Kimi is Mooni (`▐(▌`), Grok is Rok (`▐/▌`), and GitHub Copilot CLI is Copi (`▐=▌`). Desks show their account name when more than one account is in use, and historical views include agent-time per agent and account.
 
 | Argument | Shows |
 | --- | --- |

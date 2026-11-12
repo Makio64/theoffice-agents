@@ -2130,6 +2130,65 @@ export function progressOf(file) {
   }
 }
 
+/** A Copilot CLI desk shows while its session was touched in the last 10 min (same cutoff as relay/merge.mjs STALE_MS). */
+const COPILOT_STALE_MS = 10 * 60e3
+/** Files of a Copilot session folder written this recently mean a turn is running ("thinking"). */
+const COPILOT_BUSY_MS = 15e3
+
+/**
+ * Live GitHub Copilot CLI desks from `<root>/.copilot/session-state/<id>/`. Reads workspace.yaml only (never the
+ * conversation) plus file names and mtimes. Heuristic: the newest mtime of any file in the folder within 15 s is a
+ * turn in progress ('thinking'), otherwise the desk is idle ("your turn"). Rendered as Copi (cast.mjs) with account
+ * 'GitHub Copilot'.
+ */
+export function collectCopilot(ctx, root) {
+  const base = path.join(root, '.copilot', 'session-state')
+  const byId = new Map()
+  for (const ent of readdirSafe(base)) {
+    if (!ent.isDirectory()) continue
+    const dir = path.join(base, ent.name)
+    let yaml
+    try { yaml = fs.readFileSync(path.join(dir, 'workspace.yaml'), 'utf8') } catch { continue }
+    const meta = {}
+    for (const line of yaml.split('\n')) {
+      const m = /^(\w+):\s*(.*)$/.exec(line)
+      if (m) meta[m[1]] = m[2].trim().replace(/^(["'])(.*)\1$/, '$2')
+    }
+    if (!meta.cwd && !meta.git_root) continue   // not a workspace.yaml of a session
+    const newest = Math.max(0, ...readdirSafe(dir).map((f) => statSafe(path.join(dir, f.name))?.mtimeMs ?? 0))
+    const createdAt = Date.parse(meta.created_at)
+    const lastTs = Math.max(Date.parse(meta.updated_at) || 0, createdAt || 0, newest)
+    if (!lastTs || ctx.nowMs - lastTs > COPILOT_STALE_MS) continue
+    const id = (meta.id || ent.name).slice(0, 8)
+    if (byId.has(id)) continue
+    const proj = ctx.resolver.resolve(meta.cwd || meta.git_root)
+    const busy = ctx.nowMs - newest <= COPILOT_BUSY_MS
+    byId.set(id, {
+      id,
+      pid: null,
+      agent: 'copilot',
+      account: 'GitHub Copilot',
+      title: clip(redact(meta.name || proj.name), 60),
+      project: clip(proj.name, 60),
+      project_path: safeText(proj.path),
+      worktree: proj.worktree ? clip(proj.worktree, 40) : null,
+      branch: meta.branch ? clip(redact(meta.branch), 60) : null,
+      status: busy ? 'busy' : 'idle',
+      state: busy ? 'working' : 'idle',
+      idle_reason: busy ? null : 'done',
+      activity: busy ? { kind: 'thinking', tool: null, label: null, since: iso(newest) } : { kind: 'idle', tool: null, label: null, since: iso(lastTs) },
+      model: null,
+      started_at: iso(createdAt || lastTs),
+      last_seen: iso(lastTs),
+      entrypoint: null,
+      interns: [],
+      meetings: [],
+      _sid: meta.id || ent.name,
+    })
+  }
+  return [...byId.values()].sort((a, b) => a.started_at.localeCompare(b.started_at))
+}
+
 /**
  * Collect the facts for one view. Never throws for missing/odd data: each phase degrades to empty and
  * leaves a note. Options default from the environment (THEOFFICE_* overrides, see SPEC).
@@ -2285,6 +2344,10 @@ export async function collect(opts = {}) {
       wentHome.push(...live.left)
       for (const sid of live.open) openSids.add(sid)
     } catch (err) { ctx.log(`live: ${err?.message}`); notes.push('live sessions unreadable') }
+  }
+  // Copilot CLI sessions: only where `root` is known (never the real ~ under a test's claudeDir) and agents are unfiltered
+  if (root && !(opts.agents ?? env.THEOFFICE_AGENTS)) {
+    try { desks.push(...collectCopilot(ctx, root)) } catch (err) { ctx.log(`copilot: ${err?.message}`) }
   }
   ctx.liveSids = new Set(desks.map((d) => d._sid))
   const msLive = performance.now() - tLive

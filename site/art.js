@@ -643,7 +643,7 @@ export function liveScene(scale = P) {
   return svg(48, 30, rects(r) + screen + clawd + `<g class="armA">${arm(0)}</g><g class="armB">${arm(1)}</g>`, scale, ' aria-hidden="true"')
 }
 
-/** EVERY AGENT: a little office building, a micro character of the cast in each of its six windows. 40 × 30. */
+/** EVERY AGENT: a little office building, a micro character of the cast in each of its windows (3 × 3 fits the 9 of the cast). 40 × 30. */
 export function crowdScene(scale = P) {
   const r = [
     [4, 2, 32, 26, '#5a4334'], [4, 2, 32, 1, '#6b503f'], [3, 1, 34, 2, C.stF], [3, 1, 34, 1, C.stHi], [4, 2, 1, 26, '#6b503f'], [35, 3, 1, 25, '#47342a'],
@@ -651,7 +651,7 @@ export function crowdScene(scale = P) {
     // the door
     [17, 21, 6, 7, '#2a211b'], [18, 22, 4, 6, C.warm], [19, 22, 2, 6, '#ffe7b0'],
   ]
-  // six windows: 3 × 2, a micro character (7 × 5) in each
+  // windows: 3 per row, a micro character (7 × 5) in each
   let cast = ''
   CAST.forEach((c, i) => {
     const wx = 7 + (i % 3) * 9, wy = 5 + Math.floor(i / 3) * 8

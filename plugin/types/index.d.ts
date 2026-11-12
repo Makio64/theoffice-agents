@@ -14,9 +14,10 @@ export type OfficeActivityCounts = Partial<Record<OfficeActivityKind, number>>
 
 /**
  * The kind of agent at a desk, each drawn as its own character (lib/cast.mjs): Clawd for Claude, Dex for Codex, Gem for
- * Gemini (the CLI and Antigravity), Caret for Cursor, Mooni for Kimi, Rok for Grok. Missing means Claude.
+ * Gemini (the CLI and Antigravity), Caret for Cursor, Mooni for Kimi, Rok for Grok, Ocho for opencode, Ompa for omp,
+ * Copi for GitHub Copilot CLI. Missing means Claude.
  */
-export type OfficeAgent = 'claude' | 'codex' | 'gemini' | 'cursor' | 'kimi' | 'grok'
+export type OfficeAgent = 'claude' | 'codex' | 'gemini' | 'cursor' | 'kimi' | 'grok' | 'opencode' | 'omp' | 'copilot'
 
 /** Agent-minutes per agent over the range (agents at zero left out). */
 export type OfficeAgentMinutes = Partial<Record<OfficeAgent, number>>
