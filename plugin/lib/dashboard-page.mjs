@@ -85,7 +85,7 @@ function isNow(){return view!=='timelapse'&&!back()}
 function width(){const w=Math.round(byId('console')?.clientWidth||0);return w>=320?Math.min(2400,w):960}
 function drawingWidth(){return Math.max(320,Math.min(2400,Math.round(width()/20)*20))}
 function key(){return JSON.stringify([view,range,back(),view==='live'&&quiet,zoom,drawingWidth()])}
-function selectionUrl(route){const url=new URL(route,location.href);url.search='';url.searchParams.set('token',new URL(location.href).searchParams.get('token'));return url}
+function selectionUrl(route){const url=new URL(route,location.href);url.search='';const token=new URL(location.href).searchParams.get('token');if(token)url.searchParams.set('token',token);return url}
 function viewUrl(route){const url=selectionUrl(route);url.searchParams.set('view',view);url.searchParams.set('range',range);url.searchParams.set('back',String(back()));if(view==='live'&&quiet)url.searchParams.set('quiet','1');if(zoom)url.searchParams.set('zoom','1');url.searchParams.set('width',String(drawingWidth()));return url}
 function remember(){
   const state=JSON.stringify({view,range,quiet,zoom,backs});try{localStorage.setItem(storeKey,state)}catch{}
